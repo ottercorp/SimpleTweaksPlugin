@@ -68,7 +68,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             #endif
             for (var i = 0; i < loadedUnitsList->Count; i++) {
                 var addon = addonList[i];
-                var name = Marshal.PtrToStringAnsi(new IntPtr(addon->Name));
+                var name = Marshal.PtrToStringUTF8(new IntPtr(addon->Name));
                 
                 if (name != null && name.StartsWith("JobHud")) {
                     if (reset || Config.ShowInDuty && InCombatDuty) {

@@ -34,7 +34,7 @@ public unsafe class PartyDebugging : DebugHelper {
 
             for (var i = 0; i < 8 && i < groupManager->MemberCount; i++) {
                 var partyMember = partyMembers[i];
-                var name = Marshal.PtrToStringAnsi(new IntPtr(partyMember.Name));
+                var name = Marshal.PtrToStringUTF8(new IntPtr(partyMember.Name));
                 ImGui.Text($"[{(ulong)&partyMember:X}] Lv {partyMember.Level}, {partyMember.ObjectID:X}, {name}");
 
                 PlayerCharacter chara = null;
