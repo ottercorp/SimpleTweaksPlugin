@@ -81,6 +81,9 @@ public class IconManager : IDisposable {
             case ClientLanguage.French:
                 type = "fr/";
                 break;
+                case ClientLanguage.ChineseSimplified:
+                    type = "chs/";
+                    break;
             default:
                 throw new ArgumentOutOfRangeException("Language", "Unknown Language: " + Service.Data.Language.ToString());
         }

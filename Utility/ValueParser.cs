@@ -27,7 +27,7 @@ public abstract class ValueParser : Attribute {
             }
 
             var addr = (byte*) (parentAddr + (ulong)fieldOffset.Value);
-            var str = Marshal.PtrToStringAnsi(new IntPtr(addr), fixedBuffer.Length);
+            var str = Marshal.PtrToStringUTF8(new IntPtr(addr), fixedBuffer.Length);
             return $"{str}";
         }
     }

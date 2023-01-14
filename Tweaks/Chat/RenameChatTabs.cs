@@ -119,11 +119,13 @@ namespace SimpleTweaksPlugin.Tweaks.Chat {
         public string DefaultName0 => Service.ClientState.ClientLanguage switch {
             ClientLanguage.French => "Général",
             ClientLanguage.German => "Allgemein",
+            ClientLanguage.ChineseSimplified => "通用",
             _ => "General"
         };
         public string DefaultName1 => Service.ClientState.ClientLanguage switch {
             ClientLanguage.French => "Combat",
             ClientLanguage.German => "Kampf",
+            ClientLanguage.ChineseSimplified => "战斗",
             _ => "Battle"
         };
         
