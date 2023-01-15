@@ -12,5 +12,6 @@ public static class CustomNodes {
         ClassicSlideCast =     SimpleTweaksNodeBase + 9,
         PaintingPreview =      SimpleTweaksNodeBase + 10,
         AdditionalInfo =       SimpleTweaksNodeBase + 11,
+        TargetCastBarTimer =   SimpleTweaksNodeBase + 11,
         SimpleTweaksNodeBase = 0x53540000;
 }
