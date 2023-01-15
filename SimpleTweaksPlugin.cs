@@ -113,15 +113,20 @@ namespace SimpleTweaksPlugin {
 
             try {
                 // Update Tweak Blacklist
-                using var webClient = new System.Net.WebClient();
-                var blacklistedTweaksString = webClient.DownloadString("https://raw.githubusercontent.com/Caraxi/SimpleTweaksPlugin/main/tweakBlacklist.txt");
-                SimpleLog.Log("Tweak Blacklist:\n" + blacklistedTweaksString);
-                var blacklistedTweaks = new List<string>();
-                foreach (var l in blacklistedTweaksString.Split("\n")) {
-                    if (string.IsNullOrWhiteSpace(l)) continue;
-                    blacklistedTweaks.Add(l.Trim());
+                //using var webClient = new System.Net.WebClient();
+                //var blacklistedTweaksString = webClient.DownloadString("https://raw.githubusercontent.com/Caraxi/SimpleTweaksPlugin/main/tweakBlacklist.txt");
+                using var s = Assembly.GetExecutingAssembly().GetManifestResourceStream($"SimpleTweaksPlugin.tweakBlacklist.txt");
+                if (s != null) {
+                    using var sr = new StreamReader(s);
+                    var blacklistedTweaksString = sr.ReadToEnd();
+                    SimpleLog.Log("Tweak Blacklist:\n" + blacklistedTweaksString);
+                    var blacklistedTweaks = new List<string>();
+                    foreach (var l in blacklistedTweaksString.Split("\n")) {
+                        if (string.IsNullOrWhiteSpace(l)) continue;
+                        blacklistedTweaks.Add(l.Trim());
+                    }
+                    PluginConfig.BlacklistedTweaks = blacklistedTweaks;
                 }
-                PluginConfig.BlacklistedTweaks = blacklistedTweaks;
             } catch {
                 //
             }
@@ -155,6 +160,7 @@ namespace SimpleTweaksPlugin {
                 ClientLanguage.French => "fr",
                 ClientLanguage.German => "de",
                 ClientLanguage.Japanese => "ja",
+                ClientLanguage.ChineseSimplified => "zh-CN",
                 _ => "en"
             };
 

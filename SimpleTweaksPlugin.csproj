@@ -31,6 +31,10 @@
       <EmbeddedResource Remove="Publish\**" />
       <None Remove="lib\**" />
       <None Remove="Publish\**" />
+      <None Remove="SimpleTweaksPlugin.Localization.zh-CN.json" />
+      <None Remove="tweakBlacklist.txt" />
+      <EmbeddedResource Include="Localization\zh-CN.json" />
+      <EmbeddedResource Include="tweakBlacklist.txt" />
       <None Update="images\icon.png">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>

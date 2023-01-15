@@ -31,11 +31,11 @@ internal static class Loc {
         }
 
         string json = null;
-        var locDir = Service.PluginInterface.GetPluginLocDirectory();
+        var locDir =Path.Combine(Service.PluginInterface.GetPluginLocDirectory(), langCode);
         if (string.IsNullOrWhiteSpace(locDir)) return;
 
 
-        var langFile = Path.Combine(locDir, $"{langCode}/strings.json");
+        var langFile = Path.Combine(locDir, "strings.json");
         if (File.Exists(langFile)) {
             json = File.ReadAllText(langFile);
         } else {
@@ -94,7 +94,7 @@ internal static class Loc {
                 var webClient = new WebClient();
                 webClient.Headers.Add("Accept: text/html, application/xhtml+xml, */*");
                 webClient.Headers.Add("User-Agent: Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)");
-                webClient.DownloadFile(new Uri("https://crowdin.com/backend/download/project/simpletweaks.zip"), zipFile);
+                webClient.DownloadFile(new Uri("https://crowdin.com/backend/download/project/simpletweaks_cn.zip"), zipFile);
                 ZipFile.ExtractToDirectory(zipFile, downloadPath, true);
 
                 File.Delete(zipFile);
