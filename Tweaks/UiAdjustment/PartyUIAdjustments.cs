@@ -14,7 +14,9 @@ using SimpleTweaksPlugin.Debugging;
 #endif
 using SimpleTweaksPlugin.GameStructs;
 using SimpleTweaksPlugin.Utility;
-
+using System.Text;
+using System.Linq;
+using System.IO;
 
 namespace SimpleTweaksPlugin
 {
@@ -89,6 +91,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             try
             {
+                SimpleLog.Information($"partyUiUpdateAddress:0x{Service.SigScanner.ScanText(
+                        "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B 7A ?? 48 8B D9 49 8B 70 ?? 48 8B 47"):x}");
                 partyUiUpdateHook ??= Hook<PartyUiUpdate>.FromAddress(
                     Service.SigScanner.ScanText(
                         "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B 7A ?? 48 8B D9 49 8B 70 ?? 48 8B 47"),
@@ -110,18 +114,18 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
                 if (Enabled) partyUiUpdateHook?.Enable();
                 else partyUiUpdateHook?.Disable();
-#if DEBUG
-                if (Config.Target) targetUpdateHook?.Enable();
-                else targetUpdateHook?.Disable();
-                if (Config.Target) mainTargetUpdateHook?.Enable();
-                else mainTargetUpdateHook?.Disable();
-                if (Config.Focus) focusUpdateHook?.Enable();
-                else focusUpdateHook?.Disable();
-#endif
+//#if DEBUG
+//                if (Config.Target) targetUpdateHook?.Enable();
+//                else targetUpdateHook?.Disable();
+//                if (Config.Target) mainTargetUpdateHook?.Enable();
+//                else mainTargetUpdateHook?.Disable();
+//                if (Config.Focus) focusUpdateHook?.Enable();
+//                else focusUpdateHook?.Disable();
+//#endif
                 
-                if (!Config.ShieldShift) UnShiftShield();
-                    else ShiftShield();
-                if (!Config.MpShield) ResetMp();
+//                if (!Config.ShieldShift) UnShiftShield();
+//                    else ShiftShield();
+//                if (!Config.MpShield) ResetMp();
             }
             catch (Exception e)
             {
@@ -174,6 +178,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             }
 #if DEBUG
                 PerformanceMonitor.Begin("PartyListLayout.Update");
+
 #endif
                 UpdatePartyUi(false);
                 var ret = partyUiUpdateHook.Original(a1, a2, a3);
@@ -237,6 +242,44 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 part1 = str.Substring(0, index).Trim();
                 part2 = str.Substring(index + 1).Trim();
             }
+        }
+        private static void SplitLvlName(byte* str,out string lvl,out string name)
+        {
+            try
+            {
+                var offset = 0;
+                var c = 0;
+                lvl = "";
+                name = "";
+                while (true)
+                {
+                    var b = *(str + offset);
+                    if (b == 0x20)
+                    {
+                        if (*(str + offset - 1) == 0xA7 && *(str + offset - 2) == 0xBA && *(str + offset - 3) == 0xE7)
+                        {
+                            lvl = Encoding.UTF8.GetString(str, offset+1);
+                            c = offset;
+                        }
+                    }
+                    if (b == 0)
+                    {
+                        if(c == 0)
+                            name = Encoding.UTF8.GetString(str, offset);
+                        else
+                            name = Encoding.UTF8.GetString(str + c+1, offset);
+                        break;
+                    }
+                    offset += 1;
+                }
+            }
+            catch(Exception e)
+            {
+                lvl = "";
+                name = "";
+                SimpleLog.Error(e);
+            }
+            
         }
 
         private void SetName(AtkTextNode* node, string payload)
@@ -437,16 +480,17 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 #if DEBUG
                         if (!Config.PartyName) return;
                         if (index >= 8) return;
-                        var lvlname = stringarray->MemberStrings(index).GetLvlName();
+                        var lvlname = party->Member(index).nameTextNode->NodeText.StringPtr;
                         var job = data->MemberData(index).JobId;
-                        SplitString(lvlname, true, out var lvl,
+                        SplitLvlName(lvlname, out var lvl,
                             out var namejob);
-
+                        //SimpleLog.Information($"{lvl}：{namejob}");
                         job = job > 0xF293 ? job - 0xF294 : 0;
                         if (namejob != GetJobName(job) ||
                             data->MemberData(index).JobId != party->JobId[index])
                         {
-                            Common.WriteSeString(stringarray->MemberStrings(index).Name, lvl+" "+GetJobName(job));
+
+                            party->Member(index).nameTextNode->SetText(lvl+" "+ GetJobName(job));
                             *((byte*)data + 0x1C + index * 0x9C) = 1; //Changed
                         }
 #endif
@@ -455,8 +499,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     {
                         if (Config.HpPercent)
                         {
-                            var textNode = (AtkTextNode*)GetNodeById(party->Member(index).hpComponentBase, 2);
-                            if (textNode != null) SetHp(textNode, data->MemberData(index));
+                            var textNode = (AtkTextNode*)GetNodeById(party->Member(index).hpComponentBase, 0);
+                            if (textNode != null) ;//SetHp(textNode, data->MemberData(index));
                         }
                         if (Config.MpShield) ShieldOnMp(index);
                     }

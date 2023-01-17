@@ -11,7 +11,7 @@ namespace SimpleTweaksPlugin.GameStructs
     [StructLayout(LayoutKind.Explicit, Size = 0x68)]
     public unsafe struct MemberStrings
     {
-        [FieldOffset(0x00)] public byte* Name;
+        [FieldOffset(0x00)] public byte* Name;//
 
         [FieldOffset(0x08)] public byte* Casting;
         //[FieldOffset(0x10)] public fixed long Buff[10];
@@ -97,11 +97,11 @@ namespace SimpleTweaksPlugin.GameStructs
         [FieldOffset(0x08)] public int Level;
         [FieldOffset(0x0C)] public int JobId; //+固定值
         [FieldOffset(0x10)] public int UnknownINT;
-        [FieldOffset(0x14)] public int CurrentHP; //范围外FFFFFFFF  跨服00000001
-        [FieldOffset(0x18)] public int MaxHp; //范围外00000001  跨服00000001
-        [FieldOffset(0x1C)] public int ShieldPercent;
-        [FieldOffset(0x20)] public int CurrentMP; //范围外FFFFFFFF  跨服00000000
-        [FieldOffset(0x24)] public int MaxMp; //范围外00000000  跨服00000000
+        [FieldOffset(0x18)] public int CurrentHP; //范围外FFFFFFFF  跨服00000001
+        [FieldOffset(0x1C)] public int MaxHp; //范围外00000001  跨服00000001
+        [FieldOffset(0x20)] public int ShieldPercent;
+        [FieldOffset(0x24)] public int CurrentMP; //范围外FFFFFFFF  跨服00000000
+        [FieldOffset(0x28)] public int MaxMp; //范围外00000000  跨服00000000
 
         [FieldOffset(0x2C)] public int EmnityPercent;
         [FieldOffset(0x30)] public int EmnityNumber;
