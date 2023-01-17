@@ -491,7 +491,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                         {
 
                             party->Member(index).nameTextNode->SetText(lvl+" "+ GetJobName(job));
-                            *((byte*)data + 0x1C + index * 0x9C) = 1; //Changed
+                            //*((byte*)data + 0x1C + index * 0x9C) = 1; //Changed
                         }
 #endif
                     }
