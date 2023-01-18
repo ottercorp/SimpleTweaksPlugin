@@ -91,8 +91,6 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             try
             {
-                SimpleLog.Information($"partyUiUpdateAddress:0x{Service.SigScanner.ScanText(
-                        "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B 7A ?? 48 8B D9 49 8B 70 ?? 48 8B 47"):x}");
                 partyUiUpdateHook ??= Hook<PartyUiUpdate>.FromAddress(
                     Service.SigScanner.ScanText(
                         "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B 7A ?? 48 8B D9 49 8B 70 ?? 48 8B 47"),
@@ -114,18 +112,18 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
                 if (Enabled) partyUiUpdateHook?.Enable();
                 else partyUiUpdateHook?.Disable();
-//#if DEBUG
-//                if (Config.Target) targetUpdateHook?.Enable();
-//                else targetUpdateHook?.Disable();
-//                if (Config.Target) mainTargetUpdateHook?.Enable();
-//                else mainTargetUpdateHook?.Disable();
-//                if (Config.Focus) focusUpdateHook?.Enable();
-//                else focusUpdateHook?.Disable();
-//#endif
-                
-//                if (!Config.ShieldShift) UnShiftShield();
-//                    else ShiftShield();
-//                if (!Config.MpShield) ResetMp();
+#if DEBUG
+                if (Config.Target) targetUpdateHook?.Enable();
+                else targetUpdateHook?.Disable();
+                if (Config.Target) mainTargetUpdateHook?.Enable();
+                else mainTargetUpdateHook?.Disable();
+                if (Config.Focus) focusUpdateHook?.Enable();
+                else focusUpdateHook?.Disable();
+#endif
+
+                if (!Config.ShieldShift) UnShiftShield();
+                else ShiftShield();
+                if (!Config.MpShield) ResetMp();
             }
             catch (Exception e)
             {
@@ -162,9 +160,6 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         //PartyListUpdateDelegate(AtkUnitBase* addonPartyList, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
         private long PartyListUpdateDelegate(long a1, long a2, long a3)
         {
-            SimpleLog.Information($"party address:0x{(IntPtr)a1:x}");
-            SimpleLog.Information($"data address:0x{(IntPtr)(*(long*)(*(long*)(a2 + 0x20) + 0x20)):x}");
-            SimpleLog.Information($"stringarray address:0x{(IntPtr)(*(long*)(*(long*)(a3 + 0x18) + 0x20) + 0x30):x}");
             if ((IntPtr) a1 != l1)
             {
                 l1 = (IntPtr) a1;
@@ -179,41 +174,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 //SimpleLog.Information("L1:" + l1.ToString("X") + " L2:" + l2.ToString("X"));
                 //SimpleLog.Information("L3:" + l3.ToString("X"));
             }
-            AtkUnitBase* AtkUnitBase = (AtkUnitBase*)l1;
-            AtkTextNode* textNode = null;
-            var a = "26558";
-            var b = Encoding.UTF8.GetBytes(a);
-            for (int i = 0; i < b.Length; i++)
-            {
-                SimpleLog.Information($"{b[i]:x}");
-             }
-            //for (uint i = 0; i < 300; i++)
-            //{
-                //var a = AtkUnitBase->GetTextNodeById(i);
-            //    for (uint n = 0; n < AtkUnitBase->UldManager.NodeListCount; n++)
-            //    {
-            //        if (AtkUnitBase->UldManager.NodeList[n] == null)
-            //            continue;
-            //        SimpleLog.Information($"NodeID:0x{AtkUnitBase->UldManager.NodeList[n]->NodeID:x}");
-            //        textNode = AtkUnitBase->UldManager.NodeList[n]->GetAsAtkTextNode();
-
-            //    if (textNode != null)
-            //    {
-            //        try
-            //        {
-            //            AtkUnitBase->UldManager.NodeList[n]->ToggleVisibility(true);
-            //            textNode->SetText("CC" + " " + n);
-            //            SimpleLog.Information("TextNode" + " " + n);
-            //        }
-            //        catch (Exception ex)
-            //        {
-            //            SimpleLog.Error("error" + n);
-            //        }
-            //    }
-            //}
-            //}
 #if DEBUG
-            PerformanceMonitor.Begin("PartyListLayout.Update");
+                PerformanceMonitor.Begin("PartyListLayout.Update");
 
 #endif
                 UpdatePartyUi(false);
@@ -521,7 +483,6 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                         var job = data->MemberData(index).JobId;
                         SplitLvlName(lvlname, out var lvl,
                             out var namejob);
-                        //SimpleLog.Information($"{lvl}：{namejob}");
                         job = job > 0xF293 ? job - 0xF294 : 0;
                         var nameTextNode = party->Member(index).nameTextNode;
                         if (nameTextNode == null)
@@ -538,12 +499,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     {
                         if (Config.HpPercent)
                         {
-
-                            //SimpleLog.Information("111111111111->" + index);
-                            //var textNode = GetNodeById(party->Member(index).hpComponentBase, 2);
-                            //for (uint i = 0; i < party->Member(index).hpComponentBase->UldManager.NodeListCount; i++)
-                            //{
-                             var textNode = party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(2)->GetAsAtkTextNode();
+                            var textNode = party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(2)->GetAsAtkTextNode();
                             //party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(2)->Color.A =0xff; //hpvalue
                             //party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(3)->Color.A = 0xff;// unk
                             //party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(4)->Color.A = 0xff;//hpbar
@@ -551,7 +507,6 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                             {
                                 SetHp(textNode, data->MemberData(index));
                             }
-                            //}//SetHp(textNode, data->MemberData(index));
                         }
                         if (Config.MpShield) ShieldOnMp(index);
                     }
