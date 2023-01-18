@@ -121,9 +121,9 @@ namespace SimpleTweaksPlugin.GameStructs
     [StructLayout(LayoutKind.Explicit)]
     public struct DataArray
     {
-        [FieldOffset(0x04)] private uint Unknown;
+        [FieldOffset(0x04)] private uint Unknown;//单人开跨服招募1，本服0
         [FieldOffset(0x0C)] public int HideWhenSolo;
-        [FieldOffset(0x14)] public int PlayerCount;
+        [FieldOffset(0x14)] public int PlayerCount;//不算亲信
 
         [FieldOffset(0x18)] public int LeaderNumber;
 

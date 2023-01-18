@@ -159,8 +159,12 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         #region detors
 
+        //PartyListUpdateDelegate(AtkUnitBase* addonPartyList, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
         private long PartyListUpdateDelegate(long a1, long a2, long a3)
         {
+            SimpleLog.Information($"party address:0x{(IntPtr)a1:x}");
+            SimpleLog.Information($"data address:0x{(IntPtr)(*(long*)(*(long*)(a2 + 0x20) + 0x20)):x}");
+            SimpleLog.Information($"stringarray address:0x{(IntPtr)(*(long*)(*(long*)(a3 + 0x18) + 0x20) + 0x30):x}");
             if ((IntPtr) a1 != l1)
             {
                 l1 = (IntPtr) a1;
@@ -169,15 +173,47 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 party = (PartyUi*) l1;
                 data = (DataArray*) l2;
                 stringarray = (PartyStrings*)l3;
-
                 if (Config.ShieldShift) ShiftShield();
 
                 //SimpleLog.Information("NewAddress:");
                 //SimpleLog.Information("L1:" + l1.ToString("X") + " L2:" + l2.ToString("X"));
                 //SimpleLog.Information("L3:" + l3.ToString("X"));
             }
+            AtkUnitBase* AtkUnitBase = (AtkUnitBase*)l1;
+            AtkTextNode* textNode = null;
+            var a = "26558";
+            var b = Encoding.UTF8.GetBytes(a);
+            for (int i = 0; i < b.Length; i++)
+            {
+                SimpleLog.Information($"{b[i]:x}");
+             }
+            //for (uint i = 0; i < 300; i++)
+            //{
+                //var a = AtkUnitBase->GetTextNodeById(i);
+            //    for (uint n = 0; n < AtkUnitBase->UldManager.NodeListCount; n++)
+            //    {
+            //        if (AtkUnitBase->UldManager.NodeList[n] == null)
+            //            continue;
+            //        SimpleLog.Information($"NodeID:0x{AtkUnitBase->UldManager.NodeList[n]->NodeID:x}");
+            //        textNode = AtkUnitBase->UldManager.NodeList[n]->GetAsAtkTextNode();
+
+            //    if (textNode != null)
+            //    {
+            //        try
+            //        {
+            //            AtkUnitBase->UldManager.NodeList[n]->ToggleVisibility(true);
+            //            textNode->SetText("CC" + " " + n);
+            //            SimpleLog.Information("TextNode" + " " + n);
+            //        }
+            //        catch (Exception ex)
+            //        {
+            //            SimpleLog.Error("error" + n);
+            //        }
+            //    }
+            //}
+            //}
 #if DEBUG
-                PerformanceMonitor.Begin("PartyListLayout.Update");
+            PerformanceMonitor.Begin("PartyListLayout.Update");
 
 #endif
                 UpdatePartyUi(false);
@@ -337,6 +373,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             if (compBase->UldManager.Objects == null) return null;
             var count = compBase->UldManager.Objects->NodeCount;
             var ptr = (long) compBase->UldManager.Objects->NodeList;
+            SimpleLog.Information($"{ptr:x} {count}");
             for (var i = 0; i < count; i++)
             {
                 var node = (AtkResNode*) *(long*) (ptr + 8 * i);
@@ -486,11 +523,13 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                             out var namejob);
                         //SimpleLog.Information($"{lvl}：{namejob}");
                         job = job > 0xF293 ? job - 0xF294 : 0;
+                        var nameTextNode = party->Member(index).nameTextNode;
+                        if (nameTextNode == null)
+                            return;
                         if (namejob != GetJobName(job) ||
                             data->MemberData(index).JobId != party->JobId[index])
                         {
-
-                            party->Member(index).nameTextNode->SetText(lvl+" "+ GetJobName(job));
+                            nameTextNode->SetText(lvl+" "+ GetJobName(job));
                             //*((byte*)data + 0x1C + index * 0x9C) = 1; //Changed
                         }
 #endif
@@ -499,8 +538,20 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     {
                         if (Config.HpPercent)
                         {
-                            var textNode = (AtkTextNode*)GetNodeById(party->Member(index).hpComponentBase, 0);
-                            if (textNode != null) ;//SetHp(textNode, data->MemberData(index));
+
+                            //SimpleLog.Information("111111111111->" + index);
+                            //var textNode = GetNodeById(party->Member(index).hpComponentBase, 2);
+                            //for (uint i = 0; i < party->Member(index).hpComponentBase->UldManager.NodeListCount; i++)
+                            //{
+                             var textNode = party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(2)->GetAsAtkTextNode();
+                            //party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(2)->Color.A =0xff; //hpvalue
+                            //party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(3)->Color.A = 0xff;// unk
+                            //party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(4)->Color.A = 0xff;//hpbar
+                            if (textNode != null)
+                            {
+                                SetHp(textNode, data->MemberData(index));
+                            }
+                            //}//SetHp(textNode, data->MemberData(index));
                         }
                         if (Config.MpShield) ShieldOnMp(index);
                     }
