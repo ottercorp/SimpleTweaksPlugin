@@ -14,7 +14,9 @@ using SimpleTweaksPlugin.Debugging;
 #endif
 using SimpleTweaksPlugin.GameStructs;
 using SimpleTweaksPlugin.Utility;
-
+using System.Text;
+using System.Linq;
+using System.IO;
 
 namespace SimpleTweaksPlugin
 {
@@ -118,9 +120,9 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 if (Config.Focus) focusUpdateHook?.Enable();
                 else focusUpdateHook?.Disable();
 #endif
-                
+
                 if (!Config.ShieldShift) UnShiftShield();
-                    else ShiftShield();
+                else ShiftShield();
                 if (!Config.MpShield) ResetMp();
             }
             catch (Exception e)
@@ -155,6 +157,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         #region detors
 
+        //PartyListUpdateDelegate(AtkUnitBase* addonPartyList, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
         private long PartyListUpdateDelegate(long a1, long a2, long a3)
         {
             if ((IntPtr) a1 != l1)
@@ -165,7 +168,6 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 party = (PartyUi*) l1;
                 data = (DataArray*) l2;
                 stringarray = (PartyStrings*)l3;
-
                 if (Config.ShieldShift) ShiftShield();
 
                 //SimpleLog.Information("NewAddress:");
@@ -174,6 +176,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             }
 #if DEBUG
                 PerformanceMonitor.Begin("PartyListLayout.Update");
+
 #endif
                 UpdatePartyUi(false);
                 var ret = partyUiUpdateHook.Original(a1, a2, a3);
@@ -238,6 +241,44 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 part2 = str.Substring(index + 1).Trim();
             }
         }
+        private static void SplitLvlName(byte* str,out string lvl,out string name)
+        {
+            try
+            {
+                var offset = 0;
+                var c = 0;
+                lvl = "";
+                name = "";
+                while (true)
+                {
+                    var b = *(str + offset);
+                    if (b == 0x20)
+                    {
+                        if (*(str + offset - 1) == 0xA7 && *(str + offset - 2) == 0xBA && *(str + offset - 3) == 0xE7)
+                        {
+                            lvl = Encoding.UTF8.GetString(str, offset+1);
+                            c = offset;
+                        }
+                    }
+                    if (b == 0)
+                    {
+                        if(c == 0)
+                            name = Encoding.UTF8.GetString(str, offset);
+                        else
+                            name = Encoding.UTF8.GetString(str + c+1, offset);
+                        break;
+                    }
+                    offset += 1;
+                }
+            }
+            catch(Exception e)
+            {
+                lvl = "";
+                name = "";
+                SimpleLog.Error(e);
+            }
+            
+        }
 
         private void SetName(AtkTextNode* node, string payload)
         {
@@ -294,6 +335,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             if (compBase->UldManager.Objects == null) return null;
             var count = compBase->UldManager.Objects->NodeCount;
             var ptr = (long) compBase->UldManager.Objects->NodeList;
+            SimpleLog.Information($"{ptr:x} {count}");
             for (var i = 0; i < count; i++)
             {
                 var node = (AtkResNode*) *(long*) (ptr + 8 * i);
@@ -437,17 +479,19 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 #if DEBUG
                         if (!Config.PartyName) return;
                         if (index >= 8) return;
-                        var lvlname = stringarray->MemberStrings(index).GetLvlName();
+                        var lvlname = party->Member(index).nameTextNode->NodeText.StringPtr;
                         var job = data->MemberData(index).JobId;
-                        SplitString(lvlname, true, out var lvl,
+                        SplitLvlName(lvlname, out var lvl,
                             out var namejob);
-
                         job = job > 0xF293 ? job - 0xF294 : 0;
+                        var nameTextNode = party->Member(index).nameTextNode;
+                        if (nameTextNode == null)
+                            return;
                         if (namejob != GetJobName(job) ||
                             data->MemberData(index).JobId != party->JobId[index])
                         {
-                            Common.WriteSeString(stringarray->MemberStrings(index).Name, lvl+" "+GetJobName(job));
-                            *((byte*)data + 0x1C + index * 0x9C) = 1; //Changed
+                            nameTextNode->SetText(lvl+" "+ GetJobName(job));
+                            //*((byte*)data + 0x1C + index * 0x9C) = 1; //Changed
                         }
 #endif
                     }
@@ -455,8 +499,14 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     {
                         if (Config.HpPercent)
                         {
-                            var textNode = (AtkTextNode*)GetNodeById(party->Member(index).hpComponentBase, 2);
-                            if (textNode != null) SetHp(textNode, data->MemberData(index));
+                            var textNode = party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(2)->GetAsAtkTextNode();
+                            //party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(2)->Color.A =0xff; //hpvalue
+                            //party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(3)->Color.A = 0xff;// unk
+                            //party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(4)->Color.A = 0xff;//hpbar
+                            if (textNode != null)
+                            {
+                                SetHp(textNode, data->MemberData(index));
+                            }
                         }
                         if (Config.MpShield) ShieldOnMp(index);
                     }

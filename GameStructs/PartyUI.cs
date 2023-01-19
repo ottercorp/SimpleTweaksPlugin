@@ -3,7 +3,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace SimpleTweaksPlugin.GameStructs
 {
-    [StructLayout(LayoutKind.Explicit, Size = 0x100)]
+    [StructLayout(LayoutKind.Explicit, Size = 0xF8)]
     public unsafe struct SortedMember
     {
         [FieldOffset(0x00)] private AtkComponentBase* buff0; //*10
@@ -29,7 +29,8 @@ namespace SimpleTweaksPlugin.GameStructs
         [FieldOffset(0xA0)] public AtkImageNode* iconNode; //Sorted[20] =11  职业Icon
         [FieldOffset(0xA8)] public AtkUldPart* iconAtkUldPart; //Sorted[21] =11? 职业Icon.AtkTexture
         [FieldOffset(0xB0)] public AtkImageNode* UnknownNode; //Sorted[22] =10  跨服Icon              亲信=0
-        [FieldOffset(0xB8)] public AtkUldPart* UnknownAtkUldPart; //Sorted[23] =10? 跨服职业Icon.AtkTexture   亲信=0
+        //[FieldOffset(0xB8)] public AtkUldPart* UnknownAtkUldPart; //Sorted[23] =10? 跨服职业Icon.AtkTexture   亲信=0
+        [FieldOffset(0xB8)] public AtkComponentBase* HPGaugeComponent;
         [FieldOffset(0xC0)] public AtkComponentBase* hpComponentBase; //Sorted[24] =    HP部分 Components
         [FieldOffset(0xC8)] public AtkComponentBase* hpBarComponentBase; //Sorted[25] =    HP条 Components
         [FieldOffset(0xD0)] public AtkComponentBase* mpBarComponentBase; //Sorted[26] =    MP部分 Components     宠物=0
@@ -63,6 +64,7 @@ namespace SimpleTweaksPlugin.GameStructs
     [StructLayout(LayoutKind.Explicit)]
     public unsafe struct PartyUi
     {
+        [FieldOffset(0x000)] public AtkUnitBase AtkUnitBase;
         //[FieldOffset(0x0)] public AtkEventListener AtkEventListener;
         //[FieldOffset(0x8)] public fixed byte Name[0x20];
 
@@ -92,43 +94,49 @@ namespace SimpleTweaksPlugin.GameStructs
 
         ////[FieldOffset(0x1F6)] Unknown Textnode*;
 
-        [FieldOffset(0x220)] private SortedMember Member0; //*13;
-        [FieldOffset(0x320)] private SortedMember Member1;
-        [FieldOffset(0x420)] private SortedMember Member2;
-        [FieldOffset(0x520)] private SortedMember Member3;
-        [FieldOffset(0x620)] private SortedMember Member4;
-        [FieldOffset(0x720)] private SortedMember Member5;
-        [FieldOffset(0x820)] private SortedMember Member6;
-        [FieldOffset(0x920)] private SortedMember Member7;
-        [FieldOffset(0xA20)] private SortedMember Member8;
-        [FieldOffset(0xB20)] private SortedMember Member9;
-        [FieldOffset(0xC20)] private SortedMember Member10;
-        [FieldOffset(0xD20)] private SortedMember Member11;
-        [FieldOffset(0xE20)] private SortedMember Member12;
+        [FieldOffset(0x220)] private SortedMember Member0; //*13; partymember * 8
+        [FieldOffset(0x220+0xF8*1)] private SortedMember Member1;
+        [FieldOffset(0x220 + 0xF8 * 2)] private SortedMember Member2;
+        [FieldOffset(0x220 + 0xF8 * 3)] private SortedMember Member3;
+        [FieldOffset(0x220 + 0xF8 * 4)] private SortedMember Member4;
+        [FieldOffset(0x220 + 0xF8 * 5)] private SortedMember Member5;
+        [FieldOffset(0x220 + 0xF8 * 6)] private SortedMember Member6;
+        [FieldOffset(0x220 + 0xF8 * 7)] private SortedMember Member7;
+        [FieldOffset(0x220 + 0xF8 * 8)] private SortedMember Member8;//TrustMember*7
+        [FieldOffset(0x220 + 0xF8 * 9)] private SortedMember Member9;
+        [FieldOffset(0x220 + 0xF8 * 10)] private SortedMember Member10;
+        [FieldOffset(0x220 + 0xF8 * 11)] private SortedMember Member11;
+        [FieldOffset(0x220 + 0xF8 * 12)] private SortedMember Member12;
+        [FieldOffset(0x220 + 0xF8 * 13)] private SortedMember Member13;
+        [FieldOffset(0x220 + 0xF8 * 14)] private SortedMember Member14;
 
-        [FieldOffset(0xF20)] public fixed int JobId[13]; //ClassJob+F294 or 0
-        [FieldOffset(0xF54)] public fixed int UnknownINT[13];
+        [FieldOffset(0x1298)] public fixed int JobId[15]; //ClassJob+F294 or 0 // FFXIVClientStructs call it JobIconId
+        [FieldOffset(0x12D4)] public uint ChocoboIconId;
+        [FieldOffset(0x12D8)] public uint PetIconId;
 
-        [FieldOffset(0xF88)] public fixed short Edited[13]; //0X11 if edited? Need comfirm
+        [FieldOffset(0x1360)] public fixed short Edited[17]; //0X11 if edited? Need comfirm
 
-        [FieldOffset(0xFA8)] public AtkNineGridNode* BackgroundNineGridNode; //= Background;
-        [FieldOffset(0xFB0)] public AtkTextNode* SoloTextNode; //= Solo指示;
-        [FieldOffset(0xFB8)] public AtkResNode* LeaderResNode; //= 队长指示(Res);
-        [FieldOffset(0xFC0)] public AtkResNode* MpBarSpecialResNode; //= 蓝条特殊Res;
-        [FieldOffset(0xFC8)] public AtkTextNode* MpBarSpecialTextNode; //= 蓝条特殊Text;
+        [FieldOffset(0x1388)] public AtkNineGridNode* BackgroundNineGridNode; //= Background;
+        [FieldOffset(0x1390)] public AtkTextNode* SoloTextNode; //= Solo指示;
+        [FieldOffset(0x1398)] public AtkResNode* LeaderResNode; //= 队长指示(Res);
+        [FieldOffset(0x13A0)] public AtkResNode* MpBarSpecialResNode; //= 蓝条特殊Res;
+        [FieldOffset(0x13A8)] public AtkTextNode* MpBarSpecialTextNode; //= 蓝条特殊Text;
 
-        [FieldOffset(0xFD0)] public short LocalCount; //本地
-        [FieldOffset(0xFD4)] public short CrossRealmCount; //跨服
-        [FieldOffset(0xFD8)] public short LeaderNumber; //or FFFF // (从0开始计数)
+        [FieldOffset(0x13B0)] public int MemberCount;
+        [FieldOffset(0x13B4)] public int TrustCount;
 
-        [FieldOffset(0xFDC)] public short HideWhenSolo;
+        //[FieldOffset(0xFD0)] public short LocalCount; //本地？
+        //[FieldOffset(0xFD4)] public short CrossRealmCount; //跨服？
+        [FieldOffset(0x13B8)] public short LeaderNumber; //or FFFF // (从0开始计数)
+
+        [FieldOffset(0x13BC)] public short HideWhenSolo;
         //[FieldOffset(0xFE0)] FFFFFFFF
         //[FieldOffset(0xFE4)]FFFFFFFF
         //[FieldOffset(0xFE8)] = 蓝条特殊Res.Y;
         //[FieldOffset(0xFEC)] &= FFFE
 
-        [FieldOffset(0xFF1)] public byte PetCount;
-        [FieldOffset(0xFF2)] public byte CPCount;
+        [FieldOffset(0x13D1)] public byte PetCount;
+        [FieldOffset(0x13D2)] public byte CPCount;
 
 
         public SortedMember Member(int index)
