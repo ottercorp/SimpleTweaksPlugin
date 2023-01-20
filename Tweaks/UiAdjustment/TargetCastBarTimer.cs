@@ -161,6 +161,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
 
         private void HideTargetInfoCastBarText() {
             var splitCastBar = Common.GetUnitBase("_TargetInfoCastBar");
+            if (splitCastBar == null) return;
             var targetCastTimeNode=GetTargetCastTimeNode(splitCastBar);
             if (targetCastTimeNode != null) {
                 targetCastTimeNode->AtkResNode.ToggleVisibility(false);
