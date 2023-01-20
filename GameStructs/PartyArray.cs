@@ -128,13 +128,13 @@ namespace SimpleTweaksPlugin.GameStructs
         [FieldOffset(0x18)] public int LeaderNumber;
 
         [FieldOffset(0x1C)] private MemberData MemberData0; //数量未知
-        [FieldOffset(0xC0)] private MemberData MemberData1;
-        [FieldOffset(0x164)] private MemberData MemberData2;
-        [FieldOffset(0x208)] private MemberData MemberData3;
-        [FieldOffset(0x2AC)] private MemberData MemberData4;
-        [FieldOffset(0x350)] private MemberData MemberData5;
-        [FieldOffset(0x3F4)] private MemberData MemberData6;
-        [FieldOffset(0x498)] private MemberData MemberData7;
+        [FieldOffset(0xC4)] private MemberData MemberData1;
+        [FieldOffset(0x16C)] private MemberData MemberData2;
+        [FieldOffset(0x214)] private MemberData MemberData3;
+        [FieldOffset(0x2BC)] private MemberData MemberData4;
+        [FieldOffset(0x364)] private MemberData MemberData5;
+        [FieldOffset(0x40C)] private MemberData MemberData6;
+        [FieldOffset(0x4B4)] private MemberData MemberData7;
 
         [FieldOffset(0x53C)] public int QinXinCount;
         [FieldOffset(0x540)] private MemberData MemberData8;
