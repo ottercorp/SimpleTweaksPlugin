@@ -19,7 +19,6 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
     public unsafe class TargetCastBarTimer : UiAdjustments.SubTweak {
 
         public class Config : TweakConfig {
-            public bool ShowCastTimeLeft;
             public Alignment CastTimeAlignment = Alignment.TopLeft;
             public int Offset = 8;
         }
@@ -77,7 +76,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             ImGui.SameLine();
             ImGui.Text("Cast time vertical offset");
 
-            changed |= ImGuiExt.HorizontalAlignmentSelector("Cast Time Alignment", ref LoadedConfig.CastTimeAlignment, VerticalAlignment.Bottom);
+            changed |= ImGuiExt.HorizontalAlignmentSelector("Cast Time Alignment", ref LoadedConfig.CastTimeAlignment, VerticalAlignment.Top);
         };
 
         private const int MinOffset = 0;
@@ -133,32 +132,28 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
 
         private void UpdateTargetCastBarDetour(AtkUnitBase* targetInfoBase, NumberArrayData* numberArrayData, StringArrayData* stringArrayData, AtkUnitBase* castBar, bool changed) {
             updateTargetCastBarHook.Original(targetInfoBase, numberArrayData, stringArrayData, castBar, changed);
-            if (LoadedConfig.ShowCastTimeLeft) {
-                var targetCastTimeNode = GetTargetCastTimeNode(targetInfoBase);
-                if (targetCastTimeNode == null)
-                    targetCastTimeNode = AddCastTimeTextNode(targetInfoBase);
+            var targetCastTimeNode = GetTargetCastTimeNode(targetInfoBase);
+            if (targetCastTimeNode == null)
+                targetCastTimeNode = AddCastTimeTextNode(targetInfoBase);
 
-                targetCastTimeNode->AlignmentFontType = (byte)(0x26 + (byte)LoadedConfig.CastTimeAlignment);
-                targetCastTimeNode->AtkResNode.Height = (ushort)LoadedConfig.Offset;
-                targetCastTimeNode->FontSize = 15;
-                //targetCastTimeNode->SetText(RemainCastTime.ToString("00.00"));
-                targetCastTimeNode->AtkResNode.ToggleVisibility(targetInfoBase->UldManager.NodeList[5]->IsVisible);
-                TargetCastTimeNode= targetCastTimeNode;
-            }
+            targetCastTimeNode->AlignmentFontType = (byte)(0x26 + (byte)LoadedConfig.CastTimeAlignment);
+            targetCastTimeNode->AtkResNode.Height = (ushort)LoadedConfig.Offset;
+            targetCastTimeNode->FontSize = 15;
+            //targetCastTimeNode->SetText(RemainCastTime.ToString("00.00"));
+            targetCastTimeNode->AtkResNode.ToggleVisibility(targetInfoBase->UldManager.NodeList[5]->IsVisible);
+            TargetCastTimeNode= targetCastTimeNode;
         }
 
         private float RemainCastTime = 0f;
         private unsafe long SetTargetCastDetour(AgentHUD* agentHUD, NumberArrayData* numberArrayData, StringArrayData* stringArrayData, FFXIVClientStructs.FFXIV.Client.Game.Character.Character* chara) {
             var ret = setTargetCastHook.Original(agentHUD, numberArrayData, stringArrayData, chara);
             if (ret != 0xFFFFFFFF && ret != 0) {
-                if (LoadedConfig.ShowCastTimeLeft) {
-                    var cast = chara->GetCastInfo();
-                    if ((IntPtr)cast != IntPtr.Zero) {
-                        RemainCastTime = cast->AdjustedTotalCastTime - cast->CurrentCastTime;
-                        if (TargetCastTimeNode!=null)
-                            // More accuracy
-                            TargetCastTimeNode->SetText(RemainCastTime.ToString("00.00"));
-                    }
+                var cast = chara->GetCastInfo();
+                if ((IntPtr)cast != IntPtr.Zero) {
+                    RemainCastTime = cast->AdjustedTotalCastTime - cast->CurrentCastTime;
+                    if (TargetCastTimeNode!=null)
+                        // More accuracy
+                        TargetCastTimeNode->SetText(RemainCastTime.ToString("00.00"));
                 }
             }
             return ret;
