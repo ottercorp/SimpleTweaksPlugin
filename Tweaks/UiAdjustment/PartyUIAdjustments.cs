@@ -1,5 +1,4 @@
-﻿#if DEBUG
-using Dalamud;
+﻿using Dalamud;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
@@ -8,15 +7,11 @@ using ImGuiNET;
 using SimpleTweaksPlugin.Tweaks.UiAdjustment;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-#if DEBUG
-using SimpleTweaksPlugin.Debugging;
-#endif
 using SimpleTweaksPlugin.GameStructs;
 using SimpleTweaksPlugin.Utility;
 using System.Text;
-using System.Linq;
-using System.IO;
+using FFXIVClientStructs.FFXIV.Client.UI;
+using SimpleTweaksPlugin.Debugging;
 
 namespace SimpleTweaksPlugin
 {
@@ -32,13 +27,9 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
     {
         public class Configs
         {
-            public bool Target;
-            public bool Focus;
             public bool HpPercent = true;
-            public bool PartyName;
             public bool ShieldShift;
             public bool MpShield;
-            public float ShieldOffset;
         }
 
         public Configs Config => PluginConfig.UiAdjustments.PartyUiAdjustments;
@@ -47,22 +38,12 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private delegate long PartyUiUpdate(long a1, long a2, long a3);
 
-        private delegate void MainTargetUiUpdate(long a1, long a2, long a3);
-
-        private delegate long FocusUiUpdate(long a1, long a2, long a3);
-
         private Hook<PartyUiUpdate> partyUiUpdateHook;
-        private Hook<MainTargetUiUpdate> mainTargetUpdateHook;
-        private Hook<MainTargetUiUpdate> targetUpdateHook;
-        private Hook<FocusUiUpdate> focusUpdateHook;
 
-        private PartyUi* party;
+        private AddonPartyList* party;
         private DataArray* data;
         private PartyStrings* stringarray;
 
-        private AtkTextNode* focusTextNode;
-        private AtkTextNode* tTextNode;
-        private AtkTextNode* ttTextNode;
         private IntPtr l1, l2, l3;
 
 
@@ -75,14 +56,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             changed |= ImGui.Checkbox("HP及盾值百分比显示", ref Config.HpPercent);
             changed |= ImGui.Checkbox("使用盾值(估计值)替换MP值", ref Config.MpShield);
             changed |= ImGui.Checkbox("修改盾显示高度", ref Config.ShieldShift);
-            changed |= ImGui.SliderFloat("盾位移高度",ref Config.ShieldOffset,-16f,16f);
-#if DEBUG
-                changed |= ImGui.Checkbox("将队伍栏的队友姓名替换为职业名", ref Config.PartyName);
-                ImGui.SameLine();
-                changed |= ImGui.Checkbox("将目标栏的队友姓名替换为职业名", ref Config.Target);
-                ImGui.SameLine();
-                changed |= ImGui.Checkbox("将焦点栏的队友姓名替换为职业名", ref Config.Focus);
-#endif
+
             if (changed) RefreshHooks();
         };
 
@@ -95,31 +69,10 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     Service.SigScanner.ScanText(
                         "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B 7A ?? 48 8B D9 49 8B 70 ?? 48 8B 47"),
                     new PartyUiUpdate(PartyListUpdateDelegate));
-                
-                targetUpdateHook ??= Hook<MainTargetUiUpdate>.FromAddress(
-                    Service.SigScanner.ScanText(
-                        "40 55 57 41 56 48 83 EC 40 48 8B 6A 48 48 8B F9 4D 8B 70 40 48 85 ED 0F 84 ?? ?? ?? ?? 4D 85 F6 0F 84 ?? ?? ?? ?? 48 8B 45 20 48 89 74 24 ?? 4C 89 7C 24 ?? 44 0F B6 B9 ?? ?? ?? ?? 83 38 00 8B 70 08 0F 95 C0"),
-                    new MainTargetUiUpdate(TargetUpdateDelegate));
-                
-                mainTargetUpdateHook ??= Hook<MainTargetUiUpdate>.FromAddress(
-                    Service.SigScanner.ScanText(
-                        "40 55 57 41 56 48 83 EC 40 48 8B 6A 48 48 8B F9 4D 8B 70 40 48 85 ED 0F 84 ?? ?? ?? ?? 4D 85 F6 0F 84 ?? ?? ?? ?? 48 8B 45 20 48 89 74 24 ?? 4C 89 7C 24 ?? 44 0F B6 B9 ?? ?? ?? ?? 83 38 00 8B 70 08 0F 94 C0"),
-                    new MainTargetUiUpdate(MainTargetUpdateDelegate));
-                
-                focusUpdateHook ??= Hook<FocusUiUpdate>.FromAddress(
-                    Service.SigScanner.ScanText("40 53 41 54 41 56 41 57 48 83 EC 78 4C 8B 7A 48"),
-                    new FocusUiUpdate(FocusUpdateDelegate));
+
 
                 if (Enabled) partyUiUpdateHook?.Enable();
                 else partyUiUpdateHook?.Disable();
-#if DEBUG
-                if (Config.Target) targetUpdateHook?.Enable();
-                else targetUpdateHook?.Disable();
-                if (Config.Target) mainTargetUpdateHook?.Enable();
-                else mainTargetUpdateHook?.Disable();
-                if (Config.Focus) focusUpdateHook?.Enable();
-                else focusUpdateHook?.Disable();
-#endif
 
                 if (!Config.ShieldShift) UnShiftShield();
                 else ShiftShield();
@@ -136,12 +89,6 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             partyUiUpdateHook?.Dispose();
             partyUiUpdateHook = null;
-            targetUpdateHook?.Dispose();
-            targetUpdateHook = null;
-            mainTargetUpdateHook?.Dispose();
-            mainTargetUpdateHook = null;
-            focusUpdateHook?.Dispose();
-            focusUpdateHook = null;
             UnShiftShield();
         }
 
@@ -149,23 +96,20 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             //if (!partyUiUpdateHook.IsDisposed) 
             partyUiUpdateHook?.Disable();
-            targetUpdateHook?.Disable();
-            mainTargetUpdateHook?.Disable();
-            focusUpdateHook?.Disable();
         }
 
 
         #region detors
 
         //PartyListUpdateDelegate(AtkUnitBase* addonPartyList, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
-        private long PartyListUpdateDelegate(long a1, long a2, long a3)
+        private unsafe long PartyListUpdateDelegate(long a1, long a2, long a3)
         {
             if ((IntPtr) a1 != l1)
             {
                 l1 = (IntPtr) a1;
                 l2 = (IntPtr) (*(long*) (*(long*) (a2 + 0x20) + 0x20));
                 l3 = (IntPtr) (*(long*) (*(long*) (a3 + 0x18) + 0x20) + 0x30); //+Index*0x68
-                party = (PartyUi*) l1;
+                party = (AddonPartyList*) l1;
                 data = (DataArray*) l2;
                 stringarray = (PartyStrings*)l3;
                 if (Config.ShieldShift) ShiftShield();
@@ -184,34 +128,6 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 #if DEBUG
                 PerformanceMonitor.End("PartyListLayout.Update");
 #endif
-            return ret;
-        }
-
-        private void TargetUpdateDelegate(long a1, long a2, long a3)
-        {
-            targetUpdateHook.Original(a1, a2, a3);
-            var targetUi = (AtkUnitBase*) a1;
-            if (!targetUi->IsVisible) return;
-            tTextNode = (AtkTextNode*) targetUi->UldManager.NodeList[39];
-            ttTextNode = (AtkTextNode*) targetUi->UldManager.NodeList[49];
-            UpdateTarget();
-        }
-
-        private void MainTargetUpdateDelegate(long a1, long a2, long a3)
-        {
-            mainTargetUpdateHook.Original(a1, a2, a3);
-            var mainTargetUi = (AtkUnitBase*) a1;
-            if (!mainTargetUi->IsVisible) return;
-            tTextNode = (AtkTextNode*) mainTargetUi->UldManager.NodeList[8];
-            ttTextNode = (AtkTextNode*) mainTargetUi->UldManager.NodeList[12];
-            UpdateTarget();
-        }
-
-        private long FocusUpdateDelegate(long a1, long a2, long a3)
-        {
-            var ret = focusUpdateHook.Original(a1, a2, a3);
-            focusTextNode = (AtkTextNode*) ((AtkUnitBase*) a1)->UldManager.NodeList[10];
-            UpdateFocus();
             return ret;
         }
 
@@ -293,7 +209,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             {
                 se.Payloads.Add(new TextPayload("1"));
             }
-            else if (member.MaxHp == 1)
+            else if (member.MaxHp == 1 || member.MaxHp == 0)
             {
                 se.Payloads.Add(new TextPayload("???"));
             }
@@ -335,7 +251,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             if (compBase->UldManager.Objects == null) return null;
             var count = compBase->UldManager.Objects->NodeCount;
             var ptr = (long) compBase->UldManager.Objects->NodeList;
-            SimpleLog.Information($"{ptr:x} {count}");
+            //SimpleLog.Information($"{ptr:x} {count}");
             for (var i = 0; i < count; i++)
             {
                 var node = (AtkResNode*) *(long*) (ptr + 8 * i);
@@ -344,45 +260,17 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
             return null;
         }
-
-        private int GetIndex(string name)
-        {
-            try
-            {
-                if (l1 == IntPtr.Zero) return -1;
-                if (data->QinXinCount > 0)
-                {
-                    for (var i = 8; i < 8 + data->QinXinCount; i++)
-                    {
-                        if (stringarray->MemberStrings(i).GetName() == name) return i;
-                    }
-                }
-                else
-                {
-                    for (var i = 0; i <data->PlayerCount; i++)
-                    {
-                        if (stringarray->MemberStrings(i).GetName() == name) return i;
-                    }
-                }
-                return -1;
-            }
-            catch (Exception e)
-            {
-                SimpleLog.Error(e);
-                throw;
-            }
-        }
-
+        
         #endregion
 
 
         private void ShiftShield()
         {
             if (l1 == IntPtr.Zero) return;
-            for (var i = 0; i < 12; i++)
+            for (var i = 0; i < 8; i++)
             {
-                var hpBarComponentBase = party->Member(i).hpBarComponentBase;
-                
+                var hpBarComponentBase = (AtkComponentBase*)party->PartyMember[i].HPGaugeBar;
+
                 if (hpBarComponentBase == null) return;
                 var shieldNode = (AtkNineGridNode*) GetNodeById(hpBarComponentBase, 5);
                 var overShieldNode = (AtkImageNode*) GetNodeById(hpBarComponentBase, 2);
@@ -405,9 +293,9 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         private void UnShiftShield()
         {
             if (l1 == IntPtr.Zero) return;
-            for (var i = 0; i < 12; i++)
+            for (var i = 0; i < 8; i++)
             {
-                var hpBarComponentBase = party->Member(i).hpBarComponentBase;
+                var hpBarComponentBase =(AtkComponentBase*)party->PartyMember[i].HPGaugeBar;
                 if (hpBarComponentBase == null) return;
                 var shieldNode = (AtkNineGridNode*) GetNodeById(hpBarComponentBase, 5);
                 var overShieldNode = (AtkImageNode*) GetNodeById(hpBarComponentBase, 2);
@@ -433,8 +321,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             var memberData = data->MemberData(index);
             if (memberData.HasMP == 0 ) return;
             var shield = memberData.ShieldPercent * memberData.MaxHp / 100;
-            var node1 = (AtkTextNode*) GetNodeById(party->Member(index).mpBarComponentBase, 3);
-            var node2 = (AtkTextNode*) GetNodeById(party->Member(index).mpBarComponentBase, 2);
+            var node1 = (AtkTextNode*)GetNodeById((AtkComponentBase*)party->PartyMember[index].MPGaugeBar, 3);
+            var node2 = (AtkTextNode*) GetNodeById((AtkComponentBase*)party->PartyMember[index].MPGaugeBar, 2);
             if (node1 == null || node2 == null) return;
             UIForegroundPayload uiYellow =
                 new(559);
@@ -456,7 +344,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             if (l1 == IntPtr.Zero) return;
             for (var index = 0; index < 8; index++)
             {
-                var node1 = (AtkTextNode*) GetNodeById(party->Member(index).mpBarComponentBase, 3);
+                var node1 = (AtkTextNode*) GetNodeById((AtkComponentBase*)party->PartyMember[index].MPGaugeBar, 3);
                 if (node1 == null) return;
                 if (node1->FontSize == 12)
                 {
@@ -471,35 +359,13 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             try
             {
-                for (var index = 0; index < 11; index++)
+                for (var index = 0; index < 8; index++)
                 {
-                    if (index >= data->PlayerCount && index < 8 || index >= 8 + data->QinXinCount ) continue;
-                    if (!done) //改名
-                    {
-#if DEBUG
-                        if (!Config.PartyName) return;
-                        if (index >= 8) return;
-                        var lvlname = party->Member(index).nameTextNode->NodeText.StringPtr;
-                        var job = data->MemberData(index).JobId;
-                        SplitLvlName(lvlname, out var lvl,
-                            out var namejob);
-                        job = job > 0xF293 ? job - 0xF294 : 0;
-                        var nameTextNode = party->Member(index).nameTextNode;
-                        if (nameTextNode == null)
-                            return;
-                        if (namejob != GetJobName(job) ||
-                            data->MemberData(index).JobId != party->JobId[index])
-                        {
-                            nameTextNode->SetText(lvl+" "+ GetJobName(job));
-                            //*((byte*)data + 0x1C + index * 0x9C) = 1; //Changed
-                        }
-#endif
-                    }
-                    else //改HP
+                    if (done)
                     {
                         if (Config.HpPercent)
                         {
-                            var textNode = party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(2)->GetAsAtkTextNode();
+                            var textNode = party->PartyMember[index].HPGaugeComponent->UldManager.SearchNodeById(2)->GetAsAtkTextNode();
                             //party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(2)->Color.A =0xff; //hpvalue
                             //party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(3)->Color.A = 0xff;// unk
                             //party->Member(index).HPGaugeComponent->UldManager.SearchNodeById(4)->Color.A = 0xff;//hpbar
@@ -518,99 +384,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 throw;
             }
         }
-
-        private void UpdateTarget()
-        {
-            try
-            {
-                if (tTextNode == null || ttTextNode == null) return;
-                var tname = Common.ReadSeString(tTextNode->NodeText.StringPtr).TextValue.Trim();
-                var ttname = Common.ReadSeString(ttTextNode->NodeText.StringPtr).TextValue.Trim();
-                if (tname.Length >= 1)
-                {
-                    var number = tname.Substring(0, 1);
-                    if (PartyNumber.Contains(number)) tname = tname.Substring(1);
-                    else SplitString(tname, true, out tname, out _);
-                    var index = GetIndex(tname);
-                    if (index != -1)
-                    {
-                        var jobId = data->MemberData(index).JobId;
-                        jobId = jobId == 0 ? 0 : jobId - 0xF294;
-                        var job = GetJobName(jobId);
-                        SetName(tTextNode, PartyNumber.Contains(number) ? number + job : job);
-                    }
-                }
-
-                if (ttname.Length >= 1)
-                {
-                    var number = ttname.Substring(0, 1);
-                    if (PartyNumber.Contains(number)) ttname = ttname.Substring(1);
-                    var index = GetIndex(ttname);
-                    if (index != -1)
-                    {
-                        var jobid = data->MemberData(index).JobId;
-                        jobid = jobid == 0 ? 0 : jobid - 0xF294;
-                        var job = GetJobName(jobid);
-                        SetName(ttTextNode,
-                            PartyNumber.Contains(number) ? number + job : job);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                SimpleLog.Error(e);
-            }
-        }
-
-        private void UpdateFocus()
-        {
-            try
-            {
-                SplitString(Common.ReadSeString(focusTextNode->NodeText.StringPtr).ToString().Trim(), true,
-                    out var part1,
-                    out var part2);
-                if (part2 != "")
-                {
-                    var number = part2.Substring(0, 1);
-                    if (PartyNumber.Contains(number)) part2 = part2.Substring(1);
-                    var index = GetIndex(part2);
-
-                    if (index != -1)
-                    {
-                        var jobId = data->MemberData(index).JobId;
-                        jobId = jobId == 0 ? 0 : jobId - 0xF294;
-                        var job = GetJobName(jobId);
-                        SetName(focusTextNode,
-                            PartyNumber.Contains(number)
-                                ? part1 + " " + number + job
-                                : part1 + " " + job);
-                    }
-                }
-                else if (part1.Length >= 1)
-                {
-                    if (PartyNumber.Contains(part1.Substring(0, 1)))
-                    {
-                        var number = part1.Substring(0, 1);
-                        part1 = part1.Substring(1);
-                        var index = GetIndex(part1);
-                        if (index != -1)
-                        {
-                            var jobId = data->MemberData(index).JobId;
-                            jobId = jobId == 0 ? 0 : jobId - 0xF294;
-                            var job = GetJobName(jobId);
-                            SetName(focusTextNode,
-                                number + " " + job);
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                SimpleLog.Error(e);
-            }
-        }
-
-
+        
         #region Framework
 
         public override void Enable()
@@ -640,4 +414,3 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         #endregion
     }
 }
-#endif
