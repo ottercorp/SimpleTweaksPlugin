@@ -131,8 +131,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             return null;
         }
 
-        //private void UpdateTargetCastBarDetour(AtkUnitBase* targetInfoBase, NumberArrayData* numberArrayData, StringArrayData* stringArrayData, AtkUnitBase* castBar) {
-        //updateTargetCastBarHook.Original(targetInfoBase, numberArrayData, stringArrayData, castBar);
+        //private void UpdateTargetCastBarDetour(AtkUnitBase* targetInfoBase, NumberArrayData* numberArrayData, StringArrayData* stringArrayData, AtkUnitBase* castBar, bool changed) {
+        //updateTargetCastBarHook.Original(targetInfoBase, numberArrayData, stringArrayData, castBar， changed);
         private void UpdateTargetCastBarDetour(long a1, long a2, long a3, long a4){
             updateTargetCastBarHook.Original(a1, a2, a3, a4);
 
