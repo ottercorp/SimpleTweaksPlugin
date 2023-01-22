@@ -33,8 +33,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         private delegate long SetTargetCast(AgentHUD* agentHUD, NumberArrayData* numberArrayData, StringArrayData* stringArrayData, FFXIVClientStructs.FFXIV.Client.Game.Character.Character* chara);
         private HookWrapper<SetTargetCast> setTargetCastHook;
 
-        //private delegate void UpdateTargetCastBar(AtkUnitBase* targetInfoBase, NumberArrayData* numberArrayData, StringArrayData* stringArrayData, AtkUnitBase* castBar, bool changed);
-        private delegate void UpdateTargetCastBar(long a1, long a2, long a3, long a4);
+        private delegate void UpdateTargetCastBar(AtkUnitBase* targetInfoBase, NumberArrayData* numberArrayData, StringArrayData* stringArrayData, AtkUnitBase* castBar, byte changed);
         private HookWrapper<UpdateTargetCastBar> updateTargetCastBarHook;
         protected override DrawConfigDelegate DrawConfigTree => (ref bool changed) => {
             var bSize = buttonSize * ImGui.GetIO().FontGlobalScale;
@@ -86,8 +85,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         private const int TargetCastTimeNodeId = CustomNodes.TargetCastBarTimer;
         private AtkTextNode* TargetCastTimeNode;
 
-        private AtkTextNode* AddCastTimeTextNode(AtkUnitBase* splitCastBar) {
-            var cloneTextNode = (AtkTextNode*)splitCastBar->UldManager.NodeList[5];
+        private AtkTextNode* AddCastTimeTextNode(AtkUnitBase* splitCastBar, uint nodeId) {
+            var cloneTextNode = (AtkTextNode*)splitCastBar->UldManager.SearchNodeById(nodeId);
             var textNode = UiHelper.CloneNode(cloneTextNode);
             textNode->AtkResNode.NodeID = TargetCastTimeNodeId;
             var newStrPtr = UiHelper.Alloc(512);
@@ -108,45 +107,46 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             nextNode->ParentNode->ChildCount += 1;
             return textNode;
         }
-        private void UpdateCastTimeTextNode(AtkUnitBase* splitCastBar, float remainTime) {
-        }
+
         public override void Enable() {
             if (Enabled) return;
             LoadedConfig = LoadConfig<Config>() ?? new Config();
             setTargetCastHook ??= Common.Hook<SetTargetCast>("E8 ?? ?? ?? ?? 8B D8 85 C0 79 ?? 45 33 C0", SetTargetCastDetour);
             setTargetCastHook?.Enable();
-            updateTargetCastBarHook ??= Common.Hook<UpdateTargetCastBar>("E8 ?? ?? ?? ?? 48 8B 87 ?? ?? ?? ?? 45 0F B6 C7", UpdateTargetCastBarDetour);
+            updateTargetCastBarHook ??= Common.Hook<UpdateTargetCastBar>("E8 ?? ?? ?? ?? 4C 8D 8F ?? ?? ?? ?? 4D 8B C6", UpdateTargetCastBarDetour);
             updateTargetCastBarHook?.Enable();
             Enabled = true;
         }
 
         private AtkTextNode* GetTargetCastTimeNode(AtkUnitBase* targetInfoBase) {
             var count = targetInfoBase->UldManager.NodeListCount;
-            for (var i = 7; i < count; i++) {
-                var node = targetInfoBase->UldManager.NodeList[i];
-                if (node->NodeID == TargetCastTimeNodeId) {
-                    return (AtkTextNode*)node;
-                };
-            }
+            var node = targetInfoBase->UldManager.NodeList[count - 1];
+            if (node->NodeID == TargetCastTimeNodeId)
+            {
+                return (AtkTextNode*)node;
+            };
             return null;
         }
 
-        //private void UpdateTargetCastBarDetour(AtkUnitBase* targetInfoBase, NumberArrayData* numberArrayData, StringArrayData* stringArrayData, AtkUnitBase* castBar, bool changed) {
-        //updateTargetCastBarHook.Original(targetInfoBase, numberArrayData, stringArrayData, castBar， changed);
-        private void UpdateTargetCastBarDetour(long a1, long a2, long a3, long a4){
-            updateTargetCastBarHook.Original(a1, a2, a3, a4);
+        private void UpdateTargetCastBarDetour(AtkUnitBase* targetInfoBase, NumberArrayData* numberArrayData, StringArrayData* stringArrayData, AtkUnitBase* castBar, byte changed) {
+            updateTargetCastBarHook.Original(targetInfoBase, numberArrayData, stringArrayData, castBar, changed);
 
-            var targetInfoBase = Common.GetUnitBase("_TargetInfoCastBar");
-            if (targetInfoBase == null) return;
             var targetCastTimeNode = GetTargetCastTimeNode(targetInfoBase);
+            uint nodeId = (targetInfoBase->UldManager.NodeListCount) switch
+            {
+                >= 53 => 12,    //未拆分 53child
+                >= 6 => 4,      //拆分    6child
+                _ => 0xFFFF_FFFF,
+            };
+            if (nodeId == 0xFFFF_FFFF) return;
             if (targetCastTimeNode == null)
-                targetCastTimeNode = AddCastTimeTextNode(targetInfoBase);
+                targetCastTimeNode = AddCastTimeTextNode(targetInfoBase,nodeId);
 
             targetCastTimeNode->AlignmentFontType = (byte)(0x26 + (byte)LoadedConfig.CastTimeAlignment);
             targetCastTimeNode->AtkResNode.Height = (ushort)LoadedConfig.Offset;
-            targetCastTimeNode->FontSize = 15;
+            //targetCastTimeNode->FontSize = 15;
             //targetCastTimeNode->SetText(RemainCastTime.ToString("00.00"));
-            targetCastTimeNode->AtkResNode.ToggleVisibility(targetInfoBase->UldManager.NodeList[5]->IsVisible);
+            targetCastTimeNode->AtkResNode.ToggleVisibility(targetInfoBase->UldManager.SearchNodeById(nodeId)->IsVisible);
             TargetCastTimeNode = targetCastTimeNode;
         }
 
