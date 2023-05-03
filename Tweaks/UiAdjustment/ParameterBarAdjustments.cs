@@ -31,6 +31,7 @@ public unsafe class ParameterBarAdjustments : UiAdjustments.SubTweak {
         public HideAndOffsetConfig MpValue = new() { OffsetX = 24, OffsetY = 7 };
 
         public bool AutoHideMp;
+        public bool CenterHpWithMpHidden;
 
         public Vector4 HpColor = new Vector4(20 / ColorMultiplier, 75 / ColorMultiplier, 0 / ColorMultiplier, 1);
         public Vector4 MpColor = new Vector4(120 / ColorMultiplier, 0 / ColorMultiplier, 60 / ColorMultiplier, 1);
@@ -52,6 +53,12 @@ public unsafe class ParameterBarAdjustments : UiAdjustments.SubTweak {
     private List<uint> doHIds = new();
 
     private bool inPVP = false;
+
+    public override void Setup() {
+        AddChangelog("1.8.1.2", "Fixed positioning of HP bar.");
+        AddChangelog("1.8.1.1", "Added option to center HP bar when MP bar is hidden.");
+        base.Setup();
+    }
 
     public override void Enable() {
         var nbJobs = Service.Data.Excel.GetSheet<ClassJob>()?.ColumnCount ?? 0;
@@ -141,6 +148,8 @@ public unsafe class ParameterBarAdjustments : UiAdjustments.SubTweak {
         hasChanged |= VisibilityAndOffsetEditor(LocString("Hide MP Value"), ref Config.MpValue, DefaultConfig.MpValue);
 
         hasChanged |= ImGui.Checkbox(LocString("AutoHideMp", "Hide MP Bar on jobs that don't use MP"), ref Config.AutoHideMp);
+        if (Config.AutoHideMp) 
+            hasChanged |= ImGui.Checkbox(LocString("CenterHpWithMpHidden", "Center the HP Bar on jobs that don't use MP"), ref Config.CenterHpWithMpHidden);
 
         hasChanged |= ImGui.ColorEdit4(LocString("HP Bar Color"), ref Config.HpColor);
         hasChanged |= ImGui.ColorEdit4(LocString("MP Bar Color"), ref Config.MpColor);
@@ -213,5 +222,9 @@ public unsafe class ParameterBarAdjustments : UiAdjustments.SubTweak {
         // HP
         var hpNode = (AtkComponentNode*) parameterWidgetUnitBase->UldManager.SearchNodeById(3);
         if (hpNode != null) UpdateParameter(hpNode, reset ? DefaultConfig.HpBar : Config.HpBar, reset ? DefaultConfig.HpValue : Config.HpValue, reset ? DefaultConfig.HpColor : Config.HpColor, reset ? DefaultConfig.HideHpTitle : Config.HideHpTitle);
+
+        var centerHpBar = hideMp && Config.CenterHpWithMpHidden;
+        if (centerHpBar)
+            hpNode->AtkResNode.SetPositionFloat(Config.HpBar.OffsetX + ((Config.MpBar.OffsetX - Config.HpBar.OffsetX) / 2), Config.HpBar.OffsetY + ((Config.MpBar.OffsetY - Config.HpBar.OffsetY) / 2));
     }
 }

@@ -106,7 +106,7 @@ public class MateriaStats : TooltipTweaks.SubTweak {
                 baseParamDeltas.Add(bp.BaseParam.Row, 0);
                 baseParamOriginal.Add(bp.BaseParam.Row, bp.Value);
                 if (bp.BaseParam.Value != null) {
-                    baseParamLimits.Add(bp.BaseParam.Row, (int)Math.Ceiling(itemLevel.BaseParam[bp.BaseParam.Row] * (bp.BaseParam.Value.EquipSlotCategoryPct[item.EquipSlotCategory.Row] / 100f)));
+                    baseParamLimits.Add(bp.BaseParam.Row, (int)Math.Round(itemLevel.BaseParam[bp.BaseParam.Row] * (bp.BaseParam.Value.EquipSlotCategoryPct[item.EquipSlotCategory.Row] / 1000f)));
                     baseParams.Add(bp.BaseParam.Row, bp.BaseParam.Value);
                 }
             }
@@ -137,7 +137,7 @@ public class MateriaStats : TooltipTweaks.SubTweak {
                     baseParams.Add(materia.BaseParam.Row, bp);
                     baseParamDeltas.Add(materia.BaseParam.Row, materia.Value[*level]);
                     baseParamOriginal.Add(materia.BaseParam.Row, 0);
-                    baseParamLimits.Add(materia.BaseParam.Row, (int) Math.Ceiling(itemLevel.BaseParam[materia.BaseParam.Row] * (bp.EquipSlotCategoryPct[item.EquipSlotCategory.Row] / 100f)));
+                    baseParamLimits.Add(materia.BaseParam.Row, (int) Math.Round(itemLevel.BaseParam[materia.BaseParam.Row] * (bp.EquipSlotCategoryPct[item.EquipSlotCategory.Row] / 1000f)));
                     continue;
                 }
                 baseParamDeltas[materia.BaseParam.Row] += materia.Value[*level];
@@ -154,7 +154,12 @@ public class MateriaStats : TooltipTweaks.SubTweak {
                         hasApplied = true;
                         if (data.TextValue.EndsWith("]")) continue;
                         ApplyMateriaDifference(data, baseParamDeltas[param.RowId], baseParamOriginal[param.RowId], baseParamLimits[param.RowId]);
-                        SetTooltipString(stringArrayData, field, data);
+                        try {
+                            SetTooltipString(stringArrayData, field, data);
+                        } catch (Exception ex) {
+                            Plugin.Error(this, ex);
+                        }
+                        
                     }
 
                 }
@@ -167,8 +172,12 @@ public class MateriaStats : TooltipTweaks.SubTweak {
                         seString.Payloads.Add(new TextPayload($" +{baseParamOriginal[param.RowId]}"));
                         ApplyMateriaDifference(seString, baseParamDeltas[param.RowId], baseParamOriginal[param.RowId], baseParamLimits[param.RowId]);
 
-                        SetTooltipString(stringArrayData, (TooltipTweaks.ItemTooltipField) (37 + baseParamLines), seString);
-                        numberArrayData->IntArray[21] += 1;
+                        try {
+                            SetTooltipString(stringArrayData, (TooltipTweaks.ItemTooltipField)(37 + baseParamLines), seString);
+                            numberArrayData->IntArray[21] += 1;
+                        } catch (Exception ex) {
+                            Plugin.Error(this, ex);
+                        }
                     }
                 }
             }

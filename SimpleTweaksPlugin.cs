@@ -10,28 +10,24 @@ using System.Reflection;
 using Dalamud;
 using Dalamud.Game;
 using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Interface.Windowing;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Debugging;
 using SimpleTweaksPlugin.Utility;
-using XivCommon;
 #if DEBUG
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 #endif
 
 #pragma warning disable CS0659
 namespace SimpleTweaksPlugin {
     public class SimpleTweaksPlugin : IDalamudPlugin {
         public string Name => "Simple Tweaks";
-        public DalamudPluginInterface PluginInterface { get; private set; }
         public SimpleTweaksPluginConfig PluginConfig { get; private set; }
 
         public List<TweakProvider> TweakProviders = new();
 
         public IconManager IconManager { get; private set; }
-        public XivCommonBase XivCommon { get; private set; }
-
-
-        private bool drawConfigWindow = false;
 
         public string AssemblyLocation { get; private set; } = Assembly.GetExecutingAssembly().Location;
         
@@ -43,6 +39,12 @@ namespace SimpleTweaksPlugin {
 
         public IEnumerable<BaseTweak> Tweaks => TweakProviders.Where(tp => !tp.IsDisposed).SelectMany(tp => tp.Tweaks).OrderBy(t => t.Name);
 
+        public readonly ConfigWindow ConfigWindow = new ConfigWindow();
+        public readonly DebugWindow DebugWindow = new DebugWindow();
+        public readonly WindowSystem WindowSystem = new WindowSystem("SimpleTweaksPlugin");
+        public readonly Changelog ChangelogWindow = new();
+        
+        
         internal CultureInfo Culture {
             get {
                 if (setCulture != null) return setCulture;
@@ -63,7 +65,7 @@ namespace SimpleTweaksPlugin {
         public void Dispose() {
             SimpleLog.Debug("Dispose");
             Service.Framework.Update -= FrameworkOnUpdate;
-            PluginInterface.UiBuilder.Draw -= this.BuildUI;
+            Service.PluginInterface.UiBuilder.Draw -= this.BuildUI;
             RemoveCommands();
 
             foreach (var t in TweakProviders.Where(t => !t.IsDisposed)) {
@@ -77,27 +79,33 @@ namespace SimpleTweaksPlugin {
             }
             Common.HookList.Clear();
             Common.Shutdown();
-            this.XivCommon.Dispose();
             SimpleEvent.Destroy();
         }
 
         public int UpdateFrom = -1;
 
         public SimpleTweaksPlugin(DalamudPluginInterface pluginInterface) {
-            pluginInterface.Create<Service>();
-            FFXIVClientStructs.Resolver.Initialize(Service.SigScanner.SearchBase);
-
             Plugin = this;
+            pluginInterface.Create<Service>();
+            
 #if DEBUG
             SimpleLog.SetupBuildPath();
+            Task.Run(() => {
+                FFXIVClientStructs.Interop.Resolver.GetInstance.SetupSearchSpace(Service.SigScanner.SearchBase);
+                FFXIVClientStructs.Interop.Resolver.GetInstance.Resolve();
+                Service.Framework.RunOnFrameworkThread(Initalize);
+            });
+#else
+            Initalize();
 #endif
-            this.PluginInterface = pluginInterface;
+        }
 
-            this.PluginConfig = (SimpleTweaksPluginConfig)pluginInterface.GetPluginConfig() ?? new SimpleTweaksPluginConfig();
-            this.PluginConfig.Init(this, pluginInterface);
+        private void Initalize() {
+            this.PluginConfig = (SimpleTweaksPluginConfig)Service.PluginInterface.GetPluginConfig() ?? new SimpleTweaksPluginConfig();
+            this.PluginConfig.Init(this);
 
-            IconManager = new IconManager(pluginInterface);
-            this.XivCommon = new XivCommonBase();
+            IconManager = new IconManager();
+
             SetupLocalization();
 
             UiHelper.Setup(Service.SigScanner);
@@ -106,8 +114,13 @@ namespace SimpleTweaksPlugin {
 
             Common.Setup();
 
-            PluginInterface.UiBuilder.Draw += this.BuildUI;
-            pluginInterface.UiBuilder.OpenConfigUi += OnOpenConfig;
+            WindowSystem.AddWindow(ConfigWindow);
+            WindowSystem.AddWindow(DebugWindow);
+            WindowSystem.AddWindow(ChangelogWindow);
+            Changelog.AddGeneralChangelogs();
+            
+            Service.PluginInterface.UiBuilder.Draw += this.BuildUI;
+            Service.PluginInterface.UiBuilder.OpenConfigUi += OnOpenConfig;
 
             SetupCommands();
 
@@ -142,8 +155,8 @@ namespace SimpleTweaksPlugin {
 
 #if DEBUG
             if (!PluginConfig.DisableAutoOpen) {
-                DebugManager.Enabled = true;
-                drawConfigWindow = true;
+                DebugWindow.IsOpen = true;
+                ConfigWindow.IsOpen = true;
             }
 #endif
             DebugManager.Reload();
@@ -151,6 +164,7 @@ namespace SimpleTweaksPlugin {
 
             Service.Framework.Update += FrameworkOnUpdate;
         }
+        
 
         private void FrameworkOnUpdate(Framework framework) => Common.InvokeFrameworkUpdate();
 
@@ -177,7 +191,7 @@ namespace SimpleTweaksPlugin {
 
         private void OnOpenConfig() {
             if (ImGui.GetIO().KeyShift && ImGui.GetIO().KeyCtrl) {
-                DebugManager.Enabled = true;
+                DebugWindow.IsOpen = true;
                 return;
             }
             OnConfigCommandHandler(null, null);
@@ -186,13 +200,19 @@ namespace SimpleTweaksPlugin {
         public void OnConfigCommandHandler(object command, object args) {
             if (args is string argString) {
                 if (argString == "Debug") {
-                    DebugManager.Enabled = !DebugManager.Enabled;
+                    DebugWindow.IsOpen = !DebugWindow.IsOpen;
                     return;
                 }
 
                 if (!string.IsNullOrEmpty(argString.Trim())) {
                     var splitArgString = argString.Split(' ');
                     switch (splitArgString[0].ToLowerInvariant()) {
+                        case "cl":
+                        case "changes":
+                        case "changelog": {
+                            ChangelogWindow.IsOpen = !ChangelogWindow.IsOpen;
+                            return;
+                        }
                         case "t":
                         case "toggle": {
                             if (splitArgString.Length < 2) {
@@ -265,6 +285,22 @@ namespace SimpleTweaksPlugin {
                             Service.Chat.PrintError($"\"{splitArgString[1]}\" is not a valid tweak id.");
                             return;
                         }
+                        case "f":
+                        case "find": {
+                            if (splitArgString.Length < 2) {
+                                Service.Chat.PrintError("/tweaks find <tweakid>");
+                                return;
+                            }
+                            var tweak = GetTweakById(splitArgString[1]);
+                            if (tweak != null) {
+                                PluginConfig.FocusTweak(tweak);
+                                return;
+                                
+                            }
+                            Service.Chat.PrintError($"\"{splitArgString[1]}\" is not a valid tweak id.");
+
+                            return;
+                        }
                         default: {
                             var tweak = GetTweakById(splitArgString[0]);
                             if (tweak != null) {
@@ -280,10 +316,7 @@ namespace SimpleTweaksPlugin {
                 }
             }
 
-            drawConfigWindow = !drawConfigWindow;
-            if (!drawConfigWindow) {
-                SaveAllConfig();
-            }
+            ConfigWindow.IsOpen = !ConfigWindow.IsOpen;
         }
 
         public BaseTweak? GetTweakById(string s, IEnumerable<BaseTweak>? tweakList = null) {
@@ -326,22 +359,16 @@ namespace SimpleTweaksPlugin {
         }
 
         private void BuildUI() {
+            
+            
+            
             foreach (var e in ErrorList.Where(e => e.IsNew && e.Tweak != null)) {
                 e.IsNew = false;
                 e.Tweak.Disable();
                 Service.PluginInterface.UiBuilder.AddNotification($"{e.Tweak.Name} has been disabled due to an error.", "Simple Tweaks", NotificationType.Error, 5000);
             }
 
-            if (DebugManager.Enabled) {
-                DebugManager.DrawDebugWindow(ref DebugManager.Enabled);
-            }
-
-            var windowWasOpen = drawConfigWindow;
-            drawConfigWindow = drawConfigWindow && PluginConfig.DrawConfigUI();
-
-            if (windowWasOpen && !drawConfigWindow) {
-                SaveAllConfig();
-            }
+            WindowSystem.Draw();
 
             if (ShowErrorWindow) {
                 if (ErrorList.Count > 0) {
@@ -386,13 +413,13 @@ namespace SimpleTweaksPlugin {
                 }
             }
 
-            if (Service.PluginInterface.IsDevMenuOpen && Service.PluginInterface.IsDev) {
+            if (Service.PluginInterface.IsDevMenuOpen && (Service.PluginInterface.IsDev || PluginConfig.ShowInDevMenu)) {
                 if (ImGui.BeginMainMenuBar()) {
                     if (ImGui.MenuItem("Simple Tweaks")) {
                         if (ImGui.GetIO().KeyShift) {
-                            DebugManager.Enabled = !DebugManager.Enabled;
+                            DebugWindow.IsOpen = !DebugWindow.IsOpen;
                         } else {
-                            drawConfigWindow = !drawConfigWindow;
+                            ConfigWindow.IsOpen = !ConfigWindow.IsOpen;
                         }
                     }
                     ImGui.EndMainMenuBar();

@@ -78,14 +78,14 @@ public class DesynthesisSkill : TooltipTweaks.SubTweak {
                     // Turns out .Last() is broken when mixed with AllaganTools for items where the Desynth value is in ItemDescription, as I think AT Adds to the payloads.
                     // And with the original change for colouring, we switched from a simple replace to adding payloads.
                     // For some reason this gets called twice, and with the above change, would result in us adding the desynth skill twice.
-                    var textPayload = seStr.Payloads.OfType<TextPayload>().Where(p => p.Text != null).LastOrDefault(p => p.Text.Contains($": {item.LevelItem.Row},00") || p.Text.Contains($": {item.LevelItem.Row}.00"));
+                    var textPayload = seStr.Payloads.OfType<TextPayload>().Where(p => p.Text != null).LastOrDefault(p => p.Text.Contains($": {item.LevelItem.Row},00") || p.Text.Contains($": {item.LevelItem.Row}.00") || p.Text.Contains($":{item.LevelItem.Row}.00"));
                     if (textPayload != null)
                     {
                         // Until we fix AllaganTools, if we're in an ItemDescription, just Replace (and unfortunately don't colour)
                         if (useDescription) {
                             if (Config.Delta) {
-                                textPayload.Text = textPayload.Text.Replace($"{item.LevelItem.Row},00", $"{item.LevelItem.Row} ({desynthDelta:+#;-#})");
-                                textPayload.Text = textPayload.Text.Replace($"{item.LevelItem.Row}.00", $"{item.LevelItem.Row} ({desynthDelta:+#;-#})");
+                                textPayload.Text = textPayload.Text.Replace($"{item.LevelItem.Row},00", $"{item.LevelItem.Row} ({desynthDelta:+#;-#;-0})");
+                                textPayload.Text = textPayload.Text.Replace($"{item.LevelItem.Row}.00", $"{item.LevelItem.Row} ({desynthDelta:+#;-#;-0})");
                             } else {
                                 textPayload.Text = textPayload.Text.Replace($"{item.LevelItem.Row},00", $"{item.LevelItem.Row} ({MathF.Floor(desynthLevel):F0})");
                                 textPayload.Text = textPayload.Text.Replace($"{item.LevelItem.Row}.00", $"{item.LevelItem.Row} ({MathF.Floor(desynthLevel):F0})");
@@ -99,13 +99,19 @@ public class DesynthesisSkill : TooltipTweaks.SubTweak {
                             textPayload.Text = parts[0];
 
                             if (Config.Colour) seStr.Payloads.Add(new UIForegroundPayload(c));
-                            seStr.Payloads.Add(new TextPayload(Config.Delta ? $"({desynthDelta:+#;-#})" : $"({MathF.Floor(desynthLevel):F0})"));
+                            seStr.Payloads.Add(new TextPayload(Config.Delta ? $"({desynthDelta:+#;-#;-0})" : $"({MathF.Floor(desynthLevel):F0})"));
                             if (Config.Colour) seStr.Payloads.Add(new UIForegroundPayload(0));
 
                             if (parts.Length > 1)
                                 seStr.Payloads.Add(new TextPayload(parts[1]));
                         }
-                        SetTooltipString(stringArrayData, useDescription ? ItemDescription : ExtractableProjectableDesynthesizable, seStr);
+
+                        try {
+                            SetTooltipString(stringArrayData, useDescription ? ItemDescription : ExtractableProjectableDesynthesizable, seStr);
+                        } catch (Exception ex) {
+                            Plugin.Error(this, ex);
+                        }
+                        
                     }
                 }
             }

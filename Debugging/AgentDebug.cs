@@ -5,7 +5,6 @@ using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Dalamud.Hooking;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using FFXIVClientStructs.Attributes;
@@ -23,8 +22,8 @@ public unsafe class AgentDebug : DebugHelper {
 
     private delegate void* GetAgentByInternalIDDelegate(void* agentModule, AgentId agentId);
 
-    private Hook<GetAgentByInternalIDDelegate> getAgentByInternalIdHook;
-    private Hook<GetAgentByInternalIDDelegate> getAgentByInternalId2Hook;
+    private HookWrapper<GetAgentByInternalIDDelegate> getAgentByInternalIdHook;
+    private HookWrapper<GetAgentByInternalIDDelegate> getAgentByInternalId2Hook;
 
     private List<(AgentId id, ulong address, ulong hitCount)> agentGetLog = new();
 
@@ -36,6 +35,7 @@ public unsafe class AgentDebug : DebugHelper {
     private bool agentListKnownOnly = true;
     private bool sortById = false;
     private Type selectedAgentType;
+    private string agentSearch = string.Empty;
 
     
     
@@ -149,6 +149,9 @@ public unsafe class AgentDebug : DebugHelper {
                     }
                     
                     ImGui.Separator();
+                    ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+                    ImGui.InputTextWithHint($"###agentSearch", "Search...", ref agentSearch, 60, ImGuiInputTextFlags.AutoSelectAll);
+                    ImGui.Separator();
                     if (ImGui.BeginChild("AgentListScroll", new Vector2(-1, -1), false)) {
                         foreach (var agent in sortedAgentList) {
                             var agentInterface = Framework.Instance()->GetUiModule()->GetAgentModule()->GetAgentByInternalId(agent.id);
@@ -156,6 +159,12 @@ public unsafe class AgentDebug : DebugHelper {
                             if (agentListKnownOnly && !agent.hasClass) continue;
                             var active = agentInterface->IsAgentActive();
                             if (agentListActiveOnly && !active) continue;
+                            if (!(
+                                    string.IsNullOrEmpty(agentSearch) ||                                                                // No Search
+                                    $"{agent.id}".Contains(agentSearch, StringComparison.InvariantCultureIgnoreCase) ||                 // Name Search
+                                    $"{(uint)agent.id}" == agentSearch ||                                                               // ID Search
+                                    $"{(ulong)agentInterface:X16}".Contains(agentSearch, StringComparison.InvariantCultureIgnoreCase)   // Address Search
+                            )) continue;
                             
                             ImGui.PushStyleColor(ImGuiCol.Text, agent.hasClass ? 0xFFFF5500: 0x000000);
                             ImGui.PushFont(UiBuilder.IconFont);
@@ -366,9 +375,8 @@ public unsafe class AgentDebug : DebugHelper {
 
     private void SetupLogging() {
         agentGetLog = new List<(AgentId, ulong, ulong)>();
-        getAgentByInternalIdHook ??= new Hook<GetAgentByInternalIDDelegate>(Service.SigScanner.ScanText("E8 ?? ?? ?? ?? 83 FF 0D"), new GetAgentByInternalIDDelegate(GetAgentByInternalIDDetour));
-        getAgentByInternalId2Hook ??= new Hook<GetAgentByInternalIDDelegate>(Service.SigScanner.ScanText("E8 ?? ?? ?? ?? 48 85 C0 74 12 0F BF 80"), new GetAgentByInternalIDDelegate(GetAgentByInternalIDDetour));
-            
+        getAgentByInternalIdHook ??= Common.Hook("E8 ?? ?? ?? ?? 83 FE 0D", new GetAgentByInternalIDDelegate(GetAgentByInternalIDDetour));
+        getAgentByInternalId2Hook ??= Common.Hook("E8 ?? ?? ?? ?? 48 85 C0 74 12 0F BF 80", new GetAgentByInternalIDDelegate(GetAgentByInternalIDDetour));
         getAgentByInternalIdHook?.Enable();
         getAgentByInternalId2Hook?.Enable();
     }

@@ -3,4 +3,6 @@
 public enum LinkHandlerId : uint {
     OpenFolderLink,
     OpenUrlLink,
+    CraftingActionInfoIdentifier,
+    TrackGachaItemsIdentifier,
 }

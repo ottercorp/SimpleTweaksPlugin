@@ -1,119 +1,198 @@
 # Changelog
 
-## [Unreleased]
+## [1.8.6.1]
+***Tweak Changes***
+> **`Color Duty Roulette Names`** - Adds ability to select individual roulettes for recoloring.
 
-## [1.7.3.1]
-***Improvements***
-> **`Custom Free Company Tags`** - Now allows setting Wanderer and Traveller tags individually.
+> **`Hide Tooltips in Combat`** - Improved logic to attempt to reduce settings getting stuck in incorrect state.
 
-***Bug Fixes***
-> **`Blue Mage Action Tooltips`** - Fixed duplicate tooltip on non-english languages.
+> **`Tooltip Tweaks`** - Yet another attempt at fixing crashes.
 
-## [1.7.3.0]
+
+## [1.8.6.0]
+***General Changes***
+> General fixes for 6.38
 
 ***New Tweaks***
-> **`Extra Information for Tooltips`** - Adds options to show an item's Grand Company Seal value, the gear sets it is a part of and if the item is craftable.
+> **`April Fools 2023`** - Re-enable the April Fools 2023 Features
 
 
-***Added Features***
-> **`Improved Blue Mage Action Tooltips`** Added spellbook number to tooltip.
+***Tweak Changes***
+> **`Enhanced Loot Window`** - Removed Window Lock Feature, 'Lock Window Position' tweak has returned.
 
-> **`Chat Name Colours`** Added support for setting custom colours for Travellers from other data centers.
+> **`Screenshot Improvements`** - Added experimental option to use ReShade for screenshots.
 
-> **`Target Status Adjustments`** Now supports filtering status effects. *(Aireil)*
 
-***Bug Fixes***
-> **`Item Hotkeys`** Fixed enabled state not saving in some instances.
+## [1.8.5.3]
+> Removed April Fools joke due to potential crash.
 
-> **`Fix Target`** Fixed tweak not working when chat message is filtered.
+## [1.8.5.2]
+> Made April Fools Joke Stupid
 
-## [1.7.2.1]
-> Fixed a issue causing `Item Hotkeys` tweak to not work.
+## [1.8.5.1]
+***Tweak Changes***
+> **`Character Window Job Switcher`** - Fixed tweak not working on DoH without desynthesis unlocked.
 
-## [1.7.2.0]
+> **`Screenshot Improvements`** - Renamed from 'High Resolution Screenshots' to 'Screenshot Improvements'
+
+> **`Tooltip Tweaks`** - Added additional protections to attempt to reduce crashing. Please report any crashes you believe may be related to tooltips.
+
+
+## [1.8.5.0]
+***General Changes***
+> Added command to open the config window to a specific tweak. (/tweaks find [id])
+
 ***New Tweaks***
-> **`Improved Chat Font Sizes`** - Allows changing the font size for the chat windows beyond the default limits, and allows docked chat tabs to keep their font size separate from the main tab.
+> **`Color Duty Roulette Names`** - Colors Duty Roulette names to indicate their completion status *(MidoriKami)*
 
-> **`Equip Recommended Command`** - Adds a command to equip the recommended items for your current class.
-
-> **`Improved Blue Mage Action Tooltips`** - Adds Damage Type, Aspect and Rank to blue mage action tooltips.
-
-> **`Duty Ready Class Switching`** - Click 'Previous' class icon in Duty Ready to switch class.
-
-> **`Disable Auto Chat Inputs`** - Prevent the game from inserting <flag> or other parameters into chat box.
-
-***Added Features***
-> **`Item Hotkeys`** - Added a new hotkey to open crafting recipes.
-
-> **`Always Yes`** - Added support for desynthesis prompts *(Aireil)*
-
-> **`Custom Free Company Tags`** - Added placeholder to display a player's current level.
-
-> **`Try on Correct Item`** - Can now be configured for each game window you try on an item from.
+> **`Lock Window Positions`** - Allows locking the position of almost any UI window.
 
 
-## [1.7.1.1]
-***Improvements***
-> **`Always Yes`** - Add option to blacklist certain questions is yes(hold)no dialogs
+***Tweak Changes***
+> **`Always Yes`** - Added an option to default cursor to the checkbox when one exists.
 
-***Bug Fixes***
-> **`Improved Crafting Log`** - Fix disabling the tweak when the crafting window is not open.
+> **`Block Targeting Treasure Hunt Enemies`** - Fixed incorrect blocking targeting of Alexandrite Map targets.
+
+> **`Screenshot Improvements`**
+> - Added option to hide game UI for screenshots.
+> - Added option to remove the FFXIV Copyright from screenshots.
 
 
-## [1.7.1.0]
+## [1.8.4.0]
 ***New Tweaks***
-> **`Open Adventurer Plate Command`** - `/playerplate <t>` to open Adventurer plate of your target, or any other placeholder should work too.
+> **`Hide quality bar while crafting NO-HQ item.`** - Hides the quality bar in the Synthesis window while crafting an item that can not be HQ or Collectable.
 
-> **`Hide Chat Panel Buttons`** - Hides chat tab name and close button while the tab is split from the main window.
 
-> **`Estate List Command`** - `/estatelist <friend>` to open the estate teleportation list for the given friend.
+***Tweak Changes***
+> **`Expanded Currency Display`** - Added support for Collectibles
 
-***Returning Tweaks***
-> **`Improved Crafting Log`** - Back from being disabled, hopefully won't cause any more issues with people getting stuck in bad state.
+> **`Fade Unavailable Actions`**
+> - Tweak now only applies to combat actions
+> - Properly resets hotbar state on unload/disable
 
-***Added Features***
-> **`Target HP`** - Added option to not hide the Auto Attack icon.
+> **`Improved Duty Finder Settings`** - Fixed UI displaying on wrong monitor in specific circumstances. *(Aireil)*
 
-> **`Extended Desynthesis Window`** - Added option to change the sort order of the All Items category.
+> **`Set Option Command`**
+> - Fixed issues when using gamepad mode
+> - Re-added accidentally remove gamepad mode option
+> - Added 'LimitMouseToGameWindow' and 'CharacterDisplayLimit'
+> - Fixed 'DisplayNameSize' using incorrect values
 
-> **`Always Yes`** - More target windows to set default for. (*Aireil*)
+> **`Simplified Equipment Job Display`** - Fixed tweak for Japanese clients.
 
-## [1.7.0.2]
-***Bug Fixes***
-> **`Extended Desynthesis Window` - Fixed a game crash when changing certain config options.**
 
-> **`No Sell List`** - Fixed incorrect error message appearance in certain cases.
-
-> **`Large Cooldown Counter`** - Fixed certain actions not correctly showing their large cooldowns.
-
-***Added Features***
-> **`Extended Desynthesis Window`** - Added option to exclude armoury chest from 'All Items' display.
-
-## [1.7.0.0]
+## [1.8.3.2]
 ***New Tweaks***
-> **`No Sell List`** - Allows you to define a list of items that can not be sold to a vendor.
+> **`Echo Story Selection`** - When given multiple choices during quests, print the selected option to chat. *(MidoriKami)*
 
-> **`Quick Sell at Vendors`** - Hold a modifier key to sell items from your inventory in one click.
 
-> **`Always Yes`** (*by Aireil*) - Default cursor to yes when using confirm (numpad 0 or controller).
+***Tweak Changes***
+> **`Fade Unavailable Actions`**
+> - Tweak now only applies to the icon image itself and not the entire button
+> - Add option to apply transparency to the slot frame of the icon
+> - Add option to apply to sync'd skills only
 
-> **`Show Painting Preview`** - Add an image preview for paintings to item tooltips.
+> **`Set Option Command`** - Improved reliability through patches
 
-> **`Screenshot File Name`** (*by PunishedPineapple*) - Change the file name format for screenshots.
 
-> **`Recolor Own Status Timers`** - Allows the recoloring of the personal status timers color.
+## [1.8.3.1]
+***New Tweaks***
+> **`Fade Unavailable Actions`** - Instead of darkening icons, makes them transparent when unavailable *(MidoriKami)*
 
-***Added Features***
-> **`Set Option Command`** - Added 'Hide Unassigned Hotbar Slots' to available options.
 
-> **`Extended Desynthesis Window`** - Added an optional extra category to the desynthesis window to show all available items in a single list, with additional options to hide gearset items as well as items that will not give desynthesis levels.
+***Tweak Changes***
+> **`Expanded Currency Display`** - Use configured format culture for number display, should fix French issue
 
-***Bug Fixes***
-> **`Adjust Equipment Positions`** - Fixed controller navigation on Character Examine window. (*Ryan Hart*)
+> **`Target Castbar Countdown`** - Add TopRight option for displaying countdown
 
-> **`Legacy Camera Lock`** - Fixed 'Disable While Auto Running' option not working correctly.
 
-> **`Custom Free Company Tags`** - Fixed config sometimes not saving correctly. (*Airiel*)
+## [1.8.3.0]
+***General Changes***
+> Added a changelog
+> Fixed graphical issue when resizing windows on clear blue theme.
 
-> **`Smart Nameplates`** - Fixed config sometimes not saving correctly. (*Airiel*)
+***New Tweaks***
+> **`Echo Party Finder`** - Prints Party Finder description to chat upon joining a group. *(MidoriKami)*
+
+> **`Expanded Currency Display`** - Allows you to display extra currencies. *(MidoriKami)*
+
+> **`Extended Macro Icons`** - Allow using specific Icon IDs when using '/macroicon # id' inside of a macro.
+
+> **`Hide Unwanted Banners`** - Hide information banners such as 'Venture Complete', or 'Levequest Accepted' *(MidoriKami)*
+
+> **`Improved Duty Finder Settings`** - Turn the duty finder settings into buttons. *(Aireil)*
+
+> **`Improved Interruptable Castbars`** - Displays an icon next to interruptable castbars *(MidoriKami)*
+
+> **`Keyboard Gaming Mode`** - Block Alt-Tab and other keys to keep you in the game. *(KazWolfe)*
+
+> **`Simplified Equipment Job Display`** - Hides classes from equipment tooltips when their jobs are unlocked.
+
+> **`SystemConfig in Group Pose`** - Allows the use of the /systemconfig command while in gpose.
+
+> **`Target Castbar Countdown`** - Displays time remaining on targets ability cast. *(MidoriKami)*
+
+> **`Track Gacha Items`** - Adds the collectable checkmark to gacha items, such as Triple Triad card packs, when all potential items have been obtained.
+
+
+***Tweak Changes***
+> **`Enhanced Loot Window`**
+> - Rebuilt tweak to use images
+> - Fixed tweak not checking armory and equipped items
+> - Added 'Lock Loot Window' feature
+
+> **`Fix '/target' command`** - Fixed tweak not working in french. *(Aireil)*
+
+> **`Screenshot Improvements`** - Added option to hide dalamud UI for screenshot.
+
+
+## [1.8.2.1]
+***New Tweaks***
+> **`Enhanced Loot Window`** - Marks unobtainable and already unlocked items in the loot window. *(MidoriKami)*
+
+> **`Keep Windows Open`** - Prevents certain windows from hiding under specific circumstances.
+
+
+***Tweak Changes***
+> **`Improved Crafting Log`** - Fixed a potential crash in specific circumstances.
+
+
+## [1.8.2.0]
+***General Changes***
+> Now using the Dalamud Window system.
+ESC will now close Simple Tweaks windows.
+
+***New Tweaks***
+> **`Dismiss Minion Command`** - Adds a command to dismiss your current minion. /minionaway
+
+> **`House Lights Command`** - Adds a command to control lighting in your own housing areas.
+
+> **`Limit Break Adjustments`** - Simple customization of the limit break bars
+
+> **`Screenshot Improvements`** - Allows taking higher resolution screenshots, Hiding Dalamud & Game UIs and removing the copyright notice from screenshots. *(NotNite)*
+
+> **`Sticky Chat`** - Sets chat channel when you use temporary chat messages. *(MidoriKami)*
+
+
+***Tweak Changes***
+> **`Time Until GP Max`** - Added an option to display time in Eorzean Hours *(peterberbec)*
+
+
+## [1.8.1.2]
+***Tweak Changes***
+> **`Parameter Bar Adjustments`** - Fixed positioning of HP bar.
+
+
+## [1.8.1.1]
+***Tweak Changes***
+> **`Adjust Equipment Positions`** - Fixed widget display when using standard UI quality.
+
+> **`Estate List Command`** - Now allows partial matching of friend names.
+
+> **`Improved Crafting Action Tooltips`** - Fixed tweak not disabling correctly.
+
+> **`Parameter Bar Adjustments`** - Added option to center HP bar when MP bar is hidden.
+
+> **`Target HP`** - Added option to align text to the left.
+
 

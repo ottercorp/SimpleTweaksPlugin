@@ -11,13 +11,6 @@ using SimpleTweaksPlugin.Utility;
 using AlignmentType = FFXIVClientStructs.FFXIV.Component.GUI.AlignmentType;
 using GameObject = Dalamud.Game.ClientState.Objects.Types.GameObject;
 
-namespace SimpleTweaksPlugin {
-    public partial class UiAdjustmentsConfig {
-        public bool ShouldSerializeTargetHP() => TargetHP != null;
-        public TargetHP.Configs TargetHP = null;
-    }
-}
-
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
     public unsafe class TargetHP : UiAdjustments.SubTweak {
         public class Configs : TweakConfig {
@@ -27,12 +20,14 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             public Vector4 CustomColor = new Vector4(1);
             public byte FontSize = 14;
             public bool HideAutoAttack = false;
+            public bool AlignLeft;
             
             public bool NoFocus;
             public Vector2 FocusPosition = new Vector2(0);
             public bool FocusUseCustomColor = false;
             public Vector4 FocusCustomColor = new Vector4(1);
             public byte FocusFontSize = 14;
+            public bool FocusAlignLeft;
         }
 
         public enum DisplayFormat {
@@ -60,11 +55,14 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 ImGui.EndCombo();
             }
 
+            hasChanged |= ImGui.Checkbox("Align Left##AdjustTargetHPAlignLeft", ref Config.AlignLeft);
             ImGui.SetNextItemWidth(150);
             hasChanged |= ImGui.InputFloat("X Offset##AdjustTargetHPPositionX", ref Config.Position.X, 1, 5, "%.0f");
             ImGui.SetNextItemWidth(150);
             hasChanged |= ImGui.InputFloat("Y Offset##AdjustTargetHPPositionY", ref Config.Position.Y, 1, 5, "%0.f");
+            ImGui.SetNextItemWidth(150);
             hasChanged |= ImGuiExt.InputByte("Font Size##TargetHPFontSize", ref Config.FontSize);
+            
             hasChanged |= ImGui.Checkbox("Custom Color?##TargetHPUseCustomColor", ref Config.UseCustomColor);
             if (Config.UseCustomColor) {
                 ImGui.SameLine();
@@ -76,10 +74,12 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             hasChanged |= ImGui.Checkbox("Disable Focus Target HP", ref Config.NoFocus);
 
             if (!Config.NoFocus) {
+                hasChanged |= ImGui.Checkbox("Align Left on Focus Target##AdjustTargetHPFocusAlignLeft", ref Config.FocusAlignLeft);
                 ImGui.SetNextItemWidth(150);
                 hasChanged |= ImGui.InputFloat("Focus Target X Offset##AdjustTargetHPFocusPositionX", ref Config.FocusPosition.X, 1, 5, "%.0f");
                 ImGui.SetNextItemWidth(150);
                 hasChanged |= ImGui.InputFloat("Focus Target Y Offset##AdjustTargetHPFocusPositionY", ref Config.FocusPosition.Y, 1, 5, "%0.f");
+                ImGui.SetNextItemWidth(150);
                 hasChanged |= ImGuiExt.InputByte("Font Size##TargetHPFocusFontSize", ref Config.FocusFontSize);
                 hasChanged |= ImGui.Checkbox("Custom Color?##TargetHPFocusUseCustomColor", ref Config.FocusUseCustomColor);
                 if (Config.FocusUseCustomColor) {
@@ -92,15 +92,19 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         public override string Name => "Target HP";
         public override string Description => "Displays the exact (or optionally rounded) value of target's hitpoints.";
 
+        public override void Setup() {
+            AddChangelog("1.8.1.1", "Added option to align text to the left.");
+            base.Setup();
+        }
+        
         public override void Enable() {
-            Config = LoadConfig<Configs>() ?? PluginConfig.UiAdjustments.TargetHP ?? new Configs();
+            Config = LoadConfig<Configs>() ?? new Configs();
             Service.Framework.Update += FrameworkUpdate;
             base.Enable();
         }
 
         public override void Disable() {
             SaveConfig(Config);
-            PluginConfig.UiAdjustments.TargetHP = null;
             Service.Framework.Update -= FrameworkUpdate;
             Update(true);
             base.Disable();
@@ -141,24 +145,24 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             var gauge = (AtkComponentNode*) unitBase->UldManager.NodeList[36];
             var textNode = (AtkTextNode*) unitBase->UldManager.NodeList[39];
             UiHelper.SetSize(unitBase->UldManager.NodeList[37], reset || !Config.HideAutoAttack ? 44 : 0, reset || !Config.HideAutoAttack ? 20 : 0);
-            UpdateGaugeBar(gauge, textNode, target, Config.Position, Config.UseCustomColor ? Config.CustomColor : null, Config.FontSize, reset);
+            UpdateGaugeBar(gauge, textNode, target, Config.Position, Config.UseCustomColor ? Config.CustomColor : null, Config.FontSize, Config.AlignLeft, reset);
         }
         private void UpdateFocusTarget(AtkUnitBase* unitBase, GameObject target, bool reset = false) {
             if (Config.NoFocus) reset = true;
             if (unitBase == null || unitBase->UldManager.NodeList == null || unitBase->UldManager.NodeListCount < 11) return;
             var gauge = (AtkComponentNode*) unitBase->UldManager.NodeList[2];
             var textNode = (AtkTextNode*) unitBase->UldManager.NodeList[10];
-            UpdateGaugeBar(gauge, textNode, target, Config.FocusPosition, Config.FocusUseCustomColor ? Config.FocusCustomColor : null, Config.FocusFontSize, reset);
+            UpdateGaugeBar(gauge, textNode, target, Config.FocusPosition, Config.FocusUseCustomColor ? Config.FocusCustomColor : null, Config.FocusFontSize, Config.FocusAlignLeft, reset);
         }
         private void UpdateMainTargetSplit(AtkUnitBase* unitBase, GameObject target, bool reset = false) {
             if (unitBase == null || unitBase->UldManager.NodeList == null || unitBase->UldManager.NodeListCount < 9) return;
             var gauge = (AtkComponentNode*) unitBase->UldManager.NodeList[5];
             var textNode = (AtkTextNode*) unitBase->UldManager.NodeList[8];
             UiHelper.SetSize(unitBase->UldManager.NodeList[6], reset || !Config.HideAutoAttack ? 44 : 0, reset || !Config.HideAutoAttack ? 20 : 0);
-            UpdateGaugeBar(gauge, textNode, target, Config.Position, Config.UseCustomColor ? Config.CustomColor : null, Config.FontSize, reset);
+            UpdateGaugeBar(gauge, textNode, target, Config.Position, Config.UseCustomColor ? Config.CustomColor : null, Config.FontSize, Config.AlignLeft, reset);
         }
         
-        private void UpdateGaugeBar(AtkComponentNode* gauge, AtkTextNode* cloneTextNode, GameObject target, Vector2 positionOffset, Vector4? customColor, byte fontSize, bool reset = false) {
+        private void UpdateGaugeBar(AtkComponentNode* gauge, AtkTextNode* cloneTextNode, GameObject target, Vector2 positionOffset, Vector4? customColor, byte fontSize, bool alignLeft, bool reset) {
             if (gauge == null || (ushort) gauge->AtkResNode.Type < 1000) return;
             
             AtkTextNode* textNode = null;
@@ -200,7 +204,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 return;
             }
 
-            textNode->AlignmentFontType = (byte)AlignmentType.BottomRight;
+            textNode->AlignmentFontType = (byte)(alignLeft ? AlignmentType.BottomLeft : AlignmentType.BottomRight);
             
             UiHelper.SetPosition(textNode, positionOffset.X, positionOffset.Y);
             UiHelper.SetSize(textNode, gauge->AtkResNode.Width - 5, gauge->AtkResNode.Height);

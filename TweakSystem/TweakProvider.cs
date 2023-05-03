@@ -23,22 +23,28 @@ public class TweakProvider : IDisposable {
         foreach (var t in Assembly.GetTypes().Where(t => t.IsSubclassOf(typeof(Tweak)) && !t.IsAbstract)) {
             SimpleLog.Debug($"Initalizing Tweak: {t.Name}");
             try {
-                var tweak = (Tweak) Activator.CreateInstance(t)!;
+                var tweak = (BaseTweak) Activator.CreateInstance(t)!;
                 tweak.InterfaceSetup(SimpleTweaksPlugin.Plugin, Service.PluginInterface, SimpleTweaksPlugin.Plugin.PluginConfig, this);
                 if (tweak.CanLoad) {
                     var blacklistKey = tweak.Key;
                     if (tweak.Version > 1) blacklistKey += $"::{tweak.Version}";
                     if (SimpleTweaksPlugin.Plugin.PluginConfig.BlacklistedTweaks.Contains(blacklistKey)) {
                         SimpleLog.Log("Skipping blacklisted tweak: " + tweak.Key);
+                        var blTweak = new BlacklistedTweak(tweak.Key, tweak.Name, "Disabled due to known issues.");
+                        blTweak.InterfaceSetup(SimpleTweaksPlugin.Plugin, Service.PluginInterface, SimpleTweaksPlugin.Plugin.PluginConfig, this);
+                        Tweaks.Add(blTweak);
                         continue;
                     }
-                    tweak.Setup();
-                    if (tweak.Ready && (SimpleTweaksPlugin.Plugin.PluginConfig.EnabledTweaks.Contains(t.Name) || tweak is SubTweakManager {AlwaysEnabled: true})) {
-                        SimpleLog.Debug($"Enable: {t.Name}");
-                        try {
-                            tweak.Enable();
-                        } catch (Exception ex) {
-                            SimpleTweaksPlugin.Plugin.Error(tweak, ex, true, $"Error in Enable for '{tweak.Name}");
+
+                    if (tweak is not IDisabledTweak) {
+                        tweak.Setup();
+                        if (tweak.Ready && (SimpleTweaksPlugin.Plugin.PluginConfig.EnabledTweaks.Contains(t.Name) || tweak is SubTweakManager {AlwaysEnabled: true})) {
+                            SimpleLog.Debug($"Enable: {t.Name}");
+                            try {
+                                tweak.Enable();
+                            } catch (Exception ex) {
+                                SimpleTweaksPlugin.Plugin.Error(tweak, ex, true, $"Error in Enable for '{tweak.Name}");
+                            }
                         }
                     }
 
@@ -64,7 +70,7 @@ public class TweakProvider : IDisposable {
             }
             SimpleLog.Log($"Dispose: {t.Name}");
             try {
-                t.Dispose();
+                t.InternalDispose();
             } catch (Exception ex) {
                 SimpleLog.Error($"Error in Dispose for '{t.Name}'");
                 SimpleLog.Error(ex);

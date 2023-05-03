@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Dalamud.Game.ClientState.Keys;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface;
+using Dalamud.Interface.Colors;
+using Dalamud.Interface.Components;
+using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using ImGuiScene;
@@ -15,6 +18,7 @@ using SimpleTweaksPlugin.Utility;
 using Action = System.Action;
 using Addon = FFXIVClientStructs.Attributes.Addon;
 using AlignmentType = FFXIVClientStructs.FFXIV.Component.GUI.AlignmentType;
+using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 #pragma warning disable 659
 
@@ -39,6 +43,7 @@ public unsafe class UIDebug : DebugHelper {
     private static int loadImageVersion = 0;
     private static ulong[] elementSelectorFind = {};
     private AtkUnitBase* selectedUnitBase = null;
+    private string addressSearchInput = string.Empty;
 
     public const int UnitListCount = 18;
     private readonly bool[] selectedInList = new bool[UnitListCount];
@@ -63,9 +68,83 @@ public unsafe class UIDebug : DebugHelper {
         "Units 18"
     };
 
-    private RawDX11Scene.BuildUIDelegate originalHandler;
+    private static RawDX11Scene.BuildUIDelegate originalHandler;
 
-    private bool SetExclusiveDraw(Action action) {
+
+    internal bool FindByAddress(AtkResNode* node, ulong address, out List<ulong>? path) {
+        if (node == null) {
+            path = null;
+            return false;
+        }
+
+        if ((ulong)node == address) {
+            path = new List<ulong>() { (ulong) node };
+            return true;
+        }
+
+        if ((int)node->Type >= 1000) {
+            var cNode = (AtkComponentNode*)node;
+
+            if (cNode->Component != null) {
+                if ((ulong)cNode->Component == address) {
+                    path = new List<ulong>() { (ulong) node };
+                    return true;
+                }
+                
+                if (FindByAddress(cNode->Component->UldManager.RootNode, address, out path) && path != null) {
+                    path.Add((ulong)node);
+                    return true;
+                }
+            }
+        }
+
+        if (FindByAddress(node->ChildNode, address, out path) && path != null) {
+            path.Add((ulong)node);
+            return true;
+        }
+
+        if (FindByAddress(node->PrevSiblingNode, address, out path) && path != null) {
+            return true;
+        }
+        
+        path = null;
+        return false;
+    }
+    
+    internal bool FindByAddress(AtkUnitBase* atkUnitBase, ulong address) {
+        if (atkUnitBase->RootNode == null) return false;
+        if (FindByAddress(atkUnitBase->RootNode, address, out var path)) {
+            elementSelectorScrolled = false;
+            elementSelectorFind = path.ToArray();
+            elementSelectorCountdown = 100;
+            return true;
+        }
+        return false;
+    }
+
+    internal void FindByAddress(ulong address) {
+        var stage = AtkStage.GetSingleton();
+                
+        var unitManagers = &stage->RaptureAtkUnitManager->AtkUnitManager.DepthLayerOneList;
+        
+        for (var i = 0; i < UnitListCount; i++) {
+            var unitManager = &unitManagers[i];
+            var unitBaseArray = &(unitManager->AtkUnitEntries);
+            for (var j = 0; j < unitManager->Count; j++) {
+                
+                var unitBase = unitBaseArray[j];
+
+                if ((ulong)unitBase == address || FindByAddress(unitBase, address)) {
+                    selectedUnitBase = unitBase;
+                    Plugin.PluginConfig.Debugging.SelectedAtkUnitBase = address;
+                    Plugin.PluginConfig.Save();
+                    return;
+                }
+            }
+        }
+    }
+
+    internal static bool SetExclusiveDraw(Action action) {
         // Possibly the most cursed shit I've ever done.
         if (originalHandler != null) return false;
         try {
@@ -93,7 +172,7 @@ public unsafe class UIDebug : DebugHelper {
         return false;
     }
         
-    private bool FreeExclusiveDraw() {
+    internal static bool FreeExclusiveDraw() {
         if (originalHandler == null) return true;
         try {
             var dalamudAssembly = Service.PluginInterface.GetType().Assembly;
@@ -126,7 +205,8 @@ public unsafe class UIDebug : DebugHelper {
             selectedUnitBase = (AtkUnitBase*) (Plugin.PluginConfig.Debugging.SelectedAtkUnitBase);
         }
 
-        ImGui.BeginChild("st_uiDebug_unitBaseSelect", new Vector2(250, -1), true);
+        ImGui.BeginGroup();
+        ImGui.BeginChild("st_uiDebug_unitBaseSelect", new Vector2(250, -44), true);
             
         ImGui.SetNextItemWidth(-38);
         ImGui.InputTextWithHint("###atkUnitBaseSearch", "Search", ref Plugin.PluginConfig.Debugging.AtkUnitBaseSearch, 0x20);
@@ -148,6 +228,18 @@ public unsafe class UIDebug : DebugHelper {
             
         DrawUnitBaseList();
         ImGui.EndChild();
+        if (ImGui.BeginChild("###uiDebug_addressSearch", new Vector2(250, 0), true)) {
+            ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 32);
+            ImGui.InputTextWithHint("###addressSearchInput", "Address Search", ref addressSearchInput, 18, ImGuiInputTextFlags.AutoSelectAll);
+            ImGui.SameLine();
+            if (ImGuiComponents.IconButton(FontAwesomeIcon.Search)) {
+                if (ulong.TryParse(addressSearchInput, NumberStyles.HexNumber | NumberStyles.AllowHexSpecifier, NumberFormatInfo.InvariantInfo, out var address)) {
+                    FindByAddress(address);
+                }
+            }
+        }
+        ImGui.EndChild();
+        ImGui.EndGroup();
         if (selectedUnitBase != null) {
             ImGui.SameLine();
             ImGui.BeginChild("st_uiDebug_selectedUnitBase", new Vector2(-1, -1), true);
@@ -189,6 +281,7 @@ public unsafe class UIDebug : DebugHelper {
             var size = ImGui.CalcTextSize(s);
             var x = ImGuiExt.GetWindowContentRegionSize().X / 2f - size.X / 2;
             drawList.AddText(new Vector2(x, y), 0xFFFFFFFF, s);
+            
             y += size.Y;
         }
             
@@ -351,7 +444,11 @@ public unsafe class UIDebug : DebugHelper {
 
         ImGui.SameLine(ImGuiExt.GetWindowContentRegionSize().X - 25);
         if (ImGui.SmallButton("V")) {
-            atkUnitBase->Flags ^= 0x20;
+            if (atkUnitBase->IsVisible) {
+                atkUnitBase->Flags ^= 0x20;
+            } else {
+                atkUnitBase->Show(0);
+            }
         }
             
         ImGui.Separator();
@@ -376,6 +473,83 @@ public unsafe class UIDebug : DebugHelper {
 #endif
         ImGui.Text($"Scale: {atkUnitBase->Scale*100}%%");
         ImGui.Text($"Widget Count {atkUnitBase->UldManager.ObjectCount}");
+        var atkValue = atkUnitBase->AtkValues;
+        if (atkUnitBase->AtkValuesCount > 0 && atkValue != null) {
+            
+            if (ImGui.TreeNode($"Atk Values ({atkUnitBase->AtkValuesCount})###atkValues_atkUnitBase")) {
+
+                if (ImGui.BeginTable("atkUnitBase_atkValueTable", 3)) {
+                    
+                    ImGui.TableSetupColumn("Index", ImGuiTableColumnFlags.WidthFixed, 50 * ImGui.GetIO().FontGlobalScale);
+                    ImGui.TableSetupColumn("Type", ImGuiTableColumnFlags.WidthFixed, 120 * ImGui.GetIO().FontGlobalScale);
+                    ImGui.TableSetupColumn("Value");
+                    ImGui.TableHeadersRow();
+                    
+                    try {
+                        
+                        for (var i = 0; i < atkUnitBase->AtkValuesCount; i++) {
+                            ImGui.TableNextColumn();
+                            if (atkValue->Type == 0) {
+                                ImGui.TextDisabled($"#{i}");
+                            } else {
+                                ImGui.Text($"#{i}");
+                            }
+
+                            ImGui.TableNextColumn();
+                            if (atkValue->Type == 0) {
+                                ImGui.TextDisabled("Not Set");
+                            } else {
+                                ImGui.Text($"{atkValue->Type}");
+                            }
+                            
+                            ImGui.TableNextColumn();
+                            
+                            switch (atkValue->Type) {
+                                case 0:
+                                    break;
+                                case ValueType.Int: {
+                                    ImGui.Text($"{atkValue->Int}");
+                                    break;
+                                }
+                                case ValueType.AllocatedString:
+                                case ValueType.String8:
+                                case ValueType.String: {
+                                    var str = MemoryHelper.ReadSeStringNullTerminated(new nint(atkValue->String));
+                                    DebugManager.PrintOutObject(str, (ulong) atkValue);
+                                    break;
+                                }
+                                case ValueType.UInt: {
+                                    ImGui.Text($"{atkValue->Int}");
+                                    break;
+                                }
+                                case ValueType.Bool: {
+                                    ImGui.Text($"{atkValue->Byte != 0}");
+                                    break;
+                                }
+                                case ValueType.Texture: {
+                                    DebugManager.PrintOutObject(atkValue->Texture);
+                                    break;
+                                }
+                                default: {
+                                    ImGui.TextDisabled("Unhandled Type");
+                                    ImGui.SameLine();
+                                    DebugManager.PrintOutObject(atkValue);
+                                    break;
+                                }
+                            }
+                            
+                            atkValue++;
+                        }
+                        
+                    } catch (Exception ex) {
+                        ImGui.TextColored(ImGuiColors.DalamudRed, $"{ex}");
+                    }
+                    ImGui.EndTable();
+                }
+
+                ImGui.TreePop();
+            }
+        }
             
         ImGui.Separator();
 
@@ -512,6 +686,8 @@ public unsafe class UIDebug : DebugHelper {
         var customNodeName = customNodeIds.ContainsKey(id) ? customNodeIds[id] : string.Empty;
         return string.IsNullOrEmpty(customNodeName) ? (includeHashOnNoMatch ? $"#{id}" : $"{id}") : $"{customNodeName}#{id}";
     }
+
+    private static int counterNodeInputNumber = 0;
     
     private static void PrintSimpleNode(AtkResNode* node, string treePrefix, bool textOnly = false)
     {
@@ -597,7 +773,11 @@ public unsafe class UIDebug : DebugHelper {
                         ImGui.PopStyleColor();
                     }
 
-                    ImGui.InputText($"Replace Text##{(ulong) textNode:X}", new IntPtr(textNode->NodeText.StringPtr), (uint) textNode->NodeText.BufSize);
+                    var s = textNode->NodeText.ToString();
+
+                    if (ImGui.InputText($"Replace Text##{(ulong)textNode:X}", ref s, 512, ImGuiInputTextFlags.EnterReturnsTrue)) {
+                        textNode->SetText(s);
+                    }
 
 
                     ImGui.Text($"AlignmentType: {(AlignmentType)textNode->AlignmentFontType}[{textNode->AlignmentFontType:X2}]  FontSize: {textNode->FontSize}  CharSpacing: {textNode->CharSpacing}  LineSpacing: {textNode->LineSpacing}");
@@ -624,7 +804,22 @@ public unsafe class UIDebug : DebugHelper {
                     break;
                 case NodeType.Counter:
                     var counterNode = (AtkCounterNode*)node;
-                    ImGui.Text($"text: {Marshal.PtrToStringUTF8(new IntPtr(counterNode->NodeText.StringPtr))}");
+
+                    var text = counterNode->NodeText.ToString();
+                    ImGui.Text($"text: {text}");
+
+                    if (ImGui.InputText($"Replace Text##{(ulong)counterNode:X}", ref text, 100, ImGuiInputTextFlags.EnterReturnsTrue)) {
+                        counterNode->SetText(text);
+                    }
+
+                    ImGui.InputInt($"##input_{(ulong)counterNode:X}", ref counterNodeInputNumber);
+                    ImGui.SameLine();
+                    if (ImGui.Button($"Set##{(ulong)counterNode:X}")) {
+                        counterNode->SetNumber(counterNodeInputNumber);
+                    }
+                    
+                    
+                    
                     break;
                 case NodeType.NineGrid:
                 case NodeType.Image:
@@ -733,6 +928,9 @@ public unsafe class UIDebug : DebugHelper {
     private static void PrintComponentNode(AtkResNode* node, string treePrefix, bool textOnly = false)
     {
         var compNode = (AtkComponentNode*)node;
+        var componentInfo = compNode->Component->UldManager;
+        var objectInfo = (AtkUldComponentInfo*)componentInfo.Objects;
+        if (objectInfo == null) return;
 
         bool popped = false;
         bool isVisible = (node->Flags & 0x10) == 0x10;
@@ -740,11 +938,8 @@ public unsafe class UIDebug : DebugHelper {
         if (isVisible && !textOnly)
             ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0, 255, 0, 255));
 
-        var componentInfo = compNode->Component->UldManager;
-
         var childCount = componentInfo.NodeListCount;
 
-        var objectInfo = (AtkUldComponentInfo*)componentInfo.Objects;
         if (elementSelectorFind.Length > 0) {
             ImGui.SetNextItemOpen(elementSelectorFind.Contains((ulong) node), ImGuiCond.Always);
         }
@@ -859,6 +1054,47 @@ public unsafe class UIDebug : DebugHelper {
         var v2 = new Vector2(node->X, node->Y);
         if (ImGui.InputFloat2("Position", ref v2)) {
             node->SetPositionFloat(v2.X, v2.Y);
+        }
+
+        var evt = node->AtkEventManager.Event;
+        if (evt != null) {
+            if (ImGui.TreeNode($"Events##{(ulong)node:X}")) {
+                if (ImGui.BeginTable($"eventTable##{(ulong)node:X}", 7, ImGuiTableFlags.Resizable)) {
+                    ImGui.TableSetupColumn("#", ImGuiTableColumnFlags.WidthFixed, 30);
+                    ImGui.TableSetupColumn("Type", ImGuiTableColumnFlags.WidthFixed, 150);
+                    ImGui.TableSetupColumn("Param", ImGuiTableColumnFlags.WidthFixed, 80);
+                    ImGui.TableSetupColumn("Flags", ImGuiTableColumnFlags.WidthFixed, 80);
+                    ImGui.TableSetupColumn("Unk29", ImGuiTableColumnFlags.WidthFixed, 50);
+                    ImGui.TableSetupColumn("Target", ImGuiTableColumnFlags.WidthFixed, 100);
+                    ImGui.TableSetupColumn("Listener", ImGuiTableColumnFlags.WidthFixed, 100);
+                    
+                    ImGui.TableHeadersRow();
+
+                    var i = 0;
+                    while (evt != null) {
+                        ImGui.TableNextColumn();
+                        ImGui.Text($"{i++}");
+                        ImGui.TableNextColumn();
+                        ImGui.Text($"{evt->Type}");
+                        ImGui.TableNextColumn();
+                        ImGui.Text($"{evt->Param}");
+                        ImGui.TableNextColumn();
+                        ImGui.Text($"{evt->Flags}");
+                        ImGui.TableNextColumn();
+                        ImGui.Text($"{evt->Unk29}");
+                        ImGui.TableNextColumn();
+                        DebugManager.PrintAddress(evt->Target);
+                        ImGui.TableNextColumn();
+                        DebugManager.PrintAddress(evt->Listener);
+                        
+                        evt = evt->NextEvent;
+                    }
+                    
+                    ImGui.EndTable();
+                }
+
+                ImGui.TreePop();
+            }
         }
 
 

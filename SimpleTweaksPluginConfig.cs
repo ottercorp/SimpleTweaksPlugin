@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using Dalamud.Interface.Colors;
 using SimpleTweaksPlugin.Debugging;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -14,9 +15,6 @@ using SimpleTweaksPlugin.Utility;
 namespace SimpleTweaksPlugin; 
 
 public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
-    [NonSerialized]
-    private DalamudPluginInterface pluginInterface;
-
     [NonSerialized]
     private SimpleTweaksPlugin plugin;
 
@@ -32,6 +30,9 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
     public bool HideKofi;
     public bool ShowExperimentalTweaks;
     public bool DisableAutoOpen;
+    public bool ShowInDevMenu;
+    public bool NoFools;
+    public bool NotBaby;
 
     public bool ShowTweakDescriptions = true;
     public bool ShowTweakIDs;
@@ -39,14 +40,17 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
     public string CustomCulture = string.Empty;
     public string Language = null;
 
-    public void Init(SimpleTweaksPlugin plugin, DalamudPluginInterface pluginInterface) {
+    public string LastSeenChangelog = string.Empty;
+    public bool AutoOpenChangelog = false;
+    public bool DisableChangelogNotification = false;
+
+    public void Init(SimpleTweaksPlugin plugin) {
         this.plugin = plugin;
-        this.pluginInterface = pluginInterface;
         HiddenTweaks.RemoveAll(t => EnabledTweaks.Contains(t));
     }
 
     public void Save() {
-        pluginInterface.SavePluginConfig(this);
+        Service.PluginInterface.SavePluginConfig(this);
     }
 
     [NonSerialized] private SubTweakManager setTab = null;
@@ -54,13 +58,38 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
     [NonSerialized] private string searchInput = string.Empty;
     [NonSerialized] private string lastSearchInput = string.Empty;
     [NonSerialized] private List<BaseTweak> searchResults = new List<BaseTweak>();
+
+    internal void FocusTweak(BaseTweak tweak) {
+        plugin.ConfigWindow.IsOpen = true;
+        plugin.ConfigWindow.Collapsed = false;
+        searchResults.Clear();
+        
+        if (tweak is SubTweakManager stm) {
+            setTab = stm;
+            searchInput = string.Empty;
+            lastSearchInput = string.Empty;
+            return;
+        }
+        
+        searchInput = tweak.Name;
+        lastSearchInput = tweak.Name;
+        searchResults.Add(tweak);
+        tweak.ForceOpenConfig = true;
+    }
+
+    internal void ClearSearch() {
+        searchInput = string.Empty;
+        lastSearchInput = string.Empty;
+        searchResults.Clear();
+    }
+
     private string addCustomProviderInput = string.Empty;
 
     private void DrawTweakConfig(BaseTweak t, ref bool hasChange) {
         var enabled = t.Enabled;
         if (t.Experimental && !ShowExperimentalTweaks && !enabled) return;
 
-        if (!enabled && ImGui.GetIO().KeyShift) {
+        if (t is IDisabledTweak || (!enabled && ImGui.GetIO().KeyShift) || t.TweakManager is {Enabled: false}) {
             if (HiddenTweaks.Contains(t.Key)) {
                 if (ImGui.Button($"S##unhideTweak_{t.Key}", new Vector2(23) * ImGui.GetIO().FontGlobalScale)) {
                     HiddenTweaks.Remove(t.Key);
@@ -104,6 +133,20 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
         ImGui.SameLine();
         var descriptionX = ImGui.GetCursorPosX();
         if (!t.DrawConfig(ref hasChange)) {
+            if (t is IDisabledTweak dt) {
+                if (!string.IsNullOrEmpty(dt.DisabledMessage)) {
+                    ImGui.SetCursorPosX(descriptionX);
+                    ImGui.PushStyleColor(ImGuiCol.HeaderHovered, 0x0);
+                    ImGui.PushStyleColor(ImGuiCol.HeaderActive, 0x0);
+                    ImGui.TreeNodeEx(" ", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.NoTreePushOnOpen);
+                    ImGui.PopStyleColor();
+                    ImGui.PopStyleColor();
+                    ImGui.SameLine();
+                    ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
+                    ImGui.TextWrapped($"{dt.DisabledMessage}");
+                    ImGui.PopStyleColor();
+                }
+            } else
             if (ShowTweakDescriptions && !string.IsNullOrEmpty(t.Description)) {
                 ImGui.SetCursorPosX(descriptionX);
                 ImGui.PushStyleColor(ImGuiCol.HeaderHovered, 0x0);
@@ -121,17 +164,12 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
         ImGui.Separator();
     }
         
-    public bool DrawConfigUI() {
-        var drawConfig = true;
+    public void DrawConfigUI() {
         var changed = false;
-        var scale = ImGui.GetIO().FontGlobalScale;
-        var windowFlags = ImGuiWindowFlags.NoCollapse;
-        ImGui.SetNextWindowSizeConstraints(new Vector2(600 * scale, 200 * scale), new Vector2(800 * scale, 800 * scale));
-        ImGui.Begin($"{plugin.Name} Config", ref drawConfig, windowFlags);
-            
-        var showbutton = plugin.ErrorList.Count != 0 || !HideKofi;
-        var buttonText = plugin.ErrorList.Count > 0 ? $"{plugin.ErrorList.Count} Errors Detected" : "Support on Ko-fi";
-        var buttonColor = (uint) (plugin.ErrorList.Count > 0 ? 0x000000FF : 0x005E5BFF);
+
+        var showbutton = plugin.ErrorList.Count != 0 || Changelog.HasNewChangelog || !HideKofi;
+        var buttonText = plugin.ErrorList.Count > 0 ? $"{plugin.ErrorList.Count} Errors Detected" : Changelog.HasNewChangelog ? "New Changelog Available" : "Support on Ko-fi";
+        var buttonColor = (uint) (plugin.ErrorList.Count > 0 ? 0x000000FF : Changelog.HasNewChangelog ? 0x0011AA05 : 0x005E5BFF);
             
         if (showbutton) {
             ImGui.SetNextItemWidth(-(ImGui.CalcTextSize(buttonText).X + ImGui.GetStyle().FramePadding.X * 2 + ImGui.GetStyle().ItemSpacing.X));
@@ -148,9 +186,11 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
             ImGui.PushStyleColor(ImGuiCol.ButtonHovered, 0xAA000000 | buttonColor);
 
             if (ImGui.Button(buttonText, new Vector2(-1, ImGui.GetItemRectSize().Y))) {
-                if (plugin.ErrorList.Count == 0) {
+                if (plugin.ErrorList.Count == 0 && !Changelog.HasNewChangelog) {
                     Common.OpenBrowser("https://ko-fi.com/Caraxi");
-                } else {
+                } else if (Changelog.HasNewChangelog) {
+                    plugin.ChangelogWindow.IsOpen = true;
+                } else  {
                     plugin.ShowErrorWindow = true;
                 }
             }
@@ -243,14 +283,29 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
 
                 if (ImGui.BeginTabItem(Loc.Localize("General Options / TabHeader", "General Options") + $"###generalOptionsTab")) {
                     ImGui.BeginChild($"generalOptions-scroll", new Vector2(-1, -1));
+
                     if (ImGui.Checkbox(Loc.Localize("General Options / Show Experimental Tweaks", "Show Experimental Tweaks."), ref ShowExperimentalTweaks)) Save();
                     ImGui.Separator();
                     if (ImGui.Checkbox(Loc.Localize("General Options / Show Tweak Descriptions","Show tweak descriptions."), ref ShowTweakDescriptions)) Save();
                     ImGui.Separator();
                     if (ImGui.Checkbox(Loc.Localize("General Options / Show Tweak IDs", "Show tweak IDs."), ref ShowTweakIDs)) Save();
                     ImGui.Separator();
+                    
+                    if (ImGui.Checkbox(Loc.Localize("General Options / Auto Open Changelog", "Open New Changelogs Automatically"), ref AutoOpenChangelog)) Save();
+                    ImGui.Separator();
+                    if (ImGui.Checkbox(Loc.Localize("General Options / Disable Changelog Notice", "Disable Changelog Notifications"), ref DisableChangelogNotification)) Save();
+
+                    ImGui.SameLine();
+                    if (ImGui.Button("Open Changelog")) {
+                        plugin.ChangelogWindow.IsOpen = true;
+                    }
+                    
+                    ImGui.Separator();
                     #if DEBUG
                     if (ImGui.Checkbox("Disable Auto Open", ref DisableAutoOpen)) Save();
+                    ImGui.Separator();
+                    #else
+                    if (ImGui.Checkbox("Show in Dev Menu", ref ShowInDevMenu)) Save();
                     ImGui.Separator();
                     #endif
 
@@ -278,7 +333,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                             }
 #endif
 
-                            var locDir = pluginInterface.GetPluginLocDirectory();
+                            var locDir = Service.PluginInterface.GetPluginLocDirectory();
 
                             var locFiles = Directory.GetDirectories(locDir);
 
@@ -396,6 +451,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                             foreach (var hidden in HiddenTweaks) {
                                 var tweak = plugin.GetTweakById(hidden);
                                 if (tweak == null) continue;
+                                if (tweak is IDisabledTweak) ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudGrey);
                                 if (ImGui.Button($"S##unhideTweak_{tweak.Key}", new Vector2(23) * ImGui.GetIO().FontGlobalScale)) {
                                     removeKey = hidden;
                                 }
@@ -405,6 +461,12 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
 
                                 ImGui.SameLine();
                                 ImGui.Text(tweak.LocalizedName);
+
+                                if (tweak is IDisabledTweak) {
+                                    ImGui.SameLine();
+                                    ImGui.Text("[Disabled]");
+                                    ImGui.PopStyleColor();
+                                }
                             }
 
                             if (removeKey != null) {
@@ -497,14 +559,9 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                 ImGui.EndTabBar();
             }
         }
-            
-        ImGui.End();
-
         if (changed) {
             Save();
         }
-            
-        return drawConfig;
     }
 
     public void RefreshSearch() => lastSearchInput = string.Empty;

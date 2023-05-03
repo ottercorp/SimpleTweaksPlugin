@@ -6,6 +6,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using SimpleTweaksPlugin.Tweaks.AbstractTweaks;
+using SimpleTweaksPlugin.Utility;
 
 namespace SimpleTweaksPlugin.Tweaks; 
 
@@ -18,6 +19,11 @@ public unsafe class EstateListCommand : CommandTweak {
     private delegate IntPtr ShowEstateTeleportationDelegate(AgentInterface* friendListAgent, ulong contentId);
     private ShowEstateTeleportationDelegate showEstateTeleportation;
     
+    public override void Setup() {
+        AddChangelog("1.8.1.1", "Now allows partial matching of friend names.");
+        base.Setup();
+    }
+
     public override void Enable() {
         if (showEstateTeleportation == null && Service.SigScanner.TryScanText("E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 45 33 F6 48 8B CF 44 89 B3 ?? ?? ?? ?? E8", out var ptr)) {
             showEstateTeleportation = Marshal.GetDelegateForFunctionPointer<ShowEstateTeleportationDelegate>(ptr);
@@ -41,13 +47,15 @@ public unsafe class EstateListCommand : CommandTweak {
         }
 
         var useContentId = ulong.TryParse(arguments, out var contentId);
-        var friend = Plugin.XivCommon.Functions.FriendList.List
-            .FirstOrDefault(friend => {
+        var friends = FriendList.List
+            .Where(friend => {
                 if (friend.HomeWorld != Service.ClientState.LocalPlayer?.CurrentWorld.Id) return false;
                 if (useContentId && contentId > 0 && friend.ContentId == contentId) return true;
-                return friend.Name.TextValue.Equals(arguments, StringComparison.InvariantCultureIgnoreCase);
-            });
+                return friend.Name.TextValue.StartsWith(arguments, StringComparison.InvariantCultureIgnoreCase);
+            }).ToList();
         
+        var friend = friends.FirstOrDefault(friend => friend.Name.TextValue.StartsWith(arguments, StringComparison.InvariantCultureIgnoreCase));
+        if (friend.ContentId == 0) friend = friends.FirstOrDefault();
         if (friend.ContentId == 0) {
             Service.Chat.PrintError($"No friend with name \"{arguments}\" on your current world.");
             return;

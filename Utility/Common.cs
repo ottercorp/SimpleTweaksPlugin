@@ -29,7 +29,8 @@ public static unsafe class Common {
     private delegate void* AddonSetupDelegate(AtkUnitBase* addon);
     private static HookWrapper<AddonSetupDelegate> addonSetupHook;
     
-    public static IntPtr PlayerStaticAddress { get; private set; }
+    private delegate void FinalizeAddonDelegate(AtkUnitManager* unitManager, AtkUnitBase** atkUnitBase);
+    private static HookWrapper<FinalizeAddonDelegate> finalizeAddonHook;
 
     private static IntPtr LastCommandAddress;
         
@@ -45,7 +46,6 @@ public static unsafe class Common {
 
         if (FrameworkUpdate == null) return;
         foreach (var updateDelegate in FrameworkUpdate.GetInvocationList()) {
-            
             PerformanceMonitor.Begin($"[FrameworkUpdate]{updateDelegate.Target?.GetType().Name}.{updateDelegate.Method.Name}");
             updateDelegate.DynamicInvoke();
             PerformanceMonitor.End($"[FrameworkUpdate]{updateDelegate.Target?.GetType().Name}.{updateDelegate.Method.Name}");
@@ -55,15 +55,17 @@ public static unsafe class Common {
 
     public static event Action<SetupAddonArgs> AddonSetup; 
     public static event Action<SetupAddonArgs> AddonPreSetup; 
+    public static event Action<SetupAddonArgs> AddonFinalize;
     
     public static void Setup() {
-
-        PlayerStaticAddress = Service.SigScanner.GetStaticAddressFromSig("8B D7 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 0F B7 E8");
         LastCommandAddress = Service.SigScanner.GetStaticAddressFromSig("4C 8D 05 ?? ?? ?? ?? 41 B1 01 49 8B D4 E8 ?? ?? ?? ?? 83 EB 06");
         LastCommand = (Utf8String*) (LastCommandAddress);
         
         addonSetupHook = Hook<AddonSetupDelegate>("E8 ?? ?? ?? ?? 8B 83 ?? ?? ?? ?? C1 E8 14", AddonSetupDetour);
         addonSetupHook?.Enable();
+
+        finalizeAddonHook = Hook<FinalizeAddonDelegate>("E8 ?? ?? ?? ?? 48 8B 7C 24 ?? 41 8B C6", FinalizeAddonDetour);
+        finalizeAddonHook?.Enable();
 
         updateCursorHook = Hook<AtkModuleUpdateCursor>("48 89 74 24 ?? 48 89 7C 24 ?? 41 56 48 83 EC 20 4C 8B F1 E8 ?? ?? ?? ?? 49 8B CE", UpdateCursorDetour);
         updateCursorHook?.Enable();
@@ -87,6 +89,17 @@ public static unsafe class Common {
         }
 
         return retVal;
+    }
+
+    private static void FinalizeAddonDetour(AtkUnitManager* unitManager, AtkUnitBase** atkUnitBase) {
+        try {
+            AddonFinalize?.Invoke(new SetupAddonArgs() {
+                Addon = atkUnitBase[0]
+            });
+        } catch (Exception ex) {
+            SimpleLog.Error(ex);
+        }
+        finalizeAddonHook?.Original(unitManager, atkUnitBase);
     }
 
     public static UIModule* UIModule => Framework.Instance()->GetUiModule();
@@ -194,7 +207,21 @@ public static unsafe class Common {
     }
 
     public static HookWrapper<T> Hook<T>(void* address, T detour) where T : Delegate {
-        var h = new Hook<T>(new IntPtr(address), detour);
+        var h =  Dalamud.Hooking.Hook<T>.FromAddress(new nint(address), detour);
+        var wh = new HookWrapper<T>(h);
+        HookList.Add(wh);
+        return wh;
+    }
+
+    public static HookWrapper<T> Hook<T>(nuint address, T detour) where T : Delegate {
+        var h = Dalamud.Hooking.Hook<T>.FromAddress((nint)address, detour);
+        var wh = new HookWrapper<T>(h);
+        HookList.Add(wh);
+        return wh;
+    }
+
+    public static HookWrapper<T> Hook<T>(nint address, T detour) where T : Delegate {
+        var h = Dalamud.Hooking.Hook<T>.FromAddress(address, detour);
         var wh = new HookWrapper<T>(h);
         HookList.Add(wh);
         return wh;
@@ -202,7 +229,7 @@ public static unsafe class Common {
 
     public static HookWrapper<AddonOnUpdate> HookAfterAddonUpdate(IntPtr address, NoReturnAddonOnUpdate after) {
         Hook<AddonOnUpdate> hook = null;
-        hook = new Hook<AddonOnUpdate>(address, (atkUnitBase, nums, strings) => {
+        hook = Dalamud.Hooking.Hook<AddonOnUpdate>.FromAddress(address, (atkUnitBase, nums, strings) => {
             var retVal = hook.Original(atkUnitBase, nums, strings);
             try {
                 after(atkUnitBase, nums, strings);
@@ -290,6 +317,11 @@ public static unsafe class Common {
         [FieldOffset(8)] public ulong Unknown8;
     }
 
+    public static EventObject* SendEvent(AgentId agentId, ulong eventKind, params object[] eventparams) {
+        var agent = AgentModule.Instance()->GetAgentByInternalId(agentId);
+        return agent == null ? null : SendEvent(agent, eventKind, eventparams);
+    }
+
     public static EventObject* SendEvent(AgentInterface* agentInterface, ulong eventKind, params object[] eventParams) {
         var eventObject = stackalloc EventObject[1];
         return SendEvent(agentInterface, eventObject, eventKind, eventParams);
@@ -347,6 +379,9 @@ public static unsafe class Common {
         
         updateCursorHook?.Disable();
         updateCursorHook?.Dispose();
+        
+        finalizeAddonHook?.Disable();
+        finalizeAddonHook?.Dispose();
     }
 
     public const int UnitListCount = 18;
@@ -428,7 +463,29 @@ public static unsafe class Common {
         updateCursorHook?.Disable();
     }
     
+    public static string GetTexturePath(AtkImageNode* imageNode) {
+        if (imageNode == null) return null;
+        var partList = imageNode->PartsList;
+        if (partList == null || partList->Parts == null) return null;
+        if (imageNode->PartId >= partList->PartCount) return null;
+        var part = &partList->Parts[imageNode->PartId];
+        var textureInfo = part->UldAsset;
+        if (textureInfo == null) return null;
+        if (textureInfo->AtkTexture.TextureType != TextureType.Resource) return null;
+        var resource = textureInfo->AtkTexture.Resource;
+        if (resource == null) return null;
+        var handle = resource->TexFileResourceHandle;
+        if (handle == null) return null;
+        return handle->ResourceHandle.FileName.ToString();
+    }
     
+    public static string ReadString(byte* b, int maxLength = 0, bool nullIsEmpty = true) {
+        if (b == null) return nullIsEmpty ? string.Empty : null;
+        if (maxLength > 0) return Encoding.UTF8.GetString(b, maxLength).Split('\0')[0];
+        var l = 0;
+        while (b[l] != 0) l++;
+        return Encoding.UTF8.GetString(b, l);
+    }
 }
 
 public unsafe class SetupAddonArgs {
