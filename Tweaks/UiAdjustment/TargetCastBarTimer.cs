@@ -1,19 +1,12 @@
 ﻿using System;
 using System.Numerics;
-using Dalamud.Game;
-using System.Runtime.InteropServices;
-using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using SimpleTweaksPlugin.Enums;
-using SimpleTweaksPlugin.Tweaks.UiAdjustment;
 using SimpleTweaksPlugin.TweakSystem;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using SimpleTweaksPlugin.Utility;
-using Newtonsoft.Json.Linq;
-using static Lumina.Data.Parsing.Uld.NodeData;
-using XivCommon.Functions;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
     public unsafe class TargetCastBarTimer : UiAdjustments.SubTweak {
