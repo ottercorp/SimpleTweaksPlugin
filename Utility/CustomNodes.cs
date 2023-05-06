@@ -14,6 +14,6 @@ public static class CustomNodes {
         AdditionalInfo =       SimpleTweaksNodeBase + 11,
         CraftingGhostBar =     SimpleTweaksNodeBase + 12,
         CraftingGhostText =    SimpleTweaksNodeBase + 13,
-        TargetCastBarTimer =   SimpleTweaksNodeBase + 0x334,
+        //TargetCastBarTimer =   SimpleTweaksNodeBase + 0x334,
         SimpleTweaksNodeBase = 0x53540000;
 }
