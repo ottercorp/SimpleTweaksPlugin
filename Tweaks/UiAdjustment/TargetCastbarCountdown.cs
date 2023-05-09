@@ -191,7 +191,7 @@ public unsafe class TargetCastbarCountdown : UiAdjustments.SubTweak
         textNode->BackgroundColor = backgroundColor;
         textNode->LineSpacing = 20;
         textNode->AlignmentFontType = 37;
-        textNode->FontSize = 20;
+        textNode->FontSize = 16;
         textNode->TextFlags = 8;
         
         textNode->AtkResNode.SetWidth(80);
