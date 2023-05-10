@@ -68,10 +68,6 @@ public unsafe class ImprovedDutyFinderSettings : UiAdjustments.SubTweak {
         DutyFinderSetting.ExplorerMode,
         DutyFinderSetting.LimitedLevelingRoulette,
         DutyFinderSetting.LootRule,
-        DutyFinderSetting.Ja,
-        DutyFinderSetting.En,
-        DutyFinderSetting.De,
-        DutyFinderSetting.Fr,
     };
 
     // values are matching the index in the array passed to setContentsFinderSettings
@@ -112,10 +108,6 @@ public unsafe class ImprovedDutyFinderSettings : UiAdjustments.SubTweak {
     private static byte GetCurrentSettingValue(DutyFinderSetting dutyFinderSetting) {
         var contentsFinder = UIState.Instance()->ContentsFinder;
         return dutyFinderSetting switch {
-            DutyFinderSetting.Ja => (byte)GameConfig.UiConfig.GetUInt("ContentsFinderUseLangTypeJA"),
-            DutyFinderSetting.En => (byte)GameConfig.UiConfig.GetUInt("ContentsFinderUseLangTypeEN"),
-            DutyFinderSetting.De => (byte)GameConfig.UiConfig.GetUInt("ContentsFinderUseLangTypeDE"),
-            DutyFinderSetting.Fr => (byte)GameConfig.UiConfig.GetUInt("ContentsFinderUseLangTypeFR"),
             DutyFinderSetting.LootRule => (byte)contentsFinder.LootRules,
             DutyFinderSetting.JoinPartyInProgress => (byte)GameConfig.UiConfig.GetUInt("ContentsFinderSupplyEnable"),
             DutyFinderSetting.UnrestrictedParty => *(byte*)&contentsFinder.IsUnrestrictedParty,
@@ -131,10 +123,6 @@ public unsafe class ImprovedDutyFinderSettings : UiAdjustments.SubTweak {
     private static string GetTooltip(DutyFinderSetting dutyFinderSetting, LootRule lootRule = LootRule.Normal) {
         var addonSheet = Service.Data.Excel.GetSheet<Addon>();
         return dutyFinderSetting switch {
-            DutyFinderSetting.Ja => addonSheet?.GetRow(10)?.Text.ToDalamudString().ToString() ?? "Japanese",
-            DutyFinderSetting.En => addonSheet?.GetRow(11)?.Text?.ToDalamudString().ToString() ?? "English",
-            DutyFinderSetting.De => addonSheet?.GetRow(12)?.Text?.ToDalamudString().ToString() ?? "German",
-            DutyFinderSetting.Fr => addonSheet?.GetRow(13)?.Text?.ToDalamudString().ToString() ?? "French",
             DutyFinderSetting.LootRule => lootRule switch
             {
                 LootRule.Normal => addonSheet?.GetRow(10022)?.Text?.ToDalamudString().ToString() ?? "Loot Rule: Normal",
@@ -347,7 +335,7 @@ public unsafe class ImprovedDutyFinderSettings : UiAdjustments.SubTweak {
                 }
 
                 var nextLetter = japaneseLetter;
-                const int nbLanguages = 4;
+                const int nbLanguages = 0;
                 for (var i = nbButtons; i < nbButtons + nbLanguages; i++) {
                     var setting = this.dutyFinderSettingOrder[i];
                     ImGui.SameLine((languageHeader->X + nextLetter->X - buttonsHeader->X) * windowScale);
@@ -370,17 +358,6 @@ public unsafe class ImprovedDutyFinderSettings : UiAdjustments.SubTweak {
         // block setting change if queued for a duty
         if (Service.Condition[ConditionFlag.BoundToDuty97]) {
             return;
-        }
-
-        // always need at least one language enabled
-        if (setting is DutyFinderSetting.Ja or DutyFinderSetting.En or DutyFinderSetting.De or DutyFinderSetting.Fr) {
-            var nbEnabledLanguages = GetCurrentSettingValue(DutyFinderSetting.Ja)
-                                        + GetCurrentSettingValue(DutyFinderSetting.En)
-                                        + GetCurrentSettingValue(DutyFinderSetting.De)
-                                        + GetCurrentSettingValue(DutyFinderSetting.Fr);
-            if (nbEnabledLanguages == 1 && GetCurrentSettingValue(setting) == 1) {
-                return;
-            }
         }
 
         var array = GetCurrentSettingArray();
@@ -412,7 +389,7 @@ public unsafe class ImprovedDutyFinderSettings : UiAdjustments.SubTweak {
     private static byte[] GetCurrentSettingArray() {
         var array = new byte[27];
         var nbSettings = Enum.GetValues<DutyFinderSetting>().Length;
-        for (var i = 0; i < nbSettings; i++) {
+        for (var i = 4; i < nbSettings; i++) {
             array[i] = GetCurrentSettingValue((DutyFinderSetting)i);
             array[i + nbSettings] = GetCurrentSettingValue((DutyFinderSetting)i); // prev value to print in chat when changed
         }
@@ -431,15 +408,6 @@ public unsafe class ImprovedDutyFinderSettings : UiAdjustments.SubTweak {
                 isArrayValid = false;
                 SimpleLog.Error($"Invalid setting value ({array[index]}) for: {(DutyFinderSetting)(index % nbSettings)}");
             }
-        }
-
-        // duty server would reject any request without language set
-        if (array[(int)DutyFinderSetting.Ja] == 0
-                && array[(int)DutyFinderSetting.En] == 0
-                && array[(int)DutyFinderSetting.De] == 0
-                && array[(int)DutyFinderSetting.Fr] == 0) {
-            isArrayValid = false;
-            SimpleLog.Error("No language selected, this is impossible.");
         }
 
         return isArrayValid;
