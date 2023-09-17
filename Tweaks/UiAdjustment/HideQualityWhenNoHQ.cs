@@ -11,10 +11,11 @@ public unsafe class HideQualityWhenNoHQ : UiAdjustments.SubTweak {
 
     public override void Setup() {
         AddChangelogNewTweak("1.8.4.0");
+        AddChangelog("1.8.9.0", "Show quality bar for expert recipes.");
         base.Setup();
     }
-    
-    public override void Enable() {
+
+    protected override void Enable() {
         Common.AddonSetup += CommonOnAddonSetup;
         base.Enable();
     }
@@ -24,13 +25,13 @@ public unsafe class HideQualityWhenNoHQ : UiAdjustments.SubTweak {
         var agent = AgentRecipeNote.Instance();
         var recipe = Service.Data.GetExcelSheet<Recipe>()?.GetRow(agent->ActiveCraftRecipeId);
         if (recipe == null) return;
-        if (recipe.CanHq) return;
+        if (recipe.CanHq || recipe.IsExpert) return;
         var qualityNode = obj.Addon->GetNodeById(58);
         if (qualityNode == null) return;
         qualityNode->ToggleVisibility(false);
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         Common.AddonSetup -= CommonOnAddonSetup;
 
         // Immediately reshow

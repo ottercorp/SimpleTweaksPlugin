@@ -73,7 +73,7 @@ public class MateriaStats : TooltipTweaks.SubTweak {
     private ExcelSheet<ExtendedBaseParam> bpSheet;
     private ExcelSheet<Materia> materiaSheet;
 
-    public override void Enable() {
+    protected override void Enable() {
         itemSheet = Service.Data.Excel.GetSheet<ExtendedItem>();
         itemLevelSheet = Service.Data.Excel.GetSheet<ExtendedItemLevel>();
         bpSheet = Service.Data.Excel.GetSheet<ExtendedBaseParam>();
@@ -83,7 +83,7 @@ public class MateriaStats : TooltipTweaks.SubTweak {
         base.Enable();
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         SaveConfig(Config);
         base.Disable();
     }
@@ -106,7 +106,7 @@ public class MateriaStats : TooltipTweaks.SubTweak {
                 baseParamDeltas.Add(bp.BaseParam.Row, 0);
                 baseParamOriginal.Add(bp.BaseParam.Row, bp.Value);
                 if (bp.BaseParam.Value != null) {
-                    baseParamLimits.Add(bp.BaseParam.Row, (int)Math.Round(itemLevel.BaseParam[bp.BaseParam.Row] * (bp.BaseParam.Value.EquipSlotCategoryPct[item.EquipSlotCategory.Row] / 1000f)));
+                    baseParamLimits.Add(bp.BaseParam.Row, (int)Math.Round(itemLevel.BaseParam[bp.BaseParam.Row] * (bp.BaseParam.Value.EquipSlotCategoryPct[item.EquipSlotCategory.Row] / 1000f), MidpointRounding.AwayFromZero));
                     baseParams.Add(bp.BaseParam.Row, bp.BaseParam.Value);
                 }
             }
@@ -137,7 +137,7 @@ public class MateriaStats : TooltipTweaks.SubTweak {
                     baseParams.Add(materia.BaseParam.Row, bp);
                     baseParamDeltas.Add(materia.BaseParam.Row, materia.Value[*level]);
                     baseParamOriginal.Add(materia.BaseParam.Row, 0);
-                    baseParamLimits.Add(materia.BaseParam.Row, (int) Math.Round(itemLevel.BaseParam[materia.BaseParam.Row] * (bp.EquipSlotCategoryPct[item.EquipSlotCategory.Row] / 1000f)));
+                    baseParamLimits.Add(materia.BaseParam.Row, (int) Math.Round(itemLevel.BaseParam[materia.BaseParam.Row] * (bp.EquipSlotCategoryPct[item.EquipSlotCategory.Row] / 1000f), MidpointRounding.AwayFromZero));
                     continue;
                 }
                 baseParamDeltas[materia.BaseParam.Row] += materia.Value[*level];

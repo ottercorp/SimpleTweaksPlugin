@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using Dalamud.Game;
+using Dalamud.Game.Config;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Utility;
@@ -34,7 +36,7 @@ public unsafe class ImprovedFontSizes : ChatTweaks.SubTweak {
 
     public Configs Config { get; private set; }
 
-    private readonly int[] originalFontSize = new int[4] { 12, 12, 12, 12 };
+    private readonly uint[] originalFontSize = new uint[4] { 12, 12, 12, 12 };
 
     private void RefreshFontSizes(bool restoreOriginal = false) {
         try {
@@ -44,29 +46,23 @@ public unsafe class ImprovedFontSizes : ChatTweaks.SubTweak {
 
             for (var i = 0; i < 4; i++) {
                 var configOption = i switch {
-                    1 => ConfigOption.LogFontSizeLog2,
-                    2 => ConfigOption.LogFontSizeLog3,
-                    3 => ConfigOption.LogFontSizeLog4,
-                    _ => ConfigOption.LogFontSize,
+                    1 => UiConfigOption.LogFontSizeLog2,
+                    2 => UiConfigOption.LogFontSizeLog3,
+                    3 => UiConfigOption.LogFontSizeLog4,
+                    _ => UiConfigOption.LogFontSize,
                 };
-
-                var optionIndex = c->GetIndex(configOption);
-                if (optionIndex != null) {
-                    // Force game to refresh the fonts
-                    int v;
-                    if (restoreOriginal) {
-                        v = originalFontSize[i];
-                    } else {
-                        v = c->GetIntValue(configOption);
+                uint v;
+                if (restoreOriginal) {
+                    v = originalFontSize[i];
+                } else {
+                    if (Service.GameConfig.TryGet(configOption, out v)) {
                         v++;
                         if (v > 36) v = 12;
                     }
-
-                    Common.SendEvent(a, 0, 18, optionIndex, v, 0);
                 }
+                
+                Service.GameConfig.Set(configOption, v);
             }
-
-            Common.SendEvent(a, 0, 0);
         } finally {
             showLogMessageHook?.Disable();
         }
@@ -108,21 +104,22 @@ public unsafe class ImprovedFontSizes : ChatTweaks.SubTweak {
             ImGui.EndTable();
         }
     };
-    
-    public override void Enable() {
+
+    protected override void Enable() {
         Config = LoadConfig<Configs>() ?? new Configs();
 
         for (var i = 0; i < 4; i++) {
             var configOption = i switch {
-                1 => ConfigOption.LogFontSizeLog2,
-                2 => ConfigOption.LogFontSizeLog3,
-                3 => ConfigOption.LogFontSizeLog4,
-                _ => ConfigOption.LogFontSize,
+                1 => UiConfigOption.LogFontSizeLog2,
+                2 => UiConfigOption.LogFontSizeLog3,
+                3 => UiConfigOption.LogFontSizeLog4,
+                _ => UiConfigOption.LogFontSize,
             };
-            originalFontSize[i] = ConfigModule.Instance()->GetIntValue(configOption);
+            if (Service.GameConfig.TryGet(configOption, out originalFontSize[i])) continue;
+            Plugin.Error(this, new Exception("Failed to load config values."));
+            return;
         }
-
-
+        
         setFontSizeHook = Common.Hook<SetFontSizeDelegate>("40 53 48 83 EC 30 48 8B D9 88 51 48", SetFontSizeDetour);
         setFontSizeHook?.Enable();
 
@@ -162,6 +159,7 @@ public unsafe class ImprovedFontSizes : ChatTweaks.SubTweak {
             if (tnc == null) continue;
 
             if (toggle) {
+                TooltipManager.RemoveTooltip(unitBase, &tnc->AtkResNode);
                 tnc->SetText(txt.RawData);
             } else {
                 var str = txt.ToDalamudString().Append(new List<Payload>() {
@@ -169,8 +167,10 @@ public unsafe class ImprovedFontSizes : ChatTweaks.SubTweak {
                     new TextPayload(" (Managed by Simple Tweaks)"),
                     new UIForegroundPayload(0)
                 });
+                TooltipManager.AddTooltip(unitBase, &tnc->AtkResNode, $"Setting managed by Simple Tweak:\n  - {LocalizedName}");
                 tnc->SetText(str.Encode());
             }
+            tnc->ResizeNodeForCurrentText();
             
             ddc->SetEnabledState(toggle);
         }
@@ -202,7 +202,7 @@ public unsafe class ImprovedFontSizes : ChatTweaks.SubTweak {
         setFontSizeHook.Original(chatLogPanelWithOffset, fontSize);
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         setFontSizeHook?.Disable();
         showLogMessageHook?.Disable();
         Common.AddonSetup -= OnAddonSetup;

@@ -36,18 +36,16 @@ public unsafe partial class StickyChat : ChatTweaks.SubTweak
     {
         if (Ready) return;
         AddChangelogNewTweak("1.8.2.0");
-
-        SignatureHelper.Initialise(this);
         Ready = true;
     }
 
-    public override void Enable()
+    protected override void Enable()
     {
         processChatInputHook?.Enable();
         base.Enable();
     }
 
-    public override void Disable()
+    protected override void Disable()
     {
         processChatInputHook?.Disable();
         base.Disable();

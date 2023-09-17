@@ -21,13 +21,13 @@ public unsafe class TrackGachaItems : TooltipTweaks.SubTweak {
         /* Mythril Triad Card  */ [13380] = new uint[]{ 9843, 14193, 13368, 9810, 9823, 9841, 13372, 9844, 13367 },
         /* Imperial Triad Card */ [17702] = new uint[]{ 17686, 16775, 17681, 17682, 16774, 13378 },
         /* Dream Triad Card    */ [28652] = new uint[]{ 28661, 26767, 28657, 28653, 28655, 26772, 28658, 28660, 26765, 26768, 26766 },
+        /* Platinum Triad Card */ [10077] = new uint[] { 9830, 9842, 9840, 14208, 15872, 9828, 9851, 9831, 9834, 9826, 9822, 9848 },
         
-        
-        /* Materiel Container 3.0 */ [36635] = new uint[] { 9350, 12051, 6187, 15441, 6175, 7564, 6186, 6203, 6177, 14099, 17525, 15440, 14098, 6003, 12055, 6199, 6205,
+        /* Materiel Container 3.0 */ [36635] = new uint[] { 9350, 12051, 6187, 15441, 6175, 7564, 6186, 6203, 6177, 17525, 15440, 14098, 6003, 12055, 6199, 6205,
                                                             16570, 16568, 6189, 15447, 8193, 9347, 14103, 12054, 8194, 12061, 6191, 12069, 13279, 6179, 12058, 13283,
                                                             12056, 9348, 7568, 6004, 8196, 8201, 7566, 10071, 6204, 6173, 14100, 9349, 8200, 8205, 16564, 8202, 12052,
                                                             12057, 13275, 7559, 6192, 16572, 6208, 6195, 12062, 7567, 6188, 6174, 8199, 6185, 8195, 12053, 12049, 6005,
-                                                            6213, 6200, 6190, 16573, 17527, 14093, 13284, 13276, 14095, 6214, 15436, 15437, 14094, 6184, 14083 },
+                                                            6213, 6200, 6190, 16573, 17527, 14093, 13284, 13276, 14095, 6214, 15436, 15437, 14094, 6184, 14083, 6183, 6198, 8192, },
         
         /* Materiel Container 4.0 */ [36636] = new uint[] { 24902, 21921, 21063, 20529, 20530, 21920, 24002, 20524, 24635, 23027, 24001, 23023, 20533, 24219, 24630, 21052,
                                                             20542, 24903, 20538, 21064, 20541, 21058, 20536, 23032, 23998, 20525, 21916, 20531, 21193, 23989, 24634, 21059,
@@ -44,10 +44,11 @@ public unsafe class TrackGachaItems : TooltipTweaks.SubTweak {
 
     public override void Setup() {
         AddChangelogNewTweak("1.8.3.0");
+        AddChangelog("1.8.7.3", "Added 'Platinum Triad Card'");
         base.Setup();
     }
 
-    public override void Enable() {
+    protected override void Enable() {
         this._isItemActionUnlockedHookWrapper ??=
             Common.Hook<IsItemActionUnlocked>(UIState.Addresses.IsItemActionUnlocked.Value, this.IsItemActionUnlockedDetour);
         this._isItemActionUnlockedHookWrapper?.Enable();
@@ -137,7 +138,7 @@ public unsafe class TrackGachaItems : TooltipTweaks.SubTweak {
         return _isItemActionUnlockedHookWrapper.Original(uiState, item);
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         _isItemActionUnlockedHookWrapper?.Disable();
         PluginInterface.RemoveChatLinkHandler((uint) LinkHandlerId.TrackGachaItemsIdentifier);
         base.Disable();

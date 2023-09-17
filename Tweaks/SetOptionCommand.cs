@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using Dalamud.Game.Config;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using ImGuiNET;
@@ -27,6 +28,7 @@ public unsafe class SetOptionCommand : CommandTweak {
         AddChangelog("1.8.4.0", "Re-added accidentally remove gamepad mode option");
         AddChangelog("1.8.4.0", "Added 'LimitMouseToGameWindow' and 'CharacterDisplayLimit'");
         AddChangelog("1.8.4.0", "Fixed 'DisplayNameSize' using incorrect values");
+        AddChangelog("1.8.9.1", "Fixed toggle options not working.");
         base.Setup();
     }
 
@@ -206,9 +208,9 @@ public unsafe class SetOptionCommand : CommandTweak {
         }
 
         var optionSection = optionDefinition.OptionGroup switch {
-            OptionGroup.System => GameConfig.System,
-            OptionGroup.UiConfig => GameConfig.UiConfig,
-            OptionGroup.UiControl => GameConfig.UiControl,
+            OptionGroup.System => Service.GameConfig.System,
+            OptionGroup.UiConfig => Service.GameConfig.UiConfig,
+            OptionGroup.UiControl => Service.GameConfig.UiControl,
             _ => throw new ArgumentOutOfRangeException()
         };
         
@@ -219,8 +221,7 @@ public unsafe class SetOptionCommand : CommandTweak {
 
             switch (optionDefinition) {
                 case OptionDefinition<uint> i: {
-                    var optionDetail = optionSection[optionDefinition.ID];
-                    if (optionDetail == null) {
+                    if (!optionSection.TryGetProperties(optionDefinition.ID, out UIntConfigProperties properties) || properties == null) {
                         Plugin.Error(this, new Exception($"Failed to get option detail for {optionDefinition.Name}"), allowContinue: true);
                         return;
                     }
@@ -228,8 +229,8 @@ public unsafe class SetOptionCommand : CommandTweak {
                     var toggleValue = optionSection.GetUInt(optionDefinition.ID);
                     toggleValue += 1;
 
-                    if (toggleValue > optionDetail.Entry->Properties.UInt.MaxValue) {
-                        toggleValue = optionDetail.Entry->Properties.UInt.MinValue;
+                    if (toggleValue > properties.Maximum) {
+                        toggleValue = properties.Minimum;
                     }
 
                     optionSection.Set(optionDefinition.ID, toggleValue);

@@ -27,12 +27,16 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
     public List<string> CustomProviders = new List<string>();
     public List<string> BlacklistedTweaks = new List<string>();
 
+    public Dictionary<string, string> CustomizedCommands = new();
+    public Dictionary<string, List<string>> DisabledCommandAlias = new();
+
     public bool HideKofi;
     public bool ShowExperimentalTweaks;
     public bool DisableAutoOpen;
     public bool ShowInDevMenu;
     public bool NoFools;
     public bool NotBaby;
+    public bool AnalyticsOptOut;
 
     public bool ShowTweakDescriptions = true;
     public bool ShowTweakIDs;
@@ -85,13 +89,14 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
 
     private string addCustomProviderInput = string.Empty;
 
+    private Vector2 checkboxSize = new(16);
     private void DrawTweakConfig(BaseTweak t, ref bool hasChange) {
         var enabled = t.Enabled;
         if (t.Experimental && !ShowExperimentalTweaks && !enabled) return;
 
         if (t is IDisabledTweak || (!enabled && ImGui.GetIO().KeyShift) || t.TweakManager is {Enabled: false}) {
             if (HiddenTweaks.Contains(t.Key)) {
-                if (ImGui.Button($"S##unhideTweak_{t.Key}", new Vector2(23) * ImGui.GetIO().FontGlobalScale)) {
+                if (ImGui.Button($"S##unhideTweak_{t.Key}", checkboxSize)) {
                     HiddenTweaks.Remove(t.Key);
                     Save();
                 }
@@ -99,7 +104,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                     ImGui.SetTooltip(Loc.Localize("Unhide Tweak", "Unhide Tweak"));
                 }
             } else {
-                if (ImGui.Button($"H##hideTweak_{t.Key}", new Vector2(23) * ImGui.GetIO().FontGlobalScale)) {
+                if (ImGui.Button($"H##hideTweak_{t.Key}", checkboxSize)) {
                     HiddenTweaks.Add(t.Key);
                     Save();
                 }
@@ -112,7 +117,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
             if (enabled) {
                 SimpleLog.Debug($"Enable: {t.Name}");
                 try {
-                    t.Enable();
+                    t.InternalEnable();
                     if (t.Enabled) {
                         EnabledTweaks.Add(t.Key);
                     }
@@ -122,7 +127,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
             } else {
                 SimpleLog.Debug($"Disable: {t.Name}");
                 try {
-                    t.Disable();
+                    t.InternalDisable();
                 } catch (Exception ex) {
                     plugin.Error(t, ex, true, $"Error in Disable for '{t.Name}'");
                 }
@@ -130,6 +135,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
             }
             Save();
         }
+        checkboxSize = ImGui.GetItemRectSize();
         ImGui.SameLine();
         var descriptionX = ImGui.GetCursorPosX();
         if (!t.DrawConfig(ref hasChange)) {
@@ -284,6 +290,13 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                 if (ImGui.BeginTabItem(Loc.Localize("General Options / TabHeader", "General Options") + $"###generalOptionsTab")) {
                     ImGui.BeginChild($"generalOptions-scroll", new Vector2(-1, -1));
 
+                    if (ImGui.Checkbox(Loc.Localize("General Options / Analytics Opt Out", "Opt out of analytics"), ref AnalyticsOptOut)) Save();
+                    ImGui.Indent();
+                    ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetColorU32(ImGuiCol.TextDisabled));
+                    ImGui.TextWrapped("Note: The current version of simple tweaks does not collect any analytics regardless of this setting. This is here to preemptively opt out of any future analytics that may or may not be added to the plugin. All information that may be collected will be anonymous, but may include information such as the list of enabled tweaks and a subset of configured options within those tweaks.");
+                    ImGui.PopStyleColor();
+                    ImGui.Unindent();
+                    ImGui.Separator();
                     if (ImGui.Checkbox(Loc.Localize("General Options / Show Experimental Tweaks", "Show Experimental Tweaks."), ref ShowExperimentalTweaks)) Save();
                     ImGui.Separator();
                     if (ImGui.Checkbox(Loc.Localize("General Options / Show Tweak Descriptions","Show tweak descriptions."), ref ShowTweakDescriptions)) Save();
@@ -418,7 +431,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                             if (enabled) {
                                 SimpleLog.Debug($"Enable: {t.Name}");
                                 try {
-                                    t.Enable();
+                                    t.InternalEnable();
                                     if (t.Enabled) {
                                         EnabledTweaks.Add(t.GetType().Name);
                                     }
@@ -428,7 +441,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                             } else {
                                 SimpleLog.Debug($"Disable: {t.Name}");
                                 try {
-                                    t.Disable();
+                                    t.InternalDisable();
                                 } catch (Exception ex) {
                                     plugin.Error(t, ex, true, $"Error in Disable for '{t.Name}'");
                                 }

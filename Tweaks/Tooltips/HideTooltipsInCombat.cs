@@ -48,12 +48,12 @@ public unsafe class HideTooltipsInCombat : TooltipTweaks.SubTweak {
     }
 
     public override void Setup() {
-        AddChangelog("1.8.7.3", "Added support for crossbar hints.");
+        AddChangelog("1.8.7.1", "Added support for crossbar hints.");
         AddChangelog("1.8.6.1", "Improved logic to attempt to reduce settings getting stuck in incorrect state.");
         base.Setup();
     }
 
-    public override void Enable() {
+    protected override void Enable() {
         Config = LoadConfig<Configs>() ?? new Configs();
         Common.AddonSetup += OnAddonSetup;
         Service.ClientState.Login += OnLogin;
@@ -65,15 +65,15 @@ public unsafe class HideTooltipsInCombat : TooltipTweaks.SubTweak {
     }
 
     private void OnLogin(object sender = null, EventArgs e = null) {
-        OriginalAction = GameConfig.UiControl.GetBool("ActionDetailDisp");
-        OriginalItem = GameConfig.UiControl.GetBool("ItemDetailDisp");
-        OriginalPopUp = GameConfig.UiControl.GetBool("ToolTipDisp");
-        OriginalCrossbarHints = GameConfig.UiConfig.GetBool("HotbarCrossHelpDisp");
+        OriginalAction = Service.GameConfig.UiControl.GetBool("ActionDetailDisp");
+        OriginalItem = Service.GameConfig.UiControl.GetBool("ItemDetailDisp");
+        OriginalPopUp = Service.GameConfig.UiControl.GetBool("ToolTipDisp");
+        OriginalCrossbarHints = Service.GameConfig.UiConfig.GetBool("HotbarCrossHelpDisp");
         Service.Condition.ConditionChange += OnConditionChange;
         OnConditionChange(ConditionFlag.InCombat, Service.Condition[ConditionFlag.InCombat]);
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         SaveConfig(Config);
         Service.Condition.ConditionChange -= OnConditionChange;
         if (Service.ClientState.LocalContentId != 0) OnConditionChange(ConditionFlag.InCombat, false);
@@ -86,9 +86,9 @@ public unsafe class HideTooltipsInCombat : TooltipTweaks.SubTweak {
     }
 
     private void SetVisible(string name, bool visible, bool uiConfig = false) {
-        if ((uiConfig ? GameConfig.UiConfig : GameConfig.UiControl).TryGetBool(name, out var isVisible)) {
+        if ((uiConfig ? Service.GameConfig.UiConfig : Service.GameConfig.UiControl).TryGetBool(name, out var isVisible)) {
             if (isVisible != visible) {
-                (uiConfig ? GameConfig.UiConfig : GameConfig.UiControl).Set(name, visible);
+                (uiConfig ? Service.GameConfig.UiConfig : Service.GameConfig.UiControl).Set(name, visible);
             }
         }
     }
@@ -121,11 +121,15 @@ public unsafe class HideTooltipsInCombat : TooltipTweaks.SubTweak {
 
         var seString = text.Text.ToDalamudString();
         if (!allowEditing) {
+            TooltipManager.AddTooltip(addon, &textNode->AtkResNode, $"Setting managed by Simple Tweak:\n  - {LocalizedName}");
             seString.Append(new UIForegroundPayload(500));
             seString.Append(" (Managed by Simple Tweaks)");
             seString.Append(new UIForegroundPayload(0));
+        } else {
+            TooltipManager.RemoveTooltip(addon, &textNode->AtkResNode);
         }
         textNode->NodeText.SetString(seString.Encode());
+        textNode->ResizeNodeForCurrentText();
     }
     
     private unsafe void ToggleXhbConfigLock(AtkUnitBase* addon, bool allowEditing) {

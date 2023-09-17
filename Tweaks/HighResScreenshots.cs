@@ -7,6 +7,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using ImGuiNET;
 using SimpleTweaksPlugin.Debugging;
 using SimpleTweaksPlugin.TweakSystem;
@@ -93,10 +94,16 @@ public unsafe class HighResScreenshots : Tweak {
             hasChanged |= ImGui.Checkbox("Remove copyright text", ref Config.RemoveCopyright);
         }
 
-        if (ImGui.Checkbox("[Experimental] Use ReShade to take screenshot", ref Config.UseReShade)) {
-            hasChanged = true;
-            DisableReShade();
-            if (Config.UseReShade) TryEnableReShade();
+        if (Config.UseReShade || PluginConfig.ShowExperimentalTweaks) {
+            ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
+            if (ImGui.Checkbox("[Experimental]##Use ReShade to take screenshot", ref Config.UseReShade)) {
+                hasChanged = true;
+                DisableReShade();
+                if (Config.UseReShade) TryEnableReShade();
+            }
+            ImGui.PopStyleColor();
+            ImGui.SameLine();
+            ImGui.Text($"Use ReShade to take screenshot");
         }
 
         if (Config.UseReShade) {
@@ -104,6 +111,7 @@ public unsafe class HighResScreenshots : Tweak {
             ImGui.Indent();
             if (reShadeKeyTestHook == null) {
                 ImGui.TextColored(ImGuiColors.DalamudRed, "Failed to hook ReShade.");
+                ImGui.TextDisabled("\tThere is no way to fix this. If it doesn't work it doesn't work.");
             } else {
                 ImGui.TextWrapped("Take a screenshot using your FFXIV screenshot keybind.\nReShade will be used to take the screenshot instead.");
                 ImGui.Spacing();
@@ -135,7 +143,7 @@ public unsafe class HighResScreenshots : Tweak {
         base.Setup();
     }
 
-    public override void Enable() {
+    protected override void Enable() {
         Config = LoadConfig<Configs>() ?? new Configs();
 
         if (!Service.SigScanner.TryScanText("49 8B 57 30 45 33 C9", out copyrightShaderAddress)) {
@@ -190,8 +198,8 @@ public unsafe class HighResScreenshots : Tweak {
                 UIDebug.FreeExclusiveDraw();
                 if (Config.HideGameUi) {
                     var raptureAtkModule = Framework.Instance()->GetUiModule()->GetRaptureAtkModule();
-                    if (originalUiVisibility && !raptureAtkModule->IsUiVisible) {
-                        raptureAtkModule->IsUiVisible = true;
+                    if (originalUiVisibility && raptureAtkModule->RaptureAtkUnitManager.Flags.HasFlag(RaptureAtkModuleFlags.UiHidden)) {
+                        raptureAtkModule->SetUiVisibility(true);
                     }
                 }
 
@@ -239,9 +247,9 @@ public unsafe class HighResScreenshots : Tweak {
 
             if (Config.HideGameUi) {
                 var raptureAtkModule = Framework.Instance()->GetUiModule()->GetRaptureAtkModule();
-                originalUiVisibility = raptureAtkModule->IsUiVisible;
+                originalUiVisibility = !raptureAtkModule->RaptureAtkUnitManager.Flags.HasFlag(RaptureAtkModuleFlags.UiHidden);
                 if (originalUiVisibility) {
-                    raptureAtkModule->IsUiVisible = false;
+                    raptureAtkModule->SetUiVisibility(false);
                 }
             }
             
@@ -265,8 +273,8 @@ public unsafe class HighResScreenshots : Tweak {
                 UIDebug.FreeExclusiveDraw();
                 if (Config.HideGameUi) {
                     var raptureAtkModule = Framework.Instance()->GetUiModule()->GetRaptureAtkModule();
-                    if (originalUiVisibility && !raptureAtkModule->IsUiVisible) {
-                        raptureAtkModule->IsUiVisible = true;
+                    if (originalUiVisibility && raptureAtkModule->RaptureAtkUnitManager.Flags.HasFlag(RaptureAtkModuleFlags.UiHidden)) {
+                        raptureAtkModule->SetUiVisibility(true);
                     }
                 }
 
@@ -302,8 +310,8 @@ public unsafe class HighResScreenshots : Tweak {
         MemoryHelper.ChangePermission(address, data.Length, oldProtection);
         return originalBytes;
     }
-    
-    public override void Disable() {
+
+    protected override void Disable() {
         UIDebug.FreeExclusiveDraw();
         SaveConfig(Config);
         isInputIDClickedHook?.Disable();

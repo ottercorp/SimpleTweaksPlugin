@@ -64,14 +64,14 @@ public abstract class SubTweakManager<T> : SubTweakManager where T : BaseTweak {
         }
     }
 
-    public override void Enable() {
+    protected override void Enable() {
         if (!Ready) return;
         foreach (var t in SubTweaks) {
             if (t is IDisabledTweak) continue;
             if (PluginConfig.EnabledTweaks.Contains(GetTweakKey(t as T))) {
                 try {
                     SimpleLog.Log($"Enable: {t.Name} @ {Name}");
-                    t.Enable();
+                    t.InternalEnable();
                 } catch (Exception ex) {
                     Plugin.Error(this, t, ex, true, $"Error in Enable for '{t.Name}' @ '{this.Name}'");
                 }
@@ -80,11 +80,11 @@ public abstract class SubTweakManager<T> : SubTweakManager where T : BaseTweak {
         Enabled = true;
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         foreach (var t in SubTweaks.Where(t => t.Enabled)) {
             try {
                 SimpleLog.Log($"Disable: {t.Name} @ {Name}");
-                t.Disable();
+                t.InternalDisable();
             } catch (Exception ex) {
                 Plugin.Error(this, t, ex, true, $"Error in Disable for '{t.Name}' @ '{this.Name}'");
             }
@@ -98,7 +98,7 @@ public abstract class SubTweakManager<T> : SubTweakManager where T : BaseTweak {
             try {
                 if (t.Enabled) {
                     SimpleLog.Log($"Disable: {t.Name}");
-                    t.Disable();
+                    t.InternalDisable();
                 }
                 SimpleLog.Log($"Dispose: {t.Name}");
                 t.Dispose();

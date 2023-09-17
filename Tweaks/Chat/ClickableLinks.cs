@@ -12,7 +12,7 @@ class ClickableLinks : ChatTweaks.SubTweak {
     public override string Name => "Clickable Links in Chat";
     public override string Description => "Parses links posted in chat and allows them to be clicked.";
 
-    public override void Enable() {
+    protected override void Enable() {
         urlLinkPayload = PluginInterface.AddChatLinkHandler((uint) LinkHandlerId.OpenUrlLink, UrlLinkHandle);
         Service.Chat.ChatMessage += OnChatMessage;
         base.Enable();
@@ -24,7 +24,7 @@ class ClickableLinks : ChatTweaks.SubTweak {
         Common.OpenBrowser(url);
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         if (!Enabled) return;
         Service.Chat.ChatMessage -= OnChatMessage;
         PluginInterface.RemoveChatLinkHandler((uint) LinkHandlerId.OpenUrlLink);
@@ -37,9 +37,31 @@ class ClickableLinks : ChatTweaks.SubTweak {
 
 
     private DalamudLinkPayload urlLinkPayload;
+    
+    private static bool IsBattleType(XivChatType type) {
+        var channel = ((int)type & 0x7F);
+        switch (channel) {
+            case 41: // Damage
+            case 42: // Miss
+            case 43: // Action
+            case 44: // Item
+            case 45: // Healing
+            case 46: // GainBeneficialStatus
+            case 48: // LoseBeneficialStatus
+            case 47: // GainDetrimentalStatus
+            case 49: // LoseDetrimentalStatus
+            case 58: // BattleSystem
+                return true;
+            default:
+                return false;
+        }
+    }
 
-    // TODO: Ignore messages that realistically will never have links (Battle) 
     private void OnChatMessage(XivChatType type, uint senderid, ref SeString sender, ref SeString message, ref bool ishandled) {
+        if (IsBattleType(type)) {
+            return;   
+        }
+        
         var isModified = false;
         var payloads = new List<Payload>();
         var cLinkDepth = 0;

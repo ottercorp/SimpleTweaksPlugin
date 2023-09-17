@@ -103,21 +103,21 @@ public unsafe class Fools2023 : JokeTweaks.SubTweak {
             var o = (BattleChara*) GameObjectManager.GetGameObjectByIndex(i);
             if (o == null) continue;
             
-            if (statuses.Any(s => o->StatusManager.HasStatus(s))) continue;
+            if (statuses.Any(s => o->GetStatusManager->HasStatus(s))) continue;
 
             var r = RandomStatus(i >= 240);
             if (r == 0) continue;
-            o->StatusManager.AddStatus(r);
+            o->GetStatusManager->AddStatus(r);
         }
     }
 
-    public override void Enable() {
+    protected override void Enable() {
         Common.FrameworkUpdate += FrameworkUpdate;
         Config = LoadConfig<Configs>() ?? new Configs();
         base.Enable();
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         Common.FrameworkUpdate -= FrameworkUpdate;
         SaveConfig(Config);
 
@@ -128,8 +128,8 @@ public unsafe class Fools2023 : JokeTweaks.SubTweak {
                 var o = (BattleChara*)GameObjectManager.GetGameObjectByIndex(i);
                 if (o == null) continue;
                 foreach (var s in statuses) {
-                    if (o->StatusManager.HasStatus(s)) {
-                        o->StatusManager.RemoveStatus(s);
+                    if (o->GetStatusManager->HasStatus(s)) {
+                        o->GetStatusManager->RemoveStatus(s);
                     }
                 }
             }

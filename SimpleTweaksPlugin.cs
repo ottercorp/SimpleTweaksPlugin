@@ -5,8 +5,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Numerics;
 using System.Reflection;
+using System.Threading.Tasks;
 using Dalamud;
 using Dalamud.Game;
 using Dalamud.Interface.Internal.Notifications;
@@ -16,7 +19,6 @@ using SimpleTweaksPlugin.Debugging;
 using SimpleTweaksPlugin.Utility;
 #if DEBUG
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 #endif
 
 #pragma warning disable CS0659
@@ -79,6 +81,7 @@ namespace SimpleTweaksPlugin {
             }
             Common.HookList.Clear();
             Common.Shutdown();
+            TooltipManager.Destroy();
             SimpleEvent.Destroy();
         }
 
@@ -88,21 +91,49 @@ namespace SimpleTweaksPlugin {
             Plugin = this;
             pluginInterface.Create<Service>();
             
+            this.PluginConfig = (SimpleTweaksPluginConfig)Service.PluginInterface.GetPluginConfig() ?? new SimpleTweaksPluginConfig();
+            this.PluginConfig.Init(this);
+            
 #if DEBUG
             SimpleLog.SetupBuildPath();
             Task.Run(() => {
                 FFXIVClientStructs.Interop.Resolver.GetInstance.SetupSearchSpace(Service.SigScanner.SearchBase);
                 FFXIVClientStructs.Interop.Resolver.GetInstance.Resolve();
+                UpdateBlacklist();
                 Service.Framework.RunOnFrameworkThread(Initalize);
             });
 #else
-            Initalize();
+            Task.Run(() => {
+                UpdateBlacklist();
+                Service.Framework.RunOnFrameworkThread(Initalize);
+            });
 #endif
         }
 
+
+        private void UpdateBlacklist() {
+            try {
+                // Update Tweak Blacklist
+                var httpClient = Common.HttpClient;
+                var response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, "https://raw.githubusercontent.com/Caraxi/SimpleTweaksPlugin/main/tweakBlacklist.txt"));
+                if (response.StatusCode != HttpStatusCode.OK) return;
+                var asStringTask = response.Content.ReadAsStringAsync();
+                asStringTask.Wait();
+                if (!asStringTask.IsCompletedSuccessfully) return;
+                var blacklistedTweaksString = asStringTask.Result;
+                SimpleLog.Log("Tweak Blacklist:\n" + blacklistedTweaksString);
+                var blacklistedTweaks = new List<string>();
+                foreach (var l in blacklistedTweaksString.Split("\n")) {
+                    if (string.IsNullOrWhiteSpace(l)) continue;
+                    blacklistedTweaks.Add(l.Trim());
+                }
+                PluginConfig.BlacklistedTweaks = blacklistedTweaks;
+            } catch {
+                //
+            }
+        }
+        
         private void Initalize() {
-            this.PluginConfig = (SimpleTweaksPluginConfig)Service.PluginInterface.GetPluginConfig() ?? new SimpleTweaksPluginConfig();
-            this.PluginConfig.Init(this);
 
             IconManager = new IconManager();
 
@@ -124,26 +155,6 @@ namespace SimpleTweaksPlugin {
 
             SetupCommands();
 
-            try {
-                // Update Tweak Blacklist
-                //using var webClient = new System.Net.WebClient();
-                //var blacklistedTweaksString = webClient.DownloadString("https://raw.githubusercontent.com/Caraxi/SimpleTweaksPlugin/main/tweakBlacklist.txt");
-                using var s = Assembly.GetExecutingAssembly().GetManifestResourceStream($"SimpleTweaksPlugin.tweakBlacklist.txt");
-                if (s != null) {
-                    using var sr = new StreamReader(s);
-                    var blacklistedTweaksString = sr.ReadToEnd();
-                    SimpleLog.Log("Tweak Blacklist:\n" + blacklistedTweaksString);
-                    var blacklistedTweaks = new List<string>();
-                    foreach (var l in blacklistedTweaksString.Split("\n")) {
-                        if (string.IsNullOrWhiteSpace(l)) continue;
-                        blacklistedTweaks.Add(l.Trim());
-                    }
-                    PluginConfig.BlacklistedTweaks = blacklistedTweaks;
-                }
-            } catch {
-                //
-            }
-            
             var simpleTweakProvider = new TweakProvider(Assembly.GetExecutingAssembly());
             simpleTweakProvider.LoadTweaks();
             TweakProviders.Add(simpleTweakProvider);
@@ -222,13 +233,13 @@ namespace SimpleTweaksPlugin {
                             var tweak = GetTweakById(splitArgString[1]);
                             if (tweak != null) {
                                 if (tweak.Enabled) {
-                                    tweak.Disable();
+                                    tweak.InternalDisable();
                                     if (PluginConfig.EnabledTweaks.Contains(tweak.Key)) {
                                         PluginConfig.EnabledTweaks.Remove(tweak.Key);
                                     }
                                     Service.PluginInterface.UiBuilder.AddNotification($"Disabled {tweak.Name}", "Simple Tweaks", NotificationType.Info);
                                 } else {
-                                    tweak.Enable();
+                                    tweak.InternalEnable();
                                     if (!PluginConfig.EnabledTweaks.Contains(tweak.Key)) {
                                         PluginConfig.EnabledTweaks.Add(tweak.Key);
                                     }
@@ -250,7 +261,7 @@ namespace SimpleTweaksPlugin {
                             var tweak = GetTweakById(splitArgString[1]);
                             if (tweak != null) {
                                 if (!tweak.Enabled) {
-                                    tweak.Enable();
+                                    tweak.InternalEnable();
                                     if (!PluginConfig.EnabledTweaks.Contains(tweak.Key)) {
                                         PluginConfig.EnabledTweaks.Add(tweak.Key);
                                     }
@@ -272,7 +283,7 @@ namespace SimpleTweaksPlugin {
                             var tweak = GetTweakById(splitArgString[1]);
                             if (tweak != null) {
                                 if (tweak.Enabled) {
-                                    tweak.Disable();
+                                    tweak.InternalDisable();
                                     if (PluginConfig.EnabledTweaks.Contains(tweak.Key)) {
                                         PluginConfig.EnabledTweaks.Remove(tweak.Key);
                                     }
@@ -364,7 +375,7 @@ namespace SimpleTweaksPlugin {
             
             foreach (var e in ErrorList.Where(e => e.IsNew && e.Tweak != null)) {
                 e.IsNew = false;
-                e.Tweak.Disable();
+                e.Tweak.InternalDisable();
                 Service.PluginInterface.UiBuilder.AddNotification($"{e.Tweak.Name} has been disabled due to an error.", "Simple Tweaks", NotificationType.Error, 5000);
             }
 
@@ -453,13 +464,31 @@ namespace SimpleTweaksPlugin {
 
         internal readonly List<CaughtError> ErrorList = new List<CaughtError>();
 #if DEBUG
+        public void Error(Exception ex, string message = "", [CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0, [CallerMemberName] string callerMemberName = "") {
+            Error(null, ex, true, message, callerFilePath, callerLineNumber, callerMemberName);
+        }
+        
         public void Error(BaseTweak tweak, Exception exception, bool allowContinue = false, string message = "", [CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0, [CallerMemberName] string callerMemberName = "" ) {
-
-            SimpleLog.Error($"Exception in '{tweak.Name}'" + (string.IsNullOrEmpty(message) ? "" : ($": {message}")), callerFilePath, callerMemberName, callerLineNumber);
+            if (tweak != null) {
+                SimpleLog.Error($"Exception in '{tweak.Name}'" + (string.IsNullOrEmpty(message) ? "" : ($": {message}")), callerFilePath, callerMemberName, callerLineNumber);
+            } else {
+                SimpleLog.Error("Exception in SimpleTweaks framework. "+ (string.IsNullOrEmpty(message) ? "" : ($": {message}")), callerFilePath, callerMemberName, callerLineNumber);
+            }
             SimpleLog.Error($"{exception}", callerFilePath, callerMemberName, callerLineNumber);
 #else
+
+        public void Error(Exception ex, string message = "") {
+            Error(null, ex, true, message);
+        }
+
         public void Error(BaseTweak tweak, Exception exception, bool allowContinue = false, string message="") {
-            SimpleLog.Error($"Exception in '{tweak.Name}'" + (string.IsNullOrEmpty(message) ? "" : ($": {message}")));
+            if (tweak == null) {
+                SimpleLog.Error($"Exception in SimpleTweaks framework. " + (string.IsNullOrEmpty(message) ? "" : ($": {message}")));
+            } else {
+                SimpleLog.Error($"Exception in '{tweak.Name}'" + (string.IsNullOrEmpty(message) ? "" : ($": {message}")));
+            }
+            
+            
             SimpleLog.Error($"{exception}");
 #endif
             var err = new CaughtError {

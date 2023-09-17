@@ -42,8 +42,8 @@ public unsafe class CombatMovementControl : Tweak {
         ShowOption("Weapon Drawn", ref Config.WeaponDrawn);
         ShowOption("Weapon Sheathed", ref Config.WeaponSheathed);
     };
-    
-    public override void Enable() {
+
+    protected override void Enable() {
         Config = LoadConfig<Configs>() ?? new Configs();
         Service.Condition.ConditionChange += OnConditionChange;
         Common.FrameworkUpdate += OnFrameworkUpdate;
@@ -63,7 +63,7 @@ public unsafe class CombatMovementControl : Tweak {
             previousUnsheathedState = unsheathedState;
             var v = unsheathedState ? Config.WeaponDrawn : Config.WeaponSheathed;
             if (v == MoveModeType.Ignore) return;
-            GameConfig.UiControl.Set("MoveMode", (uint) v);
+            Service.GameConfig.UiControl.Set("MoveMode", (uint) v);
         }
     }
 
@@ -71,11 +71,11 @@ public unsafe class CombatMovementControl : Tweak {
         if (flag == ConditionFlag.InCombat) {
             var v = value ? Config.InCombat : Config.OutOfCombat;
             if (v == MoveModeType.Ignore) return;
-            GameConfig.UiControl.Set("MoveMode", (uint) v);
+            Service.GameConfig.UiControl.Set("MoveMode", (uint) v);
         }
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         Service.Condition.ConditionChange -= OnConditionChange;
         Common.FrameworkUpdate -= OnFrameworkUpdate;
         SaveConfig(Config);

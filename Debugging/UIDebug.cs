@@ -12,6 +12,7 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using FFXIVClientStructs.FFXIV.Component.GUI.ULD;
 using ImGuiNET;
 using ImGuiScene;
 using SimpleTweaksPlugin.Utility;
@@ -347,7 +348,7 @@ public unsafe class UIDebug : DebugHelper {
         ImGui.End();
     }
 
-    private List<AddonResult> GetAtkUnitBaseAtPosition(Vector2 position) {
+    private IEnumerable<AddonResult> GetAtkUnitBaseAtPosition(Vector2 position) {
         var list = new List<AddonResult>();
         var stage = AtkStage.GetSingleton();
         var unitManagers = &stage->RaptureAtkUnitManager->AtkUnitManager.DepthLayerOneList;
@@ -369,7 +370,8 @@ public unsafe class UIDebug : DebugHelper {
                 list.Add(addonResult);
             }
         }
-        return list;
+
+        return list.OrderBy(w => w.UnitBase->GetScaledWidth(true) * w.UnitBase->GetScaledHeight(true));
     }
 
     private class AddonResult {
@@ -687,7 +689,11 @@ public unsafe class UIDebug : DebugHelper {
                 }
             }
         }
-        var customNodeName = customNodeIds.ContainsKey(id) ? customNodeIds[id] : string.Empty;
+        
+        if (!CustomNodes.TryGet(id, out var customNodeName)) {
+            customNodeName = customNodeIds.ContainsKey(id) ? customNodeIds[id] : string.Empty;
+        }
+        
         return string.IsNullOrEmpty(customNodeName) ? (includeHashOnNoMatch ? $"#{id}" : $"{id}") : $"{customNodeName}#{id}";
     }
 
@@ -696,7 +702,7 @@ public unsafe class UIDebug : DebugHelper {
     private static void PrintSimpleNode(AtkResNode* node, string treePrefix, bool textOnly = false)
     {
         bool popped = false;
-        bool isVisible = (node->Flags & 0x10) == 0x10;
+        bool isVisible = node->IsVisible;
 
         if (isVisible && !textOnly)
             ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0, 255, 0, 255));
@@ -937,7 +943,7 @@ public unsafe class UIDebug : DebugHelper {
         if (objectInfo == null) return;
 
         bool popped = false;
-        bool isVisible = (node->Flags & 0x10) == 0x10;
+        bool isVisible = node->IsVisible;
 
         if (isVisible && !textOnly)
             ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0, 255, 0, 255));
@@ -979,8 +985,61 @@ public unsafe class UIDebug : DebugHelper {
                 case ComponentType.NumericInput: DebugManager.PrintOutObject(*(AtkComponentNumericInput*)compNode->Component, (ulong) compNode->Component, new List<string>()); break;
                 case ComponentType.List: DebugManager.PrintOutObject(*(AtkComponentList*)compNode->Component, (ulong) compNode->Component); break;
                 case ComponentType.TreeList: DebugManager.PrintOutObject(*(AtkComponentTreeList*)compNode->Component, (ulong) compNode->Component); break;
+                case ComponentType.DropDownList: DebugManager.PrintOutObject((AtkComponentDropDownList*)compNode->Component); break;
+                case ComponentType.ScrollBar:  DebugManager.PrintOutObject((AtkComponentScrollBar*)compNode->Component); break;
+                case ComponentType.ListItemRenderer:  DebugManager.PrintOutObject((AtkComponentListItemRenderer*)compNode->Component); break;
+                case ComponentType.IconText: DebugManager.PrintOutObject((AtkComponentIconText*)compNode->Component); break;
+                case ComponentType.DragDrop: DebugManager.PrintOutObject((AtkComponentDragDrop*)compNode->Component); break;
+                case ComponentType.GuildLeveCard: DebugManager.PrintOutObject((AtkComponentGuildLeveCard*)compNode->Component); break;
+                case ComponentType.TextNineGrid: DebugManager.PrintOutObject((AtkComponentTextNineGrid*)compNode->Component); break;
+                case ComponentType.JournalCanvas: DebugManager.PrintOutObject((AtkComponentJournalCanvas*)compNode->Component); break;
+                case ComponentType.HoldButton: DebugManager.PrintOutObject((AtkComponentHoldButton*)compNode->Component); break;
+                #if DEBUG
+                case ComponentType.Portrait: DebugManager.PrintOutObject((AtkComponentPortrait*)compNode->Component); break;
+                #endif
                 default: DebugManager.PrintOutObject(*compNode->Component, (ulong) compNode->Component, new List<string>()); break;
             }
+            
+            ImGui.Text("Data: ");
+            ImGui.SameLine();
+            var componentData = componentInfo.ComponentData;
+            DebugManager.ClickToCopy(componentData);
+            if (componentData != null) {
+                ImGui.SameLine();
+                switch (objectInfo->ComponentType) {
+                    case ComponentType.Base: DebugManager.PrintOutObject(componentData); break;
+                    case ComponentType.Button: DebugManager.PrintOutObject((AtkUldComponentDataButton*)componentData); break;
+                    case ComponentType.Window: DebugManager.PrintOutObject((AtkUldComponentDataWindow*)componentData); break;
+                    case ComponentType.CheckBox: DebugManager.PrintOutObject((AtkUldComponentDataCheckBox*)componentData); break;
+                    case ComponentType.RadioButton: DebugManager.PrintOutObject((AtkUldComponentDataRadioButton*)componentData); break;
+                    case ComponentType.GaugeBar: DebugManager.PrintOutObject((AtkUldComponentDataGaugeBar*)componentData); break;
+                    case ComponentType.Slider: DebugManager.PrintOutObject((AtkUldComponentDataSlider*)componentData); break;
+                    case ComponentType.TextInput: DebugManager.PrintOutObject((AtkUldComponentDataTextInput*)componentData); break;
+                    case ComponentType.NumericInput: DebugManager.PrintOutObject((AtkUldComponentDataNumericInput*)componentData); break;
+                    case ComponentType.List: DebugManager.PrintOutObject((AtkUldComponentDataList*)componentData); break;
+                    case ComponentType.DropDownList: DebugManager.PrintOutObject((AtkUldComponentDataDropDownList*)componentData); break;
+                    case ComponentType.Tab: DebugManager.PrintOutObject((AtkUldComponentDataTab*)componentData); break;
+                    case ComponentType.TreeList: DebugManager.PrintOutObject((AtkUldComponentDataTreeList*)componentData); break;
+                    case ComponentType.ScrollBar: DebugManager.PrintOutObject((AtkUldComponentDataScrollBar*)componentData); break;
+                    case ComponentType.ListItemRenderer: DebugManager.PrintOutObject((AtkUldComponentDataListItemRenderer*)componentData); break;
+                    case ComponentType.Icon: DebugManager.PrintOutObject((AtkUldComponentDataIcon*)componentData); break;
+                    case ComponentType.IconText: DebugManager.PrintOutObject((AtkUldComponentDataIconText*)componentData); break;
+                    case ComponentType.DragDrop: DebugManager.PrintOutObject((AtkUldComponentDataDragDrop*)componentData); break;
+                    case ComponentType.GuildLeveCard: DebugManager.PrintOutObject((AtkUldComponentDataGuildLeveCard*)componentData); break;
+                    case ComponentType.TextNineGrid: DebugManager.PrintOutObject((AtkUldComponentDataTextNineGrid*)componentData); break;
+                    case ComponentType.JournalCanvas: DebugManager.PrintOutObject((AtkUldComponentDataJournalCanvas*)componentData); break;
+                    case ComponentType.Multipurpose: DebugManager.PrintOutObject((AtkUldComponentDataMultipurpose*)componentData); break;
+                    case ComponentType.Map: DebugManager.PrintOutObject((AtkUldComponentDataMap*)componentData); break;
+                    case ComponentType.Preview: DebugManager.PrintOutObject((AtkUldComponentDataPreview*)componentData); break;
+                    case ComponentType.HoldButton: DebugManager.PrintOutObject((AtkUldComponentDataHoldButton*)componentData); break;
+                    #if DEBUG
+                    case ComponentType.Portrait: DebugManager.PrintOutObject((AtkUldComponentDataPortrait*)componentData); break;
+                    #endif
+                    default: DebugManager.PrintOutObject(componentData); break;
+                }
+            }
+            
+            
 
             PrintResNode(node);
             PrintNode(componentInfo.RootNode);
@@ -1033,7 +1092,7 @@ public unsafe class UIDebug : DebugHelper {
         ImGui.Text($"NodeID: {NodeID(node->NodeID, false)}   Type: {node->Type}");
         ImGui.SameLine();
         if (ImGui.SmallButton($"T:Visible##{(ulong)node:X}")) {
-            node->Flags ^= 0x10;
+            node->NodeFlags ^= NodeFlags.Visible;
         }
         ImGui.SameLine();
         if (ImGui.SmallButton($"C:Ptr##{(ulong)node:X}")) {
@@ -1048,7 +1107,7 @@ public unsafe class UIDebug : DebugHelper {
             $"Width: {node->Width} Height: {node->Height} " +
             $"OriginX: {node->OriginX} OriginY: {node->OriginY} " +
             $"Priority: {node->Priority}, Depth: {node->Depth}/{node->Depth_2} " +
-            $"Flags: {node->Flags:X} / {node->Flags_2:X} " +
+            $"Flags: {node->NodeFlags} / {node->Flags_2:X} " +
             $"DrawFlags: {node->DrawFlags:X}");
         ImGui.Text(
             $"RGBA: 0x{node->Color.R:X2}{node->Color.G:X2}{node->Color.B:X2}{node->Color.A:X2} " +
@@ -1239,7 +1298,7 @@ public unsafe class UIDebug : DebugHelper {
     private static bool GetNodeVisible(AtkResNode* node) {
         if (node == null) return false;
         while (node != null) {
-            if ((node->Flags & (short)NodeFlags.Visible) != (short)NodeFlags.Visible) return false;
+            if (!node->IsVisible) return false;
             node = node->ParentNode;
         }
         return true;

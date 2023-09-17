@@ -1,3 +1,7 @@
+#if DEBUG
+global using static SimpleTweaksPlugin.Changelog;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,6 +51,10 @@ public class Changelog : Window {
         Add("1.8.5.2", "Made April Fools Joke Stupid");
         Add("1.8.5.3", "Removed April Fools joke due to potential crash.");
         Add("1.8.6.0", "General fixes for 6.38");
+        Add("1.8.7.1", "General fixes for 6.4");
+        Add("1.8.9.0", "Added an option to opt out of analytics\n\tNote:\n\t\tNo analytics are currently being collected.\n\t\tThis is a preemptive opt out for the future.");
+        Add("1.8.9.2", "Added preview images to some tweaks.");
+        Add(UnreleasedVersion, "Tweaks that add commands can now have their commands customized.");
     }
 
 #if DEBUG
@@ -127,7 +135,7 @@ public class Changelog : Window {
         return true;
     }
 
-    private static string GenerateChangelogMarkdown(Version changelogVersion = null, StringBuilder stringBuilder = null) {
+    public static string GenerateChangelogMarkdown(Version changelogVersion = null, StringBuilder stringBuilder = null) {
         stringBuilder ??= new StringBuilder();
 
         if (changelogVersion == null) {
@@ -139,7 +147,7 @@ public class Changelog : Window {
                 var versionStringBuilder = new StringBuilder();
 
                 if (!string.IsNullOrWhiteSpace(GenerateChangelogMarkdown(version, versionStringBuilder))) {
-                    stringBuilder.AppendLine($"## [{versionLabel}]");
+                    stringBuilder.AppendLine($"## {versionLabel}");
                     stringBuilder.Append(versionStringBuilder);
                     stringBuilder.AppendLine();
                 }
@@ -162,7 +170,7 @@ public class Changelog : Window {
                 }
 
                 foreach (var c in generalChanges) {
-                    stringBuilder.Append($"> {c.Change}");
+                    stringBuilder.Append($"- {c.Change}");
                     if (!string.IsNullOrEmpty(c.ChangeAuthor)) {
                         stringBuilder.Append($" *({c.ChangeAuthor})*");
                     }
@@ -178,7 +186,7 @@ public class Changelog : Window {
                 stringBuilder.AppendLine("***New Tweaks***");
 
                 foreach (var c in newTweaks) {
-                    stringBuilder.Append($"> **`{c.Tweak.Name}`** - {c.Tweak.Description.Split('\n')[0]}");
+                    stringBuilder.Append($"- **`{c.Tweak.Name}`** - {c.Tweak.Description.Split('\n')[0]}");
                     if (!string.IsNullOrEmpty(c.ChangeAuthor)) {
                         stringBuilder.Append($" *({c.ChangeAuthor})*");
                     }
@@ -199,11 +207,11 @@ public class Changelog : Window {
                     if (!g.Any()) continue; // Who knows
                     if (g.Count() >= 2) {
                         
-                        stringBuilder.AppendLine($"> **`{g.Key.Name}`**");
+                        stringBuilder.AppendLine($"- **`{g.Key.Name}`**");
 
                         foreach (var c in g) {
                             if (c.Tweak != g.Key) continue;
-                            stringBuilder.Append($"> - {c.Change}");
+                            stringBuilder.Append($"  - {c.Change}");
                             if (!string.IsNullOrEmpty(c.ChangeAuthor)) {
                                 stringBuilder.Append($" *({c.ChangeAuthor})*");
                             }
@@ -215,7 +223,7 @@ public class Changelog : Window {
                     } else {
                         var c = g.First();
                         if (c.Tweak == null) continue;
-                        stringBuilder.Append($"> **`{c.Tweak.Name}`** - {c.Change}");
+                        stringBuilder.Append($"- **`{c.Tweak.Name}`** - {c.Change}");
                         if (!string.IsNullOrEmpty(c.ChangeAuthor)) {
                             stringBuilder.Append($" *({c.ChangeAuthor})*");
                         }

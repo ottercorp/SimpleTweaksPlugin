@@ -30,7 +30,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private bool InCombatDuty => Service.Condition[ConditionFlag.BoundByDuty] && !nonCombatTerritory.Contains(Service.ClientState.TerritoryType);
 
-        public override void Disable()
+        protected override void Disable()
         {
             Service.Framework.Update -= FrameworkUpdate;
             try
@@ -45,7 +45,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             base.Disable();
         }
 
-        public override void Enable()
+        protected override void Enable()
         {
             outOfCombatTimer.Restart();
             Config = LoadConfig<Configs>() ?? new Configs();
@@ -76,7 +76,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             PerformanceMonitor.Begin();
 #endif
 
-            var targetCircleShown = GameConfig.UiControl.GetBool("TargetCircleType");
+            var targetCircleShown = Service.GameConfig.UiControl.GetBool("TargetCircleType");
             bool requestToBeShown = false;
             bool requestToHide = false;
 
@@ -104,11 +104,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
             if (!targetCircleShown && requestToBeShown)
             {
-                GameConfig.UiControl.Set("TargetCircleType", 1);
+                Service.GameConfig.UiControl.Set("TargetCircleType", 1);
             }
             else if (targetCircleShown && requestToHide)
             {
-                GameConfig.UiControl.Set("TargetCircleType", 0);
+                Service.GameConfig.UiControl.Set("TargetCircleType", 0);
             }
 #if DEBUG
             PerformanceMonitor.End();

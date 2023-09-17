@@ -4,7 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Dalamud.Game;
 using Dalamud.Game.ClientState.Conditions;
-using Dalamud.Game.ClientState.Objects.Enums;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -21,24 +21,30 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         public class Configs : TweakConfig {
 
             [TweakConfigOption("Show In Duty", 1)]
-            public bool ShowInDuty;
+            public bool ShowInDuty = true;
 
             [TweakConfigOption("Show In Combat", 2)]
-            public bool ShowInCombat;
+            public bool ShowInCombat = true;
 
             public bool ShouldShowCombatBuffer() => ShowInCombat;
             [TweakConfigOption("Out of Combat Time (Seconds)", 3, EditorSize = 100, IntMin = 0, IntMax = 300, ConditionalDisplay = true)]
             public int CombatBuffer;
 
             [TweakConfigOption("Show While Weapon Is Drawn", 4)]
-            public bool ShowWhileWeaponDrawn;
+            public bool ShowWhileWeaponDrawn = true;
         }
 
         public Configs Config { get; private set; }
         public override bool UseAutoConfig => true;
         private readonly Stopwatch outOfCombatTimer = new Stopwatch();
         
-        public override void Enable() {
+        public override void Setup() {
+            base.Setup();
+            AddChangelog("1.8.7.2", "Fixed 'Show while weapon is drawn' option not working.");
+            AddChangelog("1.8.8.0", "Fixed 'Show In Duty' option not working in some duties.");
+        }
+
+        protected override void Enable() {
             outOfCombatTimer.Restart();
             Config = LoadConfig<Configs>() ?? new Configs();
             Service.Framework.Update += FrameworkUpdate;
@@ -58,7 +64,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             1055, // Island Sanctuary
         };
 
-        private bool InCombatDuty => Service.Condition[ConditionFlag.BoundByDuty] && !nonCombatTerritory.Contains(Service.ClientState.TerritoryType);
+        private bool InCombatDuty => Service.Condition.Duty() && !nonCombatTerritory.Contains(Service.ClientState.TerritoryType);
         
         private void Update(bool reset = false) {
             if (Common.GetUnitBase("JobHudNotice") != null) reset = true;
@@ -68,6 +74,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             #if DEBUG
             PerformanceMonitor.Begin();
             #endif
+            var character = (Character*)(Service.ClientState.LocalPlayer?.Address ?? nint.Zero);
             for (var i = 0; i < loadedUnitsList->Count; i++) {
                 var addon = addonList[i];
                 var name = Marshal.PtrToStringUTF8(new IntPtr(addon->Name));
@@ -80,7 +87,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                         if (addon->UldManager.NodeListCount == 0) addon->UldManager.UpdateDrawNodeList();
                     } else if (Config.ShowInCombat && outOfCombatTimer.ElapsedMilliseconds < Config.CombatBuffer * 1000) {
                         if (addon->UldManager.NodeListCount == 0) addon->UldManager.UpdateDrawNodeList();
-                    } else if (Config.ShowWhileWeaponDrawn && Service.ClientState.LocalPlayer != null && Service.ClientState.LocalPlayer.StatusFlags.HasFlag(StatusFlags.WeaponOut)) {
+                    } else if (Config.ShowWhileWeaponDrawn && character != null && character->IsWeaponDrawn) {
                         if (addon->UldManager.NodeListCount == 0) addon->UldManager.UpdateDrawNodeList();
                     } else {
                         addon->UldManager.NodeListCount = 0;
@@ -93,7 +100,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             #endif
         }
 
-        public override void Disable() {
+        protected override void Disable() {
             Service.Framework.Update -= FrameworkUpdate;
             try {
                 Update(true);

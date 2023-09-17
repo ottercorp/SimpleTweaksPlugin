@@ -42,9 +42,9 @@ public unsafe class KeepOpen : Tweak {
         base.Setup();
     }
 
-    public override void Enable() {
+    protected override void Enable() {
         Config = LoadConfig<Configs>() ?? new Configs();
-        hideHook ??= Common.Hook<HideUnitBase>("E8 ?? ?? ?? ?? 32 DB 0F BE D3", HideDetour);
+        hideHook ??= Common.Hook<HideUnitBase>("E8 ?? ?? ?? ?? 32 DB 0F B6 D3", HideDetour);
         hideHook?.Enable();
         base.Enable();
     }
@@ -96,7 +96,7 @@ public unsafe class KeepOpen : Tweak {
         }
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         hideHook?.Disable();
         SaveConfig(Config);
         base.Disable();
@@ -107,4 +107,3 @@ public unsafe class KeepOpen : Tweak {
         base.Dispose();
     }
 }
-

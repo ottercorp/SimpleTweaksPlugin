@@ -39,25 +39,17 @@ public class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
         }
 
         protected static unsafe void SetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ItemTooltipField field, SeString seString) {
-            try {
-                seString ??= new SeString();
-                var bytes = seString.Encode().ToList();
-                bytes.Add(0);
-                stringArrayData->SetValue((int)field, bytes.ToArray(), false, true, false);
-            } catch (Exception ex) {
-                throw;
-            }
+            seString ??= new SeString();
+            var bytes = seString.Encode().ToList();
+            bytes.Add(0);
+            stringArrayData->SetValue((int)field, bytes.ToArray(), false, true, false);
         }
         
         protected static unsafe void SetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ActionTooltipField field, SeString seString) {
-            try {
-                seString ??= new SeString();
-                var bytes = seString.Encode().ToList();
-                bytes.Add(0);
-                stringArrayData->SetValue((int)field, bytes.ToArray(), false, true, false);
-            } catch {
-                throw;
-            }
+            seString ??= new SeString();
+            var bytes = seString.Encode().ToList();
+            bytes.Add(0);
+            stringArrayData->SetValue((int)field, bytes.ToArray(), false, true, false);
         }
 
         protected static InventoryItem Item => HoveredItem;
@@ -91,7 +83,7 @@ public class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
         base.Setup();
     }
 
-    public override unsafe void Enable() {
+    protected override unsafe void Enable() {
         if (!Ready) return;
 
         itemHoveredHook ??= Common.Hook<ItemHoveredDelegate>("E8 ?? ?? ?? ?? 84 C0 0F 84 ?? ?? ?? ?? 48 89 B4 24 ?? ?? ?? ?? 48 89 BC 24 ?? ?? ?? ?? 48 8B 7C 24", ItemHoveredDetour);
@@ -162,7 +154,7 @@ public class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
         return returnValue;
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         itemHoveredHook?.Disable();
         actionTooltipHook?.Disable();
         actionHoveredHook?.Disable();

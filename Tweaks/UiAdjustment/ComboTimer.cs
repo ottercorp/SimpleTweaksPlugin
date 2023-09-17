@@ -56,8 +56,7 @@ public unsafe class ComboTimer : UiAdjustments.SubTweak {
 
     public override bool UseAutoConfig => true;
 
-
-    public override void Enable() {
+    protected override void Enable() {
         Config = LoadConfig<Configs>() ?? new Configs();
         Service.Framework.Update += FrameworkUpdate;
         base.Enable();
@@ -68,7 +67,7 @@ public unsafe class ComboTimer : UiAdjustments.SubTweak {
         base.Setup();
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         SaveConfig(Config);
         Service.Framework.Update -= FrameworkUpdate;
         Update(true);
@@ -123,7 +122,7 @@ public unsafe class ComboTimer : UiAdjustments.SubTweak {
                 textNode = newTextNode;
 
                 newTextNode->AtkResNode.Type = NodeType.Text;
-                newTextNode->AtkResNode.Flags = (short)(NodeFlags.AnchorLeft | NodeFlags.AnchorTop);
+                newTextNode->AtkResNode.NodeFlags = NodeFlags.AnchorLeft | NodeFlags.AnchorTop;
                 newTextNode->AtkResNode.DrawFlags = 0;
                 newTextNode->AtkResNode.SetPositionShort(1, 1);
                 newTextNode->AtkResNode.SetWidth(200);

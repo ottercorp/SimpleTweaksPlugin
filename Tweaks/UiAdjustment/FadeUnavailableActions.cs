@@ -54,20 +54,17 @@ public unsafe class FadeUnavailableActions : UiAdjustments.SubTweak
         AddChangelog("1.8.3.2", "Add option to apply to sync'd skills only");
         AddChangelog("1.8.4.0", "Tweak now only applies to combat actions");
         AddChangelog("1.8.4.0", "Properly resets hotbar state on unload/disable");
-        
-        SignatureHelper.Initialise(this);
-        
         base.Setup();
     }
 
-    public override void Enable()
+    protected override void Enable()
     {
         TweakConfig = LoadConfig<Config>() ?? new Config();
         onHotBarSlotUpdateHook?.Enable();
         base.Enable();
     }
 
-    public override void Disable()
+    protected override void Disable()
     {
         SaveConfig(TweakConfig);
         onHotBarSlotUpdateHook?.Disable();

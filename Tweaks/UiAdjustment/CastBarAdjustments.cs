@@ -111,7 +111,7 @@ public unsafe class CastBarAdjustments : UiAdjustments.SubTweak {
         }
     };
 
-    public override void Enable() {
+    protected override void Enable() {
         Config = LoadConfig<Configs>() ?? new Configs();
         
         // TODO: Remove
@@ -125,7 +125,7 @@ public unsafe class CastBarAdjustments : UiAdjustments.SubTweak {
         base.Enable();
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         castBarOnUpdateHook.Disable();
         UpdateCastBar(null, true);
         SaveConfig(Config);
@@ -274,7 +274,7 @@ public unsafe class CastBarAdjustments : UiAdjustments.SubTweak {
                     classicSlideMarker = IMemorySpace.GetUISpace()->Create<AtkImageNode>();
                     classicSlideMarker->AtkResNode.Type = NodeType.Image;
                     classicSlideMarker->AtkResNode.NodeID = CustomNodes.ClassicSlideCast;
-                    classicSlideMarker->AtkResNode.Flags = (short)(NodeFlags.AnchorTop | NodeFlags.AnchorLeft);
+                    classicSlideMarker->AtkResNode.NodeFlags = NodeFlags.AnchorTop | NodeFlags.AnchorLeft;
                     classicSlideMarker->AtkResNode.DrawFlags = 0;
                     classicSlideMarker->WrapMode = 1;
                     classicSlideMarker->Flags = 0;

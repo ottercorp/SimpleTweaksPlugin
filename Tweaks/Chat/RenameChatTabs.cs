@@ -36,7 +36,7 @@ namespace SimpleTweaksPlugin.Tweaks.Chat {
 
         public Config TweakConfig { get; private set; }
 
-        public override void Enable() {
+        protected override void Enable() {
             if (Enabled) return;
             TweakConfig = LoadConfig<Config>() ?? Plugin.PluginConfig.ChatTweaks.RenameChatTabs ?? new Config();
 
@@ -47,7 +47,7 @@ namespace SimpleTweaksPlugin.Tweaks.Chat {
             base.Enable();
         }
 
-        public override void Disable() {
+        protected override void Disable() {
             SaveConfig(TweakConfig);
             PluginConfig.ChatTweaks.RenameChatTabs = null;
             Service.ClientState.Login -= OnLogin;
@@ -140,7 +140,7 @@ namespace SimpleTweaksPlugin.Tweaks.Chat {
             for (var i = 13; i > 3; i--) {
                 if (i == 5) continue;
                 var t = unitBase->UldManager.NodeList[i];
-                if ((t->Flags & 0x10) != 0x10) continue;
+                if (!t->NodeFlags.HasFlag(NodeFlags.Visible)) continue;
                 t->X = x;
                 t->Flags_2 |= 0x1;
                 x += (ushort) (t->Width * t->ScaleX);

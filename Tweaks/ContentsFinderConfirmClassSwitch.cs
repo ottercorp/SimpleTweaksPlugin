@@ -12,12 +12,12 @@ public unsafe class ContentsFinderConfirmClassSwitch : Tweak {
 
     private SimpleEvent simpleEvent;
 
-    public override void Enable() {
+    protected override void Enable() {
         simpleEvent = new SimpleEvent(OnIconClicked);
         
         if (Common.GetUnitBase("ContentsFinderConfirm", out var unitBase)) {
             var node = unitBase->GetNodeById(40);
-            node->Flags |= (short)(NodeFlags.RespondToMouse | NodeFlags.EmitsEvents | NodeFlags.HasCollision);
+            node->NodeFlags |= NodeFlags.RespondToMouse | NodeFlags.EmitsEvents | NodeFlags.HasCollision;
             if (node != null) {
                 simpleEvent.Add(unitBase, node, AtkEventType.MouseClick);
                 simpleEvent.Add(unitBase, node, AtkEventType.MouseOver);
@@ -59,14 +59,14 @@ public unsafe class ContentsFinderConfirmClassSwitch : Tweak {
         if (obj.AddonName != "ContentsFinderConfirm") return;
         var classIconNode = obj.Addon->GetNodeById(40);
         if (classIconNode == null) return;
-        classIconNode->Flags |= (short)(NodeFlags.RespondToMouse | NodeFlags.EmitsEvents | NodeFlags.HasCollision);
+        classIconNode->NodeFlags |= NodeFlags.RespondToMouse | NodeFlags.EmitsEvents | NodeFlags.HasCollision;
         obj.Addon->UpdateCollisionNodeList(false);
         simpleEvent.Add(obj.Addon, classIconNode, AtkEventType.MouseClick);
         simpleEvent.Add(obj.Addon, classIconNode, AtkEventType.MouseOver);
         simpleEvent.Add(obj.Addon, classIconNode, AtkEventType.MouseOut);
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         Common.AddonSetup -= OnAddonSetup;
 
         if (Common.GetUnitBase("ContentsFinderConfirm", out var unitBase)) {

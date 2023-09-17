@@ -1,12 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Interface;
+using Dalamud.Interface.Components;
 using ImGuiNET;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
+using SimpleTweaksPlugin.ExtraPayloads;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 using static Dalamud.Game.Text.XivChatType;
@@ -18,14 +23,28 @@ public unsafe class ChatNameColours : ChatTweaks.SubTweak {
     public override string Description => "Gives players a random colour in chat, or set the name manually.";
 
     public class ForcedColour {
-        public ushort ColourKey;
+        public ushort ColourKey; // Legacy
+        public Vector3? Color;
+        public Vector3? Glow;
         public string PlayerName = string.Empty;
         public string WorldName = string.Empty;
+    }
+
+    public class ChannelConfig {
+        public bool Sender = true;
+        public bool Message = true;
     }
 
     public class Configs : TweakConfig {
         public List<ForcedColour> ForcedColours = new();
         public bool RandomColours = true;
+        public bool LegacyColours;
+        public bool ApplyDefaultColour = false;
+        public ushort DefaultColourKey = 1;
+        public Vector3 DefaultColour = Vector3.One;
+
+        public ChannelConfig DefaultChannelConfig = new();
+        public Dictionary<XivChatType, ChannelConfig> ChannelConfigs = new();
     }
 
     public Configs Config { get; private set; }
@@ -49,17 +68,48 @@ public unsafe class ChatNameColours : ChatTweaks.SubTweak {
     private ushort? GetColourKey(string playerName, string worldName, bool forceRandom = false) {
         var forced = Config.ForcedColours.FirstOrDefault(f => f.PlayerName == playerName && f.WorldName == worldName);
         if (forced != null) return forced.ColourKey;
-        if (!forceRandom && !Config.RandomColours) return null;
+        if (!forceRandom && !Config.RandomColours) return Config.ApplyDefaultColour ? Config.DefaultColourKey : null;
         var key = (uint) $"{playerName}@{worldName}".GetStableHashCode();
         var defaultColourKey = nameColours[key % nameColours.Length];
         return defaultColourKey;
     }
 
+    private Vector3? GetColor(string playerName, string worldName, bool forceRandom = false) {
+        var forced = Config.ForcedColours.FirstOrDefault(f => f.PlayerName == playerName && f.WorldName == worldName);
+        if (forced != null) return forced.Color;
+        if (!forceRandom && !Config.RandomColours) return Config.ApplyDefaultColour ? Config.DefaultColour : null;
+        var key = $"{playerName}@{worldName}".GetStableHashCode();
+        var hue = new Random(key).NextSingle();
+        ImGui.ColorConvertHSVtoRGB(hue, 1, 1, out var r, out var g, out var b);
+        return new Vector3(r, g, b);
+    }
+    
+    private Vector3? GetGlow(string playerName, string worldName) {
+        var forced = Config.ForcedColours.FirstOrDefault(f => f.PlayerName == playerName && f.WorldName == worldName);
+        return forced?.Glow;
+    }
+
+    private Vector3 LegacyToNew(ushort legacyColourId) {
+        var xivCol = Service.Data.Excel.GetSheet<UIColor>()?.GetRow(legacyColourId)?.UIForeground;
+        if (xivCol != null) {
+            var fb = (xivCol.Value >> 8) & 255;
+            var fg = (xivCol.Value >> 16) & 255;
+            var fr = (xivCol.Value >> 24) & 255;
+            return new Vector3(fr / 255f, fg / 255f, fb / 255f);
+        }
+        return Vector3.One;
+    }
+    
+
     private ExcelSheet<UIColor> uiColorSheet;
     private ExcelSheet<World> worldSheet;
 
     public override void Setup() {
-
+        AddChangelog("1.8.8.1", "Fixed Chat2 exploding with new colour system. Tweak will still not work in Chat2, but it will not explode.");
+        AddChangelog("1.8.8.0", "Fixed colour display when in party.");
+        AddChangelog("1.8.8.0", "Extended range of possible colours.");
+        AddChangelog("1.8.9.0", "Added option to give all undefined characters the same colour.");
+        AddChangelog("1.8.9.0", "Added per channel configuration for colouring sender name and/or names in messages.");
         this.uiColorSheet = Service.Data.Excel.GetSheet<UIColor>();
         this.worldSheet = Service.Data.Excel.GetSheet<World>();
 
@@ -103,11 +153,24 @@ public unsafe class ChatNameColours : ChatTweaks.SubTweak {
     private bool comboOpen = false;
     
     protected override DrawConfigDelegate DrawConfigTree => (ref bool _) => {
-
         var buttonSize = new Vector2(22, 22) * ImGui.GetIO().FontGlobalScale;
+        ImGui.Checkbox(LocString("LegacyColours", "Use old colour limits."), ref Config.LegacyColours);
+        if (ImGui.Checkbox(LocString("RandomColours", "Use random colours for unlisted players"), ref Config.RandomColours)) {
+            Config.ApplyDefaultColour = false;
+        }
 
-        ImGui.Checkbox(LocString("RandomColours", "Use random colours for unlisted players"), ref Config.RandomColours);
-
+        if (ImGui.Checkbox(LocString("ApplyDefaultColour", "Use a specific colour for unlisted players"), ref Config.ApplyDefaultColour)) {
+            Config.RandomColours = false;
+        }
+        
+        ImGui.SameLine();
+        
+        if (Config.LegacyColours) {
+            ImGuiExt.UiColorPicker($"##picker_default", ref Config.DefaultColourKey);
+        } else {
+            ImGui.ColorEdit3($"##picker_default", ref Config.DefaultColour, ImGuiColorEditFlags.NoInputs);
+        }
+        
         if (ImGui.BeginTable("forcedPlayerNames", 4)) {
             ImGui.TableSetupColumn("", ImGuiTableColumnFlags.WidthFixed, buttonSize.X);
             ImGui.TableSetupColumn(LocString("Player Name"), ImGuiTableColumnFlags.WidthFixed, 180 * ImGui.GetIO().FontGlobalScale);
@@ -126,18 +189,22 @@ public unsafe class ChatNameColours : ChatTweaks.SubTweak {
 
                 ImGui.TableNextColumn();
 
-                var xivCol = Service.Data.Excel.GetSheet<UIColor>()?.GetRow(fc.ColourKey)?.UIForeground;
-
                 Vector4 fColor;
-                if (xivCol != null) {
-                    var fa = xivCol.Value & 255;
-                    var fb = (xivCol.Value >> 8) & 255;
-                    var fg = (xivCol.Value >> 16) & 255;
-                    var fr = (xivCol.Value >> 24) & 255;
-
-                    fColor = new Vector4(fr / 255f, fg / 255f, fb / 255f, fa / 255f);
+                if (!Config.LegacyColours) {
+                    fc.Color ??= LegacyToNew(fc.ColourKey);
+                    fColor = new Vector4(fc.Color ?? Vector3.One, 1);
                 } else {
-                    fColor = new Vector4(1);
+                    var xivCol = Service.Data.Excel.GetSheet<UIColor>()?.GetRow(fc.ColourKey)?.UIForeground;
+                    if (xivCol != null) {
+                        var fa = xivCol.Value & 255;
+                        var fb = (xivCol.Value >> 8) & 255;
+                        var fg = (xivCol.Value >> 16) & 255;
+                        var fr = (xivCol.Value >> 24) & 255;
+
+                        fColor = new Vector4(fr / 255f, fg / 255f, fb / 255f, fa / 255f);
+                    } else {
+                        fColor = new Vector4(1);
+                    }
                 }
                 
                 ImGui.PushStyleColor(ImGuiCol.Text, fColor);
@@ -146,31 +213,69 @@ public unsafe class ChatNameColours : ChatTweaks.SubTweak {
                 ImGui.TableNextColumn();
                 ImGui.Text($"{fc.WorldName}");
                 ImGui.TableNextColumn();
-                ImGuiExt.UiColorPicker($"##picker_{fc.PlayerName}@{fc.WorldName}", ref fc.ColourKey);
+                if (!Config.LegacyColours) {
+                    if (fc.Color == null) {
+                        var xivCol = Service.Data.Excel.GetSheet<UIColor>()?.GetRow(fc.ColourKey)?.UIForeground;
+                        if (xivCol != null) {
+                            var fb = (xivCol.Value >> 8) & 255;
+                            var fg = (xivCol.Value >> 16) & 255;
+                            var fr = (xivCol.Value >> 24) & 255;
+                            fc.Color = new Vector3(fr / 255f, fg / 255f, fb / 255f);
+                        } else {
+                            fc.Color = Vector3.One;
+                        }
+                    }
+                    var v = fc.Color.Value;
+                    if (ImGui.ColorEdit3($"##picker_{fc.PlayerName}@{fc.WorldName}", ref v, ImGuiColorEditFlags.NoInputs)) {
+                        fc.Color = v;
+                    }
+                    ImGui.SameLine();
+                    if (fc.Glow == null) {
+                        if (ImGui.SmallButton($"add glow##addGlow_{fc.PlayerName}@{fc.WorldName}")) {
+                            fc.Glow = Vector3.One;
+                        }
+                    } else {
+                        
+                        var g = fc.Glow.Value;
+                        if (ImGui.ColorEdit3($"##picker_glow_{fc.PlayerName}@{fc.WorldName}", ref g, ImGuiColorEditFlags.NoInputs)) {
+                            fc.Glow = g;
+                        }
+                        
+                        ImGui.SameLine();
+                        if (ImGui.SmallButton($"remove glow##removeGlow_{fc.PlayerName}@{fc.WorldName}")) {
+                            fc.Glow = null;
+                        }
+                    }
+                    
+                } else {
+                    ImGuiExt.UiColorPicker($"##picker_{fc.PlayerName}@{fc.WorldName}", ref fc.ColourKey);
+                }
             }
 
             if (del != null) {
                 Config.ForcedColours.Remove(del);
             }
             
-            ImGui.TableNextColumn();
-            if (ImGui.Button("+##newPlayerName", buttonSize)) {
-                addError = string.Empty;
-                if (Config.ForcedColours.Any(f => f.PlayerName == inputNewPlayerName && f.WorldName == inputServerName)) {
-                    addError = LocString("NameAlreadyAddedError", "Name is already in list.");
-                } else {
-                    Config.ForcedColours.Add(new ForcedColour() {
-                        PlayerName = inputNewPlayerName,
-                        WorldName = inputServerName,
-                        ColourKey = GetColourKey(inputNewPlayerName, inputServerName, true) ?? 0
-                    });
-                    SaveConfig(Config);
-                    inputNewPlayerName = string.Empty;
-                }
-            }
-            ImGui.TableNextColumn();
-
             if (Service.ClientState?.LocalPlayer != null) {
+                ImGui.TableNextColumn();
+                if (ImGui.Button("+##newPlayerName", buttonSize)) {
+                    addError = string.Empty;
+                    if (Config.ForcedColours.Any(f => f.PlayerName == inputNewPlayerName && f.WorldName == inputServerName)) {
+                        addError = LocString("NameAlreadyAddedError", "Name is already in list.");
+                    } else {
+                        var colourKey = GetColourKey(inputNewPlayerName, inputServerName, true) ?? 0;
+                        Config.ForcedColours.Add(new ForcedColour() {
+                            PlayerName = inputNewPlayerName,
+                            WorldName = inputServerName,
+                            ColourKey = colourKey,
+                            Color = Config.LegacyColours || ImGui.GetIO().KeyShift ? LegacyToNew(colourKey) : GetColor(inputNewPlayerName, inputServerName, true) ?? Vector3.One,
+                        });
+                        SaveConfig(Config);
+                        inputNewPlayerName = string.Empty;
+                    }
+                }
+                ImGui.TableNextColumn();
+                
                 
                 var currentWorld = Service.ClientState.LocalPlayer.CurrentWorld.GameData?.Name.RawString;
                 var currentRegion = Regions.Find(r => r.DataCentres.Any(dc => dc.Worlds.Contains(currentWorld)));
@@ -223,13 +328,91 @@ public unsafe class ChatNameColours : ChatTweaks.SubTweak {
                 ImGui.PopStyleVar();
                 ImGui.TableNextColumn();
                 ImGui.TextColored(new Vector4(1, 0, 0, 1), addError);
+
+                var target = Service.Targets.SoftTarget ?? Service.Targets.Target;
+                if (target != null && target is PlayerCharacter pc && !Config.ForcedColours.Any(f => f.PlayerName == pc.Name.TextValue && f.WorldName == pc.HomeWorld.GameData?.Name.RawString)) {
+                    ImGui.TableNextColumn();
+                    ImGui.TableNextColumn();
+                    if (ImGui.Button($"Add {pc.Name.TextValue}")) {
+                        var colourKey = GetColourKey(pc.Name.TextValue, pc.HomeWorld.GameData.Name.RawString, true) ?? 0;
+                        Config.ForcedColours.Add(new ForcedColour() {
+                            PlayerName = pc.Name.TextValue,
+                            WorldName = pc.HomeWorld.GameData.Name.RawString,
+                            ColourKey = colourKey,
+                            Color = Config.LegacyColours || ImGui.GetIO().KeyShift ? LegacyToNew(colourKey) : GetColor(pc.Name.TextValue, pc.HomeWorld.GameData.Name.RawString, true) ?? Vector3.One,
+                        });
+                        SaveConfig(Config);
+                    }
+                }
+                
+
             }
 
             ImGui.EndTable();
         }
+        
+        if (ImGui.CollapsingHeader("Chat Channel Config")) {
+            if (ImGui.BeginTable("chatChannelConfig", 3)) {
+                ImGui.TableSetupColumn("Channel");
+                ImGui.TableSetupColumn("Colour Sender Name");
+                ImGui.TableSetupColumn("Colour Names in Message");
+                ImGui.TableHeadersRow();
+
+                foreach (var channel in Config.ChannelConfigs.Keys) {
+                    var v = Config.ChannelConfigs[channel];
+                    DrawChannelConfig(channel, ref v);
+                    if (v == null) {
+                        Config.ChannelConfigs.Remove(channel);
+                    }
+                }
+                
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+                if (ImGui.BeginCombo("##selectChannel", "Add Channel...")) {
+                    var eValues = Enum.GetValues<XivChatType>();
+                    
+                    foreach (var v in eValues) {
+                        if (Config.ChannelConfigs.ContainsKey(v)) continue;
+                        if (v is None or Debug) continue;
+
+                        if (ImGui.Selectable($"{v.GetDetails()?.FancyName ?? $"{v}"}")) {
+                            Config.ChannelConfigs.TryAdd(v, new ChannelConfig {
+                                Message = Config.DefaultChannelConfig.Message,
+                                Sender = Config.DefaultChannelConfig.Sender
+                            });
+                        }
+                    }
+                    
+                    ImGui.EndCombo();
+                }
+                
+                DrawChannelConfig(None, ref Config.DefaultChannelConfig);
+                ImGui.EndTable();
+            }
+        }
     };
 
-    public override void Enable() {
+    public void DrawChannelConfig(XivChatType type, ref ChannelConfig config) {
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
+        if (type == None) {
+            ImGui.TextDisabled("All Other Channels");
+        } else {
+            if (ImGuiComponents.IconButton($"##{type}_delete", FontAwesomeIcon.Trash)) {
+                config = null;
+                return;
+            }
+            ImGui.SameLine();
+            ImGui.Text(type.GetDetails()?.FancyName ?? $"{type}");
+        }
+        ImGui.TableNextColumn();
+        ImGui.Checkbox($"##{type}_sender", ref config.Sender);
+        ImGui.TableNextColumn();
+        ImGui.Checkbox($"##{type}_message", ref config.Message);
+    }
+
+    protected override void Enable() {
         Config = LoadConfig<Configs>() ?? new Configs();
         
         Service.Chat.ChatMessage += HandleChatMessage;
@@ -252,31 +435,49 @@ public unsafe class ChatNameColours : ChatTweaks.SubTweak {
     private bool Parse(ref SeString seString) {
         var hasName = false;
         var newPayloads = new List<Payload>();
-        var waitingEnd = false;
+        PlayerPayload? waitingBegin = null;
         
         foreach (var payload in seString.Payloads) {
             if (payload is PlayerPayload p) {
                 newPayloads.Add(p);
-                var colourKey = GetColourKey(p.PlayerName, p.World.Name);
-                if (colourKey != null) {
-                    hasName = true;
-                    waitingEnd = true;
-                    newPayloads.Add(new UIForegroundPayload(colourKey.Value));
+                waitingBegin = p;
+                continue;
+            }
+
+            if (payload is TextPayload tp && waitingBegin != null && tp.Text != null && tp.Text.Trim().Contains(' ')) {
+
+                if (!Config.LegacyColours) {
+                    var colour = GetColor(waitingBegin.PlayerName, waitingBegin.World.Name);
+                    var glow = GetGlow(waitingBegin.PlayerName, waitingBegin.World.Name);
+                    if (colour != null) {
+                        hasName = true;
+                        newPayloads.Add(new ColorPayload(colour.Value).AsRaw());
+                        if (glow != null) newPayloads.Add(new GlowPayload(glow.Value).AsRaw());
+                        newPayloads.Add(tp);
+                        if (glow != null) newPayloads.Add(new GlowEndPayload().AsRaw());
+                        newPayloads.Add(new ColorEndPayload().AsRaw());
+                    } else {
+                        newPayloads.Add(tp);
+                    }
+                } else {
+                    var colourKey = GetColourKey(waitingBegin.PlayerName, waitingBegin.World.Name);
+                    if (colourKey != null) {
+                        hasName = true;
+                        newPayloads.Add(new UIForegroundPayload(colourKey.Value));
+                        newPayloads.Add(tp);
+                        newPayloads.Add(new UIForegroundPayload(0));
+                    } else {
+                        newPayloads.Add(tp);
+                    }
                 }
+                
+                waitingBegin = null;
                 continue;
             }
             newPayloads.Add(payload);
-            if (waitingEnd) {
-                newPayloads.Add(new UIForegroundPayload(0));
-                waitingEnd = false;
-            }
         }
 
         if (hasName) {
-            if (waitingEnd) {
-                newPayloads.Add(new UIForegroundPayload(0));
-            }
-
             seString =  new SeString(newPayloads);
             return true;
         }
@@ -285,13 +486,18 @@ public unsafe class ChatNameColours : ChatTweaks.SubTweak {
     }
 
     private void HandleChatMessage(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled) {
-        if (chatTypes.Contains(type)) {
-            Parse(ref sender);
-            Parse(ref message);
+        if (Config.ChannelConfigs.TryGetValue(type, out var channelConfig) && channelConfig != null) {
+            if (chatTypes.Contains(type)) {
+                if (channelConfig.Sender) Parse(ref sender);
+                if (channelConfig.Message) Parse(ref message);
+            }
+        } else if (chatTypes.Contains(type)) {
+            if (Config.DefaultChannelConfig.Sender) Parse(ref sender);
+            if (Config.DefaultChannelConfig.Message) Parse(ref message);
         }
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         SaveConfig(Config);
         Service.Chat.ChatMessage -= HandleChatMessage;
         base.Disable();

@@ -23,14 +23,14 @@ public unsafe class StatusEffectsDebugging : DebugHelper {
 
         ImGui.Separator();
 
-        var statusManager = &battleChara->StatusManager;
+        var statusManager = battleChara->GetStatusManager;
         ImGui.Text($"Status Manager:");
         ImGui.SameLine();
         DebugManager.ClickToCopyText($"{(ulong)statusManager:X}");
         ImGui.SameLine();
         DebugManager.PrintOutObject(*statusManager, (ulong) statusManager);
         ImGui.Separator();
-        var status = (Status*) battleChara->StatusManager.Status;
+        var status = (Status*) battleChara->GetStatusManager->Status;
 
         if (ImGui.BeginTable("statusTable", 7)) {
 
@@ -47,7 +47,7 @@ public unsafe class StatusEffectsDebugging : DebugHelper {
 
             var sheet = Service.Data.Excel.GetSheet<Lumina.Excel.GeneratedSheets.Status>();
 
-            for (var i = 0; i < 40; i++) {
+            for (var i = 0; i < 30; i++) {
                 var s = sheet?.GetRow(status->StatusID);
                 ImGui.TableNextColumn();
                 ImGui.Text($"{i}");

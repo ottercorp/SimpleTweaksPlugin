@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -9,6 +11,7 @@ using System.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Hooking;
 using Dalamud.Memory;
+using Dalamud.Networking.Http;
 using FFXIVClientStructs.Attributes;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.System.String;
@@ -358,6 +361,8 @@ public static unsafe class Common {
         return new Vector3(fr / 255f, fg / 255f, fb / 255f);
     }
 
+    public static AtkResNode* GetNodeByID(AtkUnitBase* unitBase, uint nodeId, NodeType? type = null) => GetNodeByID(&unitBase->UldManager, nodeId, type);
+    public static AtkResNode* GetNodeByID(AtkComponentBase* component, uint nodeId, NodeType? type = null) => GetNodeByID(&component->UldManager, nodeId, type);
     public static AtkResNode* GetNodeByID(AtkUldManager* uldManager, uint nodeId, NodeType? type = null) => GetNodeByID<AtkResNode>(uldManager, nodeId, type);
     public static T* GetNodeByID<T>(AtkUldManager* uldManager, uint nodeId, NodeType? type = null) where T : unmanaged {
         for (var i = 0; i < uldManager->NodeListCount; i++) {
@@ -382,6 +387,8 @@ public static unsafe class Common {
         
         finalizeAddonHook?.Disable();
         finalizeAddonHook?.Dispose();
+        
+        httpClient?.Dispose();
     }
 
     public const int UnitListCount = 18;
@@ -486,6 +493,24 @@ public static unsafe class Common {
         while (b[l] != 0) l++;
         return Encoding.UTF8.GetString(b, l);
     }
+
+    private static HttpClient httpClient;
+    private static HappyEyeballsCallback happyEyeballsCallback;
+    public static HttpClient HttpClient {
+        get {
+            if (httpClient != null) return httpClient;
+            happyEyeballsCallback = new HappyEyeballsCallback();
+            httpClient = new HttpClient(new SocketsHttpHandler
+            {
+                AutomaticDecompression = DecompressionMethods.All,
+                ConnectCallback = happyEyeballsCallback.ConnectCallback,
+            });
+
+            return httpClient;
+        }
+    }
+
+
 }
 
 public unsafe class SetupAddonArgs {

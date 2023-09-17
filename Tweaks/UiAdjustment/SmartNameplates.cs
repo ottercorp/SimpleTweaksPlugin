@@ -26,8 +26,7 @@ public unsafe class SmartNameplates : UiAdjustments.SubTweak {
     }
 
     public Configs Config { get; private set; }
-
-    private const int statusFlagsOffset = 0x19A0;
+    
     private IntPtr targetManager = IntPtr.Zero;
     private delegate byte ShouldDisplayNameplateDelegate(IntPtr raptureAtkModule, GameObject* actor, GameObject* localPlayer, float distance);
     private HookWrapper<ShouldDisplayNameplateDelegate> shouldDisplayNameplateHook;
@@ -57,13 +56,13 @@ public unsafe class SmartNameplates : UiAdjustments.SubTweak {
         var targets = TargetSystem.Instance();
 
         if (actor == localPlayer // Ignore localplayer
-            || (pc->Character.StatusFlags & (byte) StatusFlags.InCombat) == 0 // Alternate in combat flag
+            || pc->Character.InCombat == false
             || GetTargetType(actor) == 3
 
-            || (Config.IgnoreParty && (pc->Character.StatusFlags & 32) != 0) // Ignore party members
-            || (Config.IgnoreAlliance && (pc->Character.StatusFlags & 64) != 0) // Ignore alliance members
-            || (Config.IgnoreFriends && (pc->Character.StatusFlags & 128) != 0) // Ignore friends
-            || (Config.IgnoreDead && pc->Character.Health == 0) // Ignore dead players
+            || (Config.IgnoreParty && pc->Character.IsPartyMember)
+            || (Config.IgnoreAlliance && pc->Character.IsAllianceMember)
+            || (Config.IgnoreFriends && pc->Character.IsFriend)
+            || (Config.IgnoreDead && pc->Character.CharacterData.Health == 0)
 
             // Ignore targets
             || (Config.IgnoreTargets && targets->Target == actor
@@ -77,16 +76,16 @@ public unsafe class SmartNameplates : UiAdjustments.SubTweak {
         return shouldDisplayNameplateHook.Original(raptureAtkModule, actor, localPlayer, distance);
     }
 
-    public override void Enable() {
+    protected override void Enable() {
         Config = LoadConfig<Configs>() ?? new Configs();
         targetManager = targetManager != IntPtr.Zero ? targetManager : Service.SigScanner.GetStaticAddressFromSig("48 8B 05 ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? FF 50 ?? 48 85 DB", 3); // Taken from Dalamud
-        GetTargetType ??= Marshal.GetDelegateForFunctionPointer<GetTargetTypeDelegate>(Service.SigScanner.ScanText("E8 ?? ?? ?? ?? 83 F8 06 0F 87 ?? ?? ?? ?? 48 8D 15 ?? ?? ?? ?? 8B C0"));
+        GetTargetType ??= Marshal.GetDelegateForFunctionPointer<GetTargetTypeDelegate>(Service.SigScanner.ScanText("48 89 5C 24 ?? 57 48 83 EC 20 48 8B 01 48 8B F9 8B 1D"));
         shouldDisplayNameplateHook ??= Common.Hook(Service.SigScanner.ScanText("E8 ?? ?? ?? ?? 89 44 24 40 48 C7 85"), new ShouldDisplayNameplateDelegate(ShouldDisplayNameplateDetour));
         shouldDisplayNameplateHook?.Enable();
         base.Enable();
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         SaveConfig(Config);
         shouldDisplayNameplateHook?.Disable();
         base.Disable();

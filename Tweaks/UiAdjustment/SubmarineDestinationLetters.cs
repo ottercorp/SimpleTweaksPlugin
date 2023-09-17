@@ -25,7 +25,7 @@ public unsafe class SubmarineDestinationLetters : UiAdjustments.SubTweak {
     private readonly Dictionary<uint, IntPtr> allocations = new();
     private readonly Dictionary<uint, string> destinationNames = new();
 
-    public override void Enable() {
+    protected override void Enable() {
         destinationNames.Clear();
         var jpSheet = Service.Data.Excel.GetSheet<SubmarineExploration>(Language.French);
         if (jpSheet == null) return;
@@ -37,7 +37,7 @@ public unsafe class SubmarineDestinationLetters : UiAdjustments.SubTweak {
             destinationNames.Add(e.RowId, $"{ToBoxedLetters(jpRow.Location.RawString)} {e.Destination.ToDalamudString().TextValue}");
         }
             
-        this.getSubmarineExplorationRowHook ??= Common.Hook<GetSubmarineExplorationRowDelegate>("E8 ?? ?? ?? ?? 80 78 16 69", this.GetExplorationRowDetour);
+        this.getSubmarineExplorationRowHook ??= Common.Hook<GetSubmarineExplorationRowDelegate>("E8 ?? ?? ?? ?? 80 78 16 6E", this.GetExplorationRowDetour);
         this.getSubmarineExplorationRowHook?.Enable();
         base.Enable();
     }
@@ -64,6 +64,7 @@ public unsafe class SubmarineDestinationLetters : UiAdjustments.SubTweak {
                     return cached + destinationOffset;
                 }
 
+                if (data == nint.Zero) return data;
                 var raw = new byte[1024];
                 Marshal.Copy(data - destinationOffset, raw, 0, raw.Length);
                 var nameBytes = Encoding.UTF8.GetBytes(name);
@@ -111,8 +112,8 @@ public unsafe class SubmarineDestinationLetters : UiAdjustments.SubTweak {
 
             return data;
         }
-    
-    public override void Disable() {
+
+    protected override void Disable() {
         foreach (var ptr in this.allocations.Values) {
             Marshal.FreeHGlobal(ptr);
         }
@@ -154,4 +155,3 @@ public unsafe class SubmarineDestinationLetters : UiAdjustments.SubTweak {
         return bytes.ToArray();
     }
 }
-

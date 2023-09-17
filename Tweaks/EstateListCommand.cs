@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using SimpleTweaksPlugin.Tweaks.AbstractTweaks;
 using SimpleTweaksPlugin.Utility;
@@ -16,16 +17,17 @@ public unsafe class EstateListCommand : CommandTweak {
     protected override string Command => "estatelist";
     protected override string HelpMessage => "Opens the estate list for one of your friends.";
 
-    private delegate IntPtr ShowEstateTeleportationDelegate(AgentInterface* friendListAgent, ulong contentId);
+    private delegate IntPtr ShowEstateTeleportationDelegate(AgentFriendList* friendListAgent, ulong contentId);
     private ShowEstateTeleportationDelegate showEstateTeleportation;
     
     public override void Setup() {
         AddChangelog("1.8.1.1", "Now allows partial matching of friend names.");
+        AddChangelog("1.8.7.2", "Fixed tweak not working in 6.4");
         base.Setup();
     }
 
-    public override void Enable() {
-        if (showEstateTeleportation == null && Service.SigScanner.TryScanText("E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 45 33 F6 48 8B CF 44 89 B3 ?? ?? ?? ?? E8", out var ptr)) {
+    protected override void Enable() {
+        if (showEstateTeleportation == null && Service.SigScanner.TryScanText("E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 33 ED 48 8B CF 89 AB ?? ?? ?? ?? E8", out var ptr)) {
             showEstateTeleportation = Marshal.GetDelegateForFunctionPointer<ShowEstateTeleportationDelegate>(ptr);
         }
         if (showEstateTeleportation == null) return;
@@ -47,21 +49,28 @@ public unsafe class EstateListCommand : CommandTweak {
         }
 
         var useContentId = ulong.TryParse(arguments, out var contentId);
-        var friends = FriendList.List
-            .Where(friend => {
-                if (friend.HomeWorld != Service.ClientState.LocalPlayer?.CurrentWorld.Id) return false;
-                if (useContentId && contentId > 0 && friend.ContentId == contentId) return true;
-                return friend.Name.TextValue.StartsWith(arguments, StringComparison.InvariantCultureIgnoreCase);
-            }).ToList();
-        
-        var friend = friends.FirstOrDefault(friend => friend.Name.TextValue.StartsWith(arguments, StringComparison.InvariantCultureIgnoreCase));
-        if (friend.ContentId == 0) friend = friends.FirstOrDefault();
-        if (friend.ContentId == 0) {
-            Service.Chat.PrintError($"No friend with name \"{arguments}\" on your current world.");
-            return;
+
+        var agent = AgentFriendList.Instance();
+
+        InfoProxyCommonList.CharacterData* friend = null;
+        for (var i = 0U; i < agent->Count; i++) {
+            var f = agent->GetFriend(i);
+            if (f == null) continue;
+            if (f->HomeWorld != Service.ClientState.LocalPlayer?.CurrentWorld.Id) continue;
+            if (f->ContentId == 0) continue;
+            if (f->Name[0] == 0) continue;
+            if (useContentId && contentId == (ulong)f->ContentId) {
+                this.showEstateTeleportation(agent, (ulong)f->ContentId);
+                return;
+            }
+
+            var name = MemoryHelper.ReadString(new nint(f->Name), 32);
+            if (name.StartsWith(arguments, StringComparison.InvariantCultureIgnoreCase)) {
+                this.showEstateTeleportation(agent, (ulong)f->ContentId);
+                return;
+            }
         }
         
-        var friendListAgent = Framework.Instance()->GetUiModule()->GetAgentModule()->GetAgentByInternalId(AgentId.SocialFriendList);
-        if (friendListAgent != null) this.showEstateTeleportation(friendListAgent, friend.ContentId);
+        Service.Chat.PrintError($"No friend with name \"{arguments}\" on your current world.");
     }
 }

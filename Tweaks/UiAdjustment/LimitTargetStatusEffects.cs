@@ -135,7 +135,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             }
         };
 
-        public override void Enable() {
+        protected override void Enable() {
             Config = LoadConfig<Configs>() ?? PluginConfig.UiAdjustments.LimitTargetStatusEffects ?? new Configs();
             UpdateFilteredStatus();
             Service.Framework.Update += FrameworkOnUpdate;
@@ -172,7 +172,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
 
                     if (localPlayer == null) {
                         localPlayer = GameObjectManager.GetGameObjectByIndex(0);
-                        if (localPlayer == null || (Config.FilterOnlyInCombat && (((Character*)localPlayer)->StatusFlags & (byte) StatusFlags.InCombat) == 0)) {
+                        if (localPlayer == null || (Config.FilterOnlyInCombat && !((Character*)localPlayer)->InCombat)) {
                             break;
                         }
                     }
@@ -198,7 +198,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             return ret;
         }
 
-        public override void Disable() {
+        protected override void Disable() {
             SaveConfig(Config);
             PluginConfig.UiAdjustments.LimitTargetStatusEffects = null;
             updateTargetStatusHook?.Disable();

@@ -38,8 +38,8 @@ public unsafe class AdditionalItemInfo : TooltipTweaks.SubTweak {
     public override bool UseAutoConfig => true;
 
     private HookWrapper<Common.AddonOnUpdate> itemTooltipOnUpdateHook;
-    
-    public override void Enable() {
+
+    protected override void Enable() {
         Config = LoadConfig<Configs>() ?? new Configs();
         itemTooltipOnUpdateHook ??= Common.Hook<Common.AddonOnUpdate>("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 54 41 55 41 56 41 57 48 83 EC 20 4C 8B AA", ItemTooltipUpdate);
         itemTooltipOnUpdateHook?.Enable();        
@@ -238,7 +238,7 @@ public unsafe class AdditionalItemInfo : TooltipTweaks.SubTweak {
             textNode->AtkResNode.NodeID = CustomNodes.AdditionalInfo;
             
             
-            textNode->AtkResNode.Flags = (short)(NodeFlags.AnchorLeft | NodeFlags.AnchorTop);
+            textNode->AtkResNode.NodeFlags = NodeFlags.AnchorLeft | NodeFlags.AnchorTop;
             textNode->AtkResNode.DrawFlags = 0;
             textNode->AtkResNode.SetWidth(50);
             textNode->AtkResNode.SetHeight(20);
@@ -289,7 +289,7 @@ public unsafe class AdditionalItemInfo : TooltipTweaks.SubTweak {
         
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         SaveConfig(Config);
         itemTooltipOnUpdateHook?.Disable();
         

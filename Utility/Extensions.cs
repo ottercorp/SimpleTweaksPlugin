@@ -5,10 +5,10 @@ using System.Reflection;
 using System.Text;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Keys;
-using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using FFXIVClientStructs.FFXIV.Client.System.String;
+using FFXIVClientStructs.Interop;
 
 namespace SimpleTweaksPlugin.Utility; 
 
@@ -73,7 +73,7 @@ public static class Extensions {
         { VirtualKey.SHIFT, "Shift"},
     };
     public static bool Cutscene(this Condition condition) => condition[ConditionFlag.WatchingCutscene] || condition[ConditionFlag.WatchingCutscene78] || condition[ConditionFlag.OccupiedInCutSceneEvent];
-    public static bool Duty(this Condition condition) => condition[ConditionFlag.BoundByDuty] || condition[ConditionFlag.BoundByDuty56] || condition[ConditionFlag.BoundByDuty95] || condition[ConditionFlag.BoundToDuty97];
+    public static bool Duty(this Condition condition) => condition[ConditionFlag.BoundByDuty] || condition[ConditionFlag.BoundByDuty56] || condition[ConditionFlag.BoundToDuty97];
     public static string GetKeyName(this VirtualKey k) => NamedKeys.ContainsKey(k) ? NamedKeys[k] : k.ToString();
     
     public static void Replace(this List<byte> byteList, IEnumerable<byte> search, IEnumerable<byte> replace) {
@@ -107,5 +107,32 @@ public static class Extensions {
             if (condition[flag]) return true;
         }
         return false;
+    }
+    
+    public unsafe ref struct PointerSpanUnboxer<T> where T : unmanaged {
+        private int currentIndex;
+        private readonly Span<Pointer<T>> items;
+        public PointerSpanUnboxer(Span<Pointer<T>> span) {
+            items = span;
+            currentIndex = 0;
+        }
+
+        public bool MoveNext() {
+            currentIndex++;
+            if (currentIndex >= items.Length) return false;
+            if (items[currentIndex].Value == null) return MoveNext();
+            return true;
+        }
+
+        public readonly T* Current => items[currentIndex].Value;
+        public PointerSpanUnboxer<T> GetEnumerator() => new(items);
+    }
+    
+    public static PointerSpanUnboxer<T> Unbox<T>(this Span<Pointer<T>> span) where T : unmanaged {
+        return new PointerSpanUnboxer<T>(span);
+    }
+
+    internal static IEnumerable<(FieldInfo Field, TAttribute Attribute)> GetFieldsWithAttribute<TAttribute>(this object obj, BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) where TAttribute : Attribute {
+        return obj.GetType().GetFields(flags).Select(f => (f, f.GetCustomAttribute<TAttribute>())).Where(f => f.Item2 != null);
     }
 }

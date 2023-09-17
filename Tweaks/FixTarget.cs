@@ -22,7 +22,7 @@ public class FixTarget : Tweak {
         base.Setup();
     }
 
-    public override void Enable() {
+    protected override void Enable() {
 
         regex = Service.ClientState.ClientLanguage switch {
             ClientLanguage.Japanese => new Regex(@"^\d+?番目のターゲット名の指定が正しくありません。： (.+)$"),
@@ -38,7 +38,7 @@ public class FixTarget : Tweak {
         base.Enable();
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         Service.Chat.CheckMessageHandled -= OnChatMessage;
         base.Disable();
     }
@@ -79,7 +79,7 @@ public class FixTarget : Tweak {
 
         if (closestMatch != null) {
             isHandled = true;
-            Service.Targets.SetTarget(closestMatch);
+            Service.Targets.Target = closestMatch;
         }
     }
 }

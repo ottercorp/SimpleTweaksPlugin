@@ -32,7 +32,7 @@ public unsafe class RememberQuickGathering : Tweak {
         }
     }
 
-    public override void Enable() {
+    protected override void Enable() {
         Service.Framework.Update += FrameworkUpdate;
         base.Enable();
     }
@@ -81,7 +81,7 @@ public unsafe class RememberQuickGathering : Tweak {
             shouldUpdateCheckmark = false;
         } else {
             checkmarkNode->Color.A = (byte)(targetQuickGatheringStatus.Value ? 0xFF : 0x7F);
-            checkmarkNode->Flags ^= 0x10;
+            checkmarkNode->NodeFlags ^= NodeFlags.Visible;
         }
     }
 
@@ -97,7 +97,7 @@ public unsafe class RememberQuickGathering : Tweak {
                 || addon->GatheredItemId8 != 0;
     }
 
-    public override void Disable() {
+    protected override void Disable() {
         targetQuickGatheringStatus = null;
         Service.Framework.Update -= FrameworkUpdate;
         base.Disable();
