@@ -104,10 +104,10 @@ public unsafe class ImprovedDutyFinderSettings : UiAdjustments.SubTweak {
     };
 
     private readonly List<DutyFinderSettingDisplay> languageButtons = new() {
-        new DutyFinderSettingDisplay(DutyFinderSetting.Ja, 0, 10),
-        new DutyFinderSettingDisplay(DutyFinderSetting.En, 0, 11),
-        new DutyFinderSettingDisplay(DutyFinderSetting.De, 0, 12),
-        new DutyFinderSettingDisplay(DutyFinderSetting.Fr, 0, 13),
+        // new DutyFinderSettingDisplay(DutyFinderSetting.Ja, 0, 10),
+        // new DutyFinderSettingDisplay(DutyFinderSetting.En, 0, 11),
+        // new DutyFinderSettingDisplay(DutyFinderSetting.De, 0, 12),
+        // new DutyFinderSettingDisplay(DutyFinderSetting.Fr, 0, 13),
     };
 
     [AddonSetup("ContentsFinder", "RaidFinder")]
@@ -296,10 +296,10 @@ public unsafe class ImprovedDutyFinderSettings : UiAdjustments.SubTweak {
     private static byte GetCurrentSettingValue(DutyFinderSetting dutyFinderSetting) {
         var contentsFinder = ContentsFinder.Instance();
         return dutyFinderSetting switch {
-            DutyFinderSetting.Ja => (byte)Service.GameConfig.UiConfig.GetUInt("ContentsFinderUseLangTypeJA"),
-            DutyFinderSetting.En => (byte)Service.GameConfig.UiConfig.GetUInt("ContentsFinderUseLangTypeEN"),
-            DutyFinderSetting.De => (byte)Service.GameConfig.UiConfig.GetUInt("ContentsFinderUseLangTypeDE"),
-            DutyFinderSetting.Fr => (byte)Service.GameConfig.UiConfig.GetUInt("ContentsFinderUseLangTypeFR"),
+            // DutyFinderSetting.Ja => (byte)Service.GameConfig.UiConfig.GetUInt("ContentsFinderUseLangTypeJA"),
+            // DutyFinderSetting.En => (byte)Service.GameConfig.UiConfig.GetUInt("ContentsFinderUseLangTypeEN"),
+            // DutyFinderSetting.De => (byte)Service.GameConfig.UiConfig.GetUInt("ContentsFinderUseLangTypeDE"),
+            // DutyFinderSetting.Fr => (byte)Service.GameConfig.UiConfig.GetUInt("ContentsFinderUseLangTypeFR"),
             DutyFinderSetting.LootRule => (byte)contentsFinder->LootRules,
             DutyFinderSetting.JoinPartyInProgress => (byte)Service.GameConfig.UiConfig.GetUInt("ContentsFinderSupplyEnable"),
             DutyFinderSetting.UnrestrictedParty => *(byte*)&contentsFinder->IsUnrestrictedParty,
@@ -320,13 +320,13 @@ public unsafe class ImprovedDutyFinderSettings : UiAdjustments.SubTweak {
             return;
         }
 
-        // always need at least one language enabled
-        if (setting is DutyFinderSetting.Ja or DutyFinderSetting.En or DutyFinderSetting.De or DutyFinderSetting.Fr) {
-            var nbEnabledLanguages = GetCurrentSettingValue(DutyFinderSetting.Ja) + GetCurrentSettingValue(DutyFinderSetting.En) + GetCurrentSettingValue(DutyFinderSetting.De) + GetCurrentSettingValue(DutyFinderSetting.Fr);
-            if (nbEnabledLanguages == 1 && GetCurrentSettingValue(setting) == 1) {
-                return;
-            }
-        }
+        // // always need at least one language enabled
+        // if (setting is DutyFinderSetting.Ja or DutyFinderSetting.En or DutyFinderSetting.De or DutyFinderSetting.Fr) {
+        //     var nbEnabledLanguages = GetCurrentSettingValue(DutyFinderSetting.Ja) + GetCurrentSettingValue(DutyFinderSetting.En) + GetCurrentSettingValue(DutyFinderSetting.De) + GetCurrentSettingValue(DutyFinderSetting.Fr);
+        //     if (nbEnabledLanguages == 1 && GetCurrentSettingValue(setting) == 1) {
+        //         return;
+        //     }
+        // }
 
         var array = GetCurrentSettingArray();
         if (array == null) {
@@ -356,7 +356,7 @@ public unsafe class ImprovedDutyFinderSettings : UiAdjustments.SubTweak {
     private static byte[] GetCurrentSettingArray() {
         var array = new byte[27];
         var nbSettings = Enum.GetValues<DutyFinderSetting>().Length;
-        for (var i = 0; i < nbSettings; i++) {
+        for (var i = 4; i < nbSettings; i++) {
             array[i] = GetCurrentSettingValue((DutyFinderSetting)i);
             array[i + nbSettings] = GetCurrentSettingValue((DutyFinderSetting)i); // prev value to print in chat when changed
         }
@@ -376,11 +376,11 @@ public unsafe class ImprovedDutyFinderSettings : UiAdjustments.SubTweak {
             }
         }
 
-        // duty server would reject any request without language set
-        if (array[(int)DutyFinderSetting.Ja] == 0 && array[(int)DutyFinderSetting.En] == 0 && array[(int)DutyFinderSetting.De] == 0 && array[(int)DutyFinderSetting.Fr] == 0) {
-            isArrayValid = false;
-            SimpleLog.Error("No language selected, this is impossible.");
-        }
+        // // duty server would reject any request without language set
+        // if (array[(int)DutyFinderSetting.Ja] == 0 && array[(int)DutyFinderSetting.En] == 0 && array[(int)DutyFinderSetting.De] == 0 && array[(int)DutyFinderSetting.Fr] == 0) {
+        //     isArrayValid = false;
+        //     SimpleLog.Error("No language selected, this is impossible.");
+        // }
 
         return isArrayValid;
     }
