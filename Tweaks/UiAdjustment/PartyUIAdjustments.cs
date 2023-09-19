@@ -385,14 +385,14 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         
         #region Framework
 
-        public override void Enable()
+        protected override void Enable()
         {
             if (Enabled) return;
             Enabled = true;
             RefreshHooks();
         }
 
-        public override void Disable()
+        protected override void Disable()
         {
             if (!Enabled) return;
             DisableHooks();

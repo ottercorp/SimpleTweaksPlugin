@@ -29,7 +29,7 @@ public unsafe class AutoACT : Tweak {
         if (changed) SaveConfig(Config);
     };
 
-    public override void Enable()
+    protected override void Enable()
     {
         Config = LoadConfig<Configs>() ?? new Configs();
         Run();
@@ -63,7 +63,7 @@ public unsafe class AutoACT : Tweak {
         //}
     }
 
-    public override void Disable()
+    protected override void Disable()
     {
         Close();
         base.Disable();

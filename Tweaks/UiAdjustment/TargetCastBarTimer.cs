@@ -110,7 +110,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             return textNode;
         }
 
-        public override void Enable()
+        protected override void Enable()
         {
             if (Enabled) return;
             LoadedConfig = LoadConfig<Config>() ?? new Config();
@@ -184,7 +184,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             }
         }
 
-        public override void Disable()
+        protected override void Disable()
         {
             if (!Enabled) return;
             SaveConfig(LoadedConfig);

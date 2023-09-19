@@ -9,7 +9,7 @@ using SimpleTweaksPlugin.Utility;
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment; 
 
 [Changelog("1.8.1.1", "Fixed widget display when using standard UI quality.")]
-[Changelog(UnreleasedVersion, "Improved gamepad navigation on Character window.")]
+[Changelog("1.8.9.2", "Improved gamepad navigation on Character window.")]
 public unsafe class GearPositions : UiAdjustments.SubTweak {
     public override string Name => "Adjust Equipment Positions";
     public override string Description => "Repositions equipment positions in character menu and inspect to give a less gross layout.";
