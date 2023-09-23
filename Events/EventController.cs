@@ -44,9 +44,10 @@ public static unsafe class EventController {
 
     private static void SetupUpdateAddon() {
         var updateAddonByIdAddress = (nint) AtkStage.GetSingleton()->RaptureAtkUnitManager->VTable->UpdateAddonByID;
-        
-        var expectedBytes = new byte[] { 0xFF, 0x90, 0x90, 0x01, 0x00, 0x00 }; // call    qword ptr [rax+190h]
-        
+
+        //var expectedBytes = new byte[] { 0xFF, 0x90, 0x90, 0x01, 0x00, 0x00 }; // call    qword ptr [rax+190h]
+        var expectedBytes = new byte[] { 0xE9, 0xB7, 0xC5, 0xAB, 0xFF, 0x90 };  //CN
+
         if (!SafeMemory.ReadBytes(updateAddonByIdAddress + 0x94, expectedBytes.Length, out var bytes)) {
             SimpleTweaksPlugin.Plugin.Error(new Exception("Failed to initalize UpdateAddon event handling. Some tweaks will not function correctly."));
             SimpleLog.Fatal("Failed to initalize UpdateAddon event handling.");
