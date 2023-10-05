@@ -46,31 +46,31 @@ public static unsafe class EventController {
         var updateAddonByIdAddress = (nint) AtkStage.GetSingleton()->RaptureAtkUnitManager->VTable->UpdateAddonByID;
 
         //var expectedBytes = new byte[] { 0xFF, 0x90, 0x90, 0x01, 0x00, 0x00 }; // call    qword ptr [rax+190h]
-        var expectedBytes = new byte[] { 0xE9, 0xB7, 0xC5, 0xAB, 0xFF, 0x90 };  //CN
+        // var expectedBytes = new byte[] { 0xE9, 0xB7, 0xC5, 0xAB, 0xFF, 0x90 };  //CN
 
-        if (!SafeMemory.ReadBytes(updateAddonByIdAddress + 0x94, expectedBytes.Length, out var bytes)) {
-            SimpleTweaksPlugin.Plugin.Error(new Exception("Failed to initalize UpdateAddon event handling. Some tweaks will not function correctly."));
-            SimpleLog.Fatal("Failed to initalize UpdateAddon event handling.");
-            return;
-        }
+        // if (!SafeMemory.ReadBytes(updateAddonByIdAddress + 0x94, expectedBytes.Length, out var bytes)) {
+        //     SimpleTweaksPlugin.Plugin.Error(new Exception("Failed to initalize UpdateAddon event handling. Some tweaks will not function correctly."));
+        //     SimpleLog.Fatal("Failed to initalize UpdateAddon event handling.");
+        //     return;
+        // }
 
-        SimpleLog.Debug("Verifying UpdateAddonByID");
-        SimpleLog.Debug($"  Expecting: {BitConverter.ToString(expectedBytes)}");
-        SimpleLog.Debug($"     Actual: {BitConverter.ToString(bytes)}");
+        // SimpleLog.Debug("Verifying UpdateAddonByID");
+        // SimpleLog.Debug($"  Expecting: {BitConverter.ToString(expectedBytes)}");
+        // SimpleLog.Debug($"     Actual: {BitConverter.ToString(bytes)}");
         
-        if (expectedBytes.Length != bytes.Length) {
-            SimpleTweaksPlugin.Plugin.Error(new Exception("Failed to initalize UpdateAddon event handling. Some tweaks will not function correctly."));
-            SimpleLog.Fatal("Failed to initalize UpdateAddon event handling - Read the incorrect number of bytes");
-            return;
-        }
+        // if (expectedBytes.Length != bytes.Length) {
+        //     SimpleTweaksPlugin.Plugin.Error(new Exception("Failed to initalize UpdateAddon event handling. Some tweaks will not function correctly."));
+        //     SimpleLog.Fatal("Failed to initalize UpdateAddon event handling - Read the incorrect number of bytes");
+        //     return;
+        // }
         
-        for (var i = 0; i < expectedBytes.Length; i++) {
-            if (expectedBytes[i] != bytes[i]) {
-                SimpleTweaksPlugin.Plugin.Error(new Exception("Failed to initalize UpdateAddon event handling. Some tweaks will not function correctly."));
-                SimpleLog.Fatal("Failed to initalize UpdateAddon event handling - Safety check failed. Expected bytes do not match read bytes.");
-                return;
-            }
-        }
+        // for (var i = 0; i < expectedBytes.Length; i++) {
+        //     if (expectedBytes[i] != bytes[i]) {
+        //         SimpleTweaksPlugin.Plugin.Error(new Exception("Failed to initalize UpdateAddon event handling. Some tweaks will not function correctly."));
+        //         SimpleLog.Fatal("Failed to initalize UpdateAddon event handling - Safety check failed. Expected bytes do not match read bytes.");
+        //         return;
+        //     }
+        // }
 
         _updateAddonByIdHook = Common.Hook<UpdateAddonByID>(updateAddonByIdAddress, UpdateAddonByIdDetour);
     }
