@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Dalamud.Hooking;
-using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 
 namespace SimpleTweaksPlugin.Utility;
@@ -120,7 +119,7 @@ public static class SignatureHelper {
             void Invalid(string message, bool prepend = true) {
                 var errorMsg = prepend ? $"Invalid Signature attribute for {selfType.FullName}.{info.Name}: {message}" : message;
                 if (fallible) {
-                    PluginLog.Warning(errorMsg);
+                    SimpleLog.Warning(errorMsg);
                 } else {
                     throw new Exception(errorMsg);
                 }
@@ -190,23 +189,23 @@ public static class SignatureHelper {
                         hookType = actualType.GetField("wrappedHook", BindingFlags.Instance | BindingFlags.NonPublic).FieldType;
                     }
 
-                    var ctor = hookType.GetConstructor(new[] { typeof(IntPtr), hookDelegateType });
-                    if (ctor == null) {
-                        SimpleLog.Error("Error in SignatureHelper: could not find Hook constructor");
+                    var createMethod = hookType.GetMethod("FromAddress", BindingFlags.Static | BindingFlags.NonPublic);
+                    if (createMethod == null) {
+                        SimpleTweaksPlugin.Plugin.Error(new Exception($"Error in SignatureHelper for {self.GetType().Name}: could not find Hook<{hookDelegateType.Name}>.FromAddress"));
                         continue;
                     }
 
-                    var hook = ctor.Invoke(new object?[] { ptr, detour });
+                    var hook = createMethod.Invoke(null, new object[] { ptr, detour, false });
 
                     if (isHookWrapper) {
                         var wrapperCtor = actualType.GetConstructor(new[] { hookType });
                         if (wrapperCtor == null) {
-                            SimpleLog.Error("Error in SignatureHelper: could not find HookWrapper constructor");
+                            SimpleTweaksPlugin.Plugin.Error(new Exception($"Error in SignatureHelper for {self.GetType().Name}: could not find could not find HookWrapper<{hookDelegateType.Name}> constructor"));
                             continue;
                         }
 
                         var wrapper = wrapperCtor.Invoke(new[] { hook });
-                        SimpleLog.Log($"Created Hook Wrapper");
+                        SimpleLog.Verbose($"Created Hook Wrapper");
                         info.SetValue(self, wrapper);
                     } else {
                         info.SetValue(self, hook);

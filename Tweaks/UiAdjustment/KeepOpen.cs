@@ -6,6 +6,7 @@ using SimpleTweaksPlugin.Utility;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 
+[TweakCategory(TweakCategory.UI)]
 public unsafe class KeepOpen : Tweak {
     public override string Name => "Keep Windows Open";
     public override string Description => "Prevents certain windows from hiding under specific circumstances.";
@@ -91,7 +92,7 @@ public unsafe class KeepOpen : Tweak {
             return hideHook.Original(atkUnitBase, a2, a3, a4);
         } finally {
             if (doReopen) {
-                atkUnitBase->Show(0);
+                atkUnitBase->Show(false, 0);
             }
         }
     }

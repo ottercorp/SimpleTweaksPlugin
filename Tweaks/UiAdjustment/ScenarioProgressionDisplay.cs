@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using Dalamud.Utility.Signatures;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets;
+using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
@@ -15,20 +15,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 [TweakName("Scenario Progression Display")]
 [TweakDescription("Shows the percentage of completion of the main scenario.")]
 [TweakAutoConfig]
-[TweakReleaseVersion("1.8.9.2")]
+[TweakReleaseVersion("1.9.0.0")]
 public unsafe class ScenarioProgressionDisplay : UiAdjustments.SubTweak {
-    // TODO: Remove this when ClientStructs is updated.
-    [StructLayout(LayoutKind.Explicit, Size = 0x30)]
-    public struct AgentScenarioTree {
-        [FieldOffset(0x00)] public AgentInterface AgentInterface;
-        [FieldOffset(0x28)] public AgentScenarioTreeData* Data;
-        
-        [StructLayout(LayoutKind.Explicit, Size = 0x30)]
-        public struct AgentScenarioTreeData {
-            [FieldOffset(0x00)] public ushort CurrentScenarioQuest;
-            [FieldOffset(0x06)] public ushort CompleteScenarioQuest; // Only populated if no MSQ is accepted
-        }
-    }
 
     private ScenarioTree finalScenario;
     private readonly Dictionary<uint, ScenarioTree> expansionBegins = new();
@@ -38,6 +26,9 @@ public unsafe class ScenarioProgressionDisplay : UiAdjustments.SubTweak {
         [TweakConfigOption("Show for current expansion", 1)]
         public bool UseCurrentExpansion = false;
 
+        [TweakConfigOption("Show percentage before quest", 2)]
+        public bool ShowBeforeQuest = false;
+
         [TweakConfigOption("Percentage Accuracy", 2, IntMin = 0, IntMax = 3, IntType = TweakConfigOptionAttribute.IntEditType.Slider, EnforcedLimit = true, EditorSize = 100)]
         public int Accuracy = 1;
     }
@@ -45,7 +36,7 @@ public unsafe class ScenarioProgressionDisplay : UiAdjustments.SubTweak {
     public Config TweakConfig { get; private set; }
 
     protected override void Enable() => UpdateAddon(Common.GetUnitBase("ScenarioTree"));
-    protected override void Disable() => UpdateAddon(Common.GetUnitBase("ScenarioTree"), true);
+    protected override void Disable() => UpdateAddon(Common.GetUnitBase("ScenarioTree"));
     protected override void ConfigChanged() => UpdateAddon(Common.GetUnitBase("ScenarioTree"));
 
     private float GetScenarioCompletionForCurrentExpansion() {
@@ -97,7 +88,7 @@ public unsafe class ScenarioProgressionDisplay : UiAdjustments.SubTweak {
     }
 
     private ScenarioTree GetCurrentScenarioTreeEntry() {
-        var agent = (AgentScenarioTree*)AgentModule.Instance()->GetAgentByInternalId(AgentId.ScenarioTree);
+        var agent = AgentScenarioTree.Instance();
         if (agent == null) return null;
         if (agent->Data == null) return null;
         uint index = agent->Data->CompleteScenarioQuest;
@@ -110,12 +101,8 @@ public unsafe class ScenarioProgressionDisplay : UiAdjustments.SubTweak {
         return result;
     }
 
-    private delegate void* RefreshAddon(AtkUnitBase* addon, void* a2, void* a3);
-
-    [TweakHook, Signature("48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC 20 49 8B F8 8B F2 48 8B D9 85 D2 0F 84 ?? ?? ?? ?? 4D 85 C0 0F 84 ?? ?? ?? ?? 49 8B C8 E8 ?? ?? ?? ?? 85 C0 0F 88", DetourName = nameof(RefreshDetour))]
-    private HookWrapper<RefreshAddon> refreshAddonHook;
-
-    private void UpdateAddon(AtkUnitBase* addon = null, bool cleanup = false) {
+    [AddonPostRefresh("ScenarioTree")]
+    private void UpdateAddon(AtkUnitBase* addon) {
         if (addon == null) return;
         
         if (addon->AtkValuesCount < 8) return;
@@ -130,9 +117,14 @@ public unsafe class ScenarioProgressionDisplay : UiAdjustments.SubTweak {
 
         var text = Common.ReadSeString(textValue->String);
         
-        if (!cleanup) {
+        if (!Unloading) {
             var percentage = TweakConfig.UseCurrentExpansion ? GetScenarioCompletionForCurrentExpansion() : GetScenarioCompletion();
-            text.Append(string.Format($" ({{0:P{Math.Clamp(TweakConfig.Accuracy, 0, 3)}}})", percentage));
+            var percentageString = new TextPayload(string.Format($" ({{0:P{Math.Clamp(TweakConfig.Accuracy, 0, 3)}}}) ", percentage));
+            if (TweakConfig.ShowBeforeQuest) {
+                text.Payloads.Insert(0, percentageString);
+            } else {
+                text.Payloads.Add(percentageString);
+            }
         }
 
         var encoded = text.Encode();
@@ -143,11 +135,5 @@ public unsafe class ScenarioProgressionDisplay : UiAdjustments.SubTweak {
             SimpleLog.Verbose($"Update ScenarioTree: {text.TextValue}");
             textNode->SetText(encoded);
         }
-    }
-    
-    private void* RefreshDetour(AtkUnitBase* addon, void* a2, void* a3) {
-        var o = refreshAddonHook.Original(addon, a2, a3);
-        UpdateAddon(addon);
-        return o;
     }
 }

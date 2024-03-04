@@ -2,6 +2,9 @@ name: Build SimpleTweaksPlugin
 on:
   push:
     branches: 'main'
+concurrency:
+  group: build_st
+  cancel-in-progress: true
 jobs:
   build:
     if: "! contains(toJSON(github.event.commits.*.message), '[skip-ci]')"
@@ -62,7 +65,7 @@ jobs:
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
 
       - name: Download Dalamud staging
-        if: "contains(github.event.head_commit.message, '[stg]')"
+        if: "!contains(github.event.head_commit.message, '[stg]')"
         run: |
             Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/stg/latest.zip -OutFile latest.zip
             Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"

@@ -1,5 +1,4 @@
-﻿using Dalamud.Game;
-using Dalamud.Game.Command;
+﻿using Dalamud.Game.Command;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using SimpleTweaksPlugin.Utility;
 using System;
@@ -31,19 +30,19 @@ public unsafe class HideChat : ChatTweaks.SubTweak
             ShowInHelp = ShowInHelp
         });
 
-        Service.Framework.Update += FrameworkUpdate;
+        Common.FrameworkUpdate += FrameworkUpdate;
         base.Enable();
     }
 
     protected override void Disable()
     {
         Service.Commands.RemoveHandler(Command);
-        Service.Framework.Update -= FrameworkUpdate;
+        Common.FrameworkUpdate -= FrameworkUpdate;
         SetVisibility(true);
         base.Disable();
     }
 
-    private void FrameworkUpdate(Framework framework)
+    private void FrameworkUpdate()
     {
         try
         {

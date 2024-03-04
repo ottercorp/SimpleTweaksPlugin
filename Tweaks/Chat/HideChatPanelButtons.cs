@@ -1,4 +1,5 @@
 ﻿using FFXIVClientStructs.FFXIV.Component.GUI;
+using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.Utility;
 
 namespace SimpleTweaksPlugin.Tweaks.Chat; 
@@ -10,12 +11,12 @@ public unsafe class HideChatPanelButtons : ChatTweaks.SubTweak {
     private readonly string[] panels = { "ChatLogPanel_1", "ChatLogPanel_2", "ChatLogPanel_3" };
 
     protected override void Enable() {
-        Service.ClientState.TerritoryChanged += TerritoryChange;
         ToggleButtons(false);
         base.Enable();
     }
 
-    private void TerritoryChange(object _, ushort territory) => ToggleButtons(false);
+    [TerritoryChanged]
+    private void TerritoryChange(ushort territory) => ToggleButtons(false);
 
     private void ToggleButtons(AtkUnitBase* atkUnitBase, bool visible) {
         if (atkUnitBase == null) return;
@@ -33,7 +34,6 @@ public unsafe class HideChatPanelButtons : ChatTweaks.SubTweak {
     }
 
     protected override void Disable() {
-        Service.ClientState.TerritoryChanged -= TerritoryChange;
         ToggleButtons(true);
         base.Disable();
     }

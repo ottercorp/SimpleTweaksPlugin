@@ -1,16 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Game.Config;
-using FFXIVClientStructs.FFXIV.Client.System.Framework;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using ImGuiNET;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
-using FFXIVClientStructs.FFXIV.Component.GUI;
 using SimpleTweaksPlugin.Tweaks.AbstractTweaks;
-using SimpleTweaksPlugin.Utility;
 
 namespace SimpleTweaksPlugin.Tweaks; 
 
@@ -134,6 +129,7 @@ public unsafe class SetOptionCommand : CommandTweak {
                 new() { ["max"] = 0, ["min"] = 4 }
             );
         }, "cdl") { AllowToggle = true },
+        new OptionDefinition<uint>("DirectChat", "DirectChat", OptionGroup.UiControl, ValueType.Boolean, "dc") { AllowToggle = true },
     };
 
     protected override DrawConfigDelegate DrawConfigTree => (ref bool _) => {

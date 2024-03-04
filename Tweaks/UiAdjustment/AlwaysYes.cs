@@ -1,17 +1,20 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
+using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Interface;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
+using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 
+[Changelog("1.9.2.1", "Added support for Blunderville exit dialog.")]
 public unsafe class AlwaysYes : UiAdjustments.SubTweak {
     public override string Name => "Always Yes";
-    public override string Description => "Default cursor to yes when using confirm (num 0).";
+    public override string Description => "Sets the default action in dialog boxes to yes when using confirm (num 0).";
     protected override string Author => "Aireil";
 
     public class Configs : TweakConfig {
@@ -28,6 +31,7 @@ public unsafe class AlwaysYes : UiAdjustments.SubTweak {
         public bool Desynthesis = true;
         public bool Lobby = true;
         public bool ItemExchangeConfirmations = true;
+        public bool BlundervilleExitDialog = true;
         public List<string> ExceptionsYesNo = new();
     }
 
@@ -91,6 +95,7 @@ public unsafe class AlwaysYes : UiAdjustments.SubTweak {
         hasChanged |= ImGui.Checkbox("Desynthesis", ref Config.Desynthesis);
         hasChanged |= ImGui.Checkbox("Character selection dialogs", ref Config.Lobby);
         hasChanged |= ImGui.Checkbox("Item exchange confirmations", ref Config.ItemExchangeConfirmations);
+        hasChanged |= ImGui.Checkbox("Blunderville exit dialog", ref Config.BlundervilleExitDialog);
 
         ImGui.Unindent();
 
@@ -106,11 +111,10 @@ public unsafe class AlwaysYes : UiAdjustments.SubTweak {
 
     protected override void Enable() {
         Config = LoadConfig<Configs>() ?? new Configs();
-        Common.AddonSetup += OnAddonSetup;
-        base.Enable();
     }
 
-    private void OnAddonSetup(SetupAddonArgs args) {
+    [AddonPostSetup]
+    private void OnAddonSetup(AddonSetupArgs args) {
         switch (args.AddonName) {
             case "SelectYesno":
                 if (Config.YesNo && !IsYesnoAnException(args.Addon)) SetFocusYes(args.Addon, 8, 9, 4);
@@ -157,10 +161,13 @@ public unsafe class AlwaysYes : UiAdjustments.SubTweak {
             case "ShopExchangeItemDialog":
                 if (Config.ItemExchangeConfirmations) SetFocusYes(args.Addon, 18);
                 return;
+            case "FGSExitDialog":
+                if (Config.BlundervilleExitDialog) SetSpecialFocus(args.Addon, 10, 6);
+                return;
         }
     }
-
-    private void SetFocusYes(AtkUnitBase* unitBase, uint yesButtonId, uint? yesHoldButtonId = null, uint? checkBoxId = null) {
+    private void SetFocusYes(nint unitBaseAddress, uint yesButtonId, uint? yesHoldButtonId = null, uint? checkBoxId = null) {
+        var unitBase = (AtkUnitBase*)unitBaseAddress;
         if (unitBase == null) return;
 
         var yesButton = unitBase->UldManager.SearchNodeById(yesButtonId);
@@ -192,7 +199,23 @@ public unsafe class AlwaysYes : UiAdjustments.SubTweak {
         unitBase->CursorTarget = yesCollision;
     }
 
-    private bool IsYesnoAnException(AtkUnitBase* unitBase) {
+    private static void SetSpecialFocus(nint unitBaseAddress, uint buttonId, uint collisionId)
+    {
+        var unitBase = (AtkUnitBase*)unitBaseAddress;
+        if (unitBase == null) return;
+
+        var button = unitBase->UldManager.SearchNodeById(buttonId);
+        if (button == null) return;
+
+        var collision = ((AtkComponentNode *)button)->Component->UldManager.SearchNodeById(collisionId);
+        if (collision == null) return;
+
+        unitBase->SetFocusNode(collision);
+        unitBase->CursorTarget = collision;
+    }
+    
+    private bool IsYesnoAnException(nint unitBaseAddress) {
+        var unitBase = (AtkUnitBase*)unitBaseAddress;
         if (Config.ExceptionsYesNo.Count == 0 || unitBase == null) return false;
 
         var textNode = (AtkTextNode *)unitBase->UldManager.SearchNodeById(2);
@@ -201,10 +224,5 @@ public unsafe class AlwaysYes : UiAdjustments.SubTweak {
         var text = Common.ReadSeString(textNode->NodeText).TextValue.ReplaceLineEndings(string.Empty);
 
         return text != string.Empty && Config.ExceptionsYesNo.Any(val => text.Contains(val));
-    }
-
-    protected override void Disable() {
-        Common.AddonSetup -= OnAddonSetup;
-        base.Disable();
     }
 }

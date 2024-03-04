@@ -6,6 +6,7 @@ using SimpleTweaksPlugin.TweakSystem;
 
 namespace SimpleTweaksPlugin.Tweaks;
 
+[TweakCategory(TweakCategory.Command)]
 public unsafe class SystemConfigInGroupPose : Tweak {
     public override string Name => "SystemConfig in Group Pose";
     public override string Description => "Allows the use of the /systemconfig command while in gpose.";
@@ -45,7 +46,7 @@ public unsafe class SystemConfigInGroupPose : Tweak {
 
     private void OnChatMessage(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled) {
         if (type != XivChatType.ErrorMessage) return;
-        if (!Service.PluginInterface.UiBuilder.GposeActive) return;
+        if (!Service.ClientState.IsGPosing) return;
         if (commands.Contains(message.TextValue)) {
             var agent = AgentModule.Instance()->GetAgentByInternalId(AgentId.Config);
             agent->Show();

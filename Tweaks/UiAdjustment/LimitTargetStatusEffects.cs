@@ -1,15 +1,13 @@
-﻿using Dalamud.Game;
-using ImGuiNET;
+﻿using ImGuiNET;
 using SimpleTweaksPlugin.Tweaks.UiAdjustment;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Game.ClientState.Conditions;
-using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
-using Dalamud.Logging;
+using Dalamud.Interface.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
@@ -42,11 +40,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         public Configs Config { get; private set; }
         private bool isDirty;
         private static string statusSearch = string.Empty;
-        private readonly ushort[] removedStatus = new ushort[30 * 2];
+        private readonly ushort[] removedStatus = new ushort[60 * 2];
         private readonly HashSet<ushort> filteredStatus = new();
         private static Dictionary<ushort, Lumina.Excel.GeneratedSheets.Status> statusSheet;
 
-        private delegate long UpdateTargetStatusDelegate(void* agentHud, void* numberArray, void* stringArray, StatusManager statusManager, void* target, void* isLocalPlayerAndRollPlaying);
+        private delegate long UpdateTargetStatusDelegate(void* agentHud, void* numberArray, void* stringArray, StatusManager* statusManager, void* target, void* isLocalPlayerAndRollPlaying);
         private HookWrapper<UpdateTargetStatusDelegate> updateTargetStatusHook;
 
         protected override DrawConfigDelegate DrawConfigTree => (ref bool hasChanged) => {
@@ -138,7 +136,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         protected override void Enable() {
             Config = LoadConfig<Configs>() ?? PluginConfig.UiAdjustments.LimitTargetStatusEffects ?? new Configs();
             UpdateFilteredStatus();
-            Service.Framework.Update += FrameworkOnUpdate;
+            Common.FrameworkUpdate += FrameworkOnUpdate;
             Service.ClientState.EnterPvP += OnEnterPvP;
             Service.ClientState.LeavePvP += OnLeavePvP;
 
@@ -158,13 +156,13 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             updateTargetStatusHook?.Enable();
         }
 
-        private long UpdateTargetStatusDetour(void* agentHud, void* numberArray, void* stringArray, StatusManager statusManager, void* target, void* isLocalPlayerAndRollPlaying) {
+        private long UpdateTargetStatusDetour(void* agentHud, void* numberArray, void* stringArray, StatusManager* statusManager, void* target, void* isLocalPlayerAndRollPlaying) {
             long ret = 0;
             try {
                 GameObject* localPlayer = null;
                 var filteredIndex = 0;
-                for (ushort i = 0; i < 30; i++) {
-                    var status = (Status*)(statusManager.Status + (0xc * i));
+                for (ushort i = 0; i < statusManager->NumValidStatuses; i++) {
+                    var status = (Status*)(statusManager->Status + (0xc * i));
                     var statusId = status->StatusID;
                     if (statusId == 0 || !filteredStatus.Contains(statusId)) {
                         continue;
@@ -189,10 +187,10 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 ret = updateTargetStatusHook.Original(agentHud, numberArray, stringArray, statusManager, target, isLocalPlayerAndRollPlaying);
 
                 for (var i = 0; i < filteredIndex; i += 2) {
-                    ((Status*)(statusManager.Status + (0xc * removedStatus[i])))->StatusID = removedStatus[i + 1];
+                    ((Status*)(statusManager->Status + (0xc * removedStatus[i])))->StatusID = removedStatus[i + 1];
                 }
             } catch (Exception ex) {
-                PluginLog.Error(ex, "Exception in UpdateTargetStatusDetour");
+                SimpleLog.Error(ex, "Exception in UpdateTargetStatusDetour");
             }
 
             return ret;
@@ -204,12 +202,12 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             updateTargetStatusHook?.Disable();
             Service.ClientState.LeavePvP -= OnLeavePvP;
             Service.ClientState.EnterPvP -= OnEnterPvP;
-            Service.Framework.Update -= FrameworkOnUpdate;
+            Common.FrameworkUpdate -= FrameworkOnUpdate;
             UpdateTargetStatus(true);
             base.Disable();
         }
 
-        private void FrameworkOnUpdate(Framework framework) {
+        private void FrameworkOnUpdate() {
             try {
                 UpdateTargetStatus();
             } catch (Exception ex) {

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
-using Dalamud.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets;
 using SimpleTweaksPlugin.Utility;
@@ -12,21 +11,21 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 
 public unsafe class ReducedDeepDungeonInfo : UiAdjustments.SubTweak {
     public override string Name => "Reduced Deep Dungeon Info";
-    public override string Description => "Removes the redundant infos from the deep dungeon character info.";
+    public override string Description => "Removes redundant information from the deep dungeon character info.";
     protected override string Author => "Aireil";
 
     protected override void Enable() {
-        Service.Framework.Update += OnFrameworkUpdate;
+        Common.FrameworkUpdate += OnFrameworkUpdate;
         base.Enable();
     }
 
     protected override void Disable() {
-        Service.Framework.Update -= OnFrameworkUpdate;
+        Common.FrameworkUpdate -= OnFrameworkUpdate;
         base.Disable();
         UpdateDeepDungeonStatus(true);
     }
 
-    private void OnFrameworkUpdate(Framework framework) {
+    private void OnFrameworkUpdate() {
         try {
             UpdateDeepDungeonStatus();
         }
@@ -151,7 +150,7 @@ public unsafe class ReducedDeepDungeonInfo : UiAdjustments.SubTweak {
         n = n->PrevSiblingNode;
         UiHelper.SetSize(n, width - 2, height - 2); // Focused Border
 
-        windowNode->AtkResNode.Flags_2 |= 0x1;
+        windowNode->AtkResNode.DrawFlags |= 0x1;
     }
 
     private IEnumerable<Payload> GetAetherpoolPayloads(SeString aetherpoolSeStr)

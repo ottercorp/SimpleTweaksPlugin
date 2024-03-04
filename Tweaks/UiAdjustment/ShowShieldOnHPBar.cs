@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Numerics;
-using Dalamud.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -33,14 +32,14 @@ public unsafe class ShowShieldOnHPBar: UiAdjustments.SubTweak
     protected override void Enable()
     {
         Config = LoadConfig<Configs>() ?? new Configs();
-        Service.Framework.Update += FrameworkUpdate;
+        Common.FrameworkUpdate += FrameworkUpdate;
         base.Enable();
     }
 
     protected override void Disable()
     {
         SaveConfig(Config);
-        Service.Framework.Update -= FrameworkUpdate;
+        Common.FrameworkUpdate -= FrameworkUpdate;
         Finalize(Common.GetUnitBase("_ParameterWidget"));
         base.Disable();
     }
@@ -72,7 +71,7 @@ public unsafe class ShowShieldOnHPBar: UiAdjustments.SubTweak
     }
     
     
-    private void FrameworkUpdate(Framework framework)
+    private void FrameworkUpdate()
     {           
         try
         {
@@ -94,7 +93,6 @@ public unsafe class ShowShieldOnHPBar: UiAdjustments.SubTweak
 
             void CreateBar(uint id) {
                 var bar = IMemorySpace.GetUISpace()->Create<AtkNineGridNode>();
-                bar->Ctor();
                 bar->AtkResNode.Type = NodeType.NineGrid;
                 bar->AtkResNode.NodeID = id;
                 bar->PartsList = hpNineGrid->PartsList;
@@ -108,11 +106,11 @@ public unsafe class ShowShieldOnHPBar: UiAdjustments.SubTweak
                 bar->AtkResNode.MultiplyRed = 255;
                 bar->AtkResNode.MultiplyGreen = 255;
                 bar->AtkResNode.MultiplyBlue = 0;
-                bar->AtkResNode.AddRed = ushort.MaxValue;
-                bar->AtkResNode.AddGreen = ushort.MaxValue;
-                bar->AtkResNode.AddBlue = ushort.MaxValue;
+                bar->AtkResNode.AddRed = -1;
+                bar->AtkResNode.AddGreen = -1;
+                bar->AtkResNode.AddBlue = -1;
                 bar->AtkResNode.Width = 0;
-                bar->AtkResNode.Flags_2 |= 1;
+                bar->AtkResNode.DrawFlags |= 1;
                 bar->AtkResNode.SetHeight(20);
                 bar->AtkResNode.SetWidth(160);
                 bar->AtkResNode.SetScale(1, 1);
@@ -146,7 +144,7 @@ public unsafe class ShowShieldOnHPBar: UiAdjustments.SubTweak
             
             shieldGrid->AtkResNode.X = playerHpPercentage * 148;
             shieldGrid->AtkResNode.SetWidth(shieldPercentage > 0 ? (ushort)(shieldPercentage * 148 + 12 + 0.5f) : (ushort)0);
-            shieldGrid->AtkResNode.Flags_2 |= 1;
+            shieldGrid->AtkResNode.DrawFlags |= 1;
             overShieldGrid->AtkResNode.SetWidth(shieldOverPercentage > 0 ? (ushort)(shieldOverPercentage * 148 + 12 + 0.5f) : (ushort)0);
 
             shieldGrid->AtkResNode.MultiplyRed = (byte) (255 * Config.ShieldColour.X);

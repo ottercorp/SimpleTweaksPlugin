@@ -1,11 +1,9 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Numerics;
-using Dalamud.Game;
 using Dalamud.Game.ClientState.Objects.Types;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
-using SimpleTweaksPlugin.Tweaks.UiAdjustment;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 using AlignmentType = FFXIVClientStructs.FFXIV.Component.GUI.AlignmentType;
@@ -99,18 +97,18 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
 
         protected override void Enable() {
             Config = LoadConfig<Configs>() ?? new Configs();
-            Service.Framework.Update += FrameworkUpdate;
+            Common.FrameworkUpdate += FrameworkUpdate;
             base.Enable();
         }
 
         protected override void Disable() {
             SaveConfig(Config);
-            Service.Framework.Update -= FrameworkUpdate;
+            Common.FrameworkUpdate -= FrameworkUpdate;
             Update(true);
             base.Disable();
         }
 
-        private void FrameworkUpdate(Framework framework) {
+        private void FrameworkUpdate() {
             try {
                 Update();
             } catch(Exception ex) {

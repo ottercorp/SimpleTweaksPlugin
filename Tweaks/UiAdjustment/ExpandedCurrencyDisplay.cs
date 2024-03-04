@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -8,10 +8,12 @@ using Dalamud;
 using Dalamud.Game.Text;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
+using Dalamud.Interface.Utility;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
@@ -105,8 +107,8 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak
         AddChangelog("1.8.8.0", "Added tooltips when mouse is over the currency icons.");
         AddChangelog("1.8.8.1", "Attempting to avoid gil addon getting thrown around when layout changes.");
         AddChangelog("1.8.8.2", "Fixed positioning of gil display moving when scale is anything other than 100%");
-        AddChangelog("1.8.9.2", "Added an option to disable tooltips.");
-        AddChangelog("1.8.9.2", "Fixed currency window positioning breaking when resizing game window.");
+        AddChangelog("1.9.0.0", "Added an option to disable tooltips.");
+        AddChangelog("1.9.0.0", "Fixed currency window positioning breaking when resizing game window.");
         base.Setup();
     }
 
@@ -264,8 +266,6 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak
     private void OnFrameworkUpdate()
     {
         if (!UiHelper.IsAddonReady(AddonMoney)) return;
-        using var _ = PerformanceMonitor.Run();
-
         
         // Button Component Node
         var currencyPositionNode = Common.GetNodeByID(&AddonMoney->UldManager, 3);

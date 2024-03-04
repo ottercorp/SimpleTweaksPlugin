@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Dalamud.Memory;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using Lumina.Excel.GeneratedSheets;
 using SimpleTweaksPlugin.Utility;
 
@@ -17,7 +15,7 @@ public unsafe class TrackFadedRolls : TooltipTweaks.SubTweak {
     
     public override string Name => "Track Faded Orchestrion Rolls";
     protected override string Author => "KazWolfe";
-    public override string Description => "Adds the collected checkmark to Faded Orchestrion Rolls.";
+    public override string Description => "Adds the collectable checkmark to Faded Orchestrion Rolls.";
     
     private delegate byte IsItemActionUnlocked(UIState* uiState, IntPtr item);
     private HookWrapper<IsItemActionUnlocked>? _isItemActionUnlockedHookWrapper;

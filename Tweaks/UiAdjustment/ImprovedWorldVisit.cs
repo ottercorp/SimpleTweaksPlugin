@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using Dalamud.Game;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using SimpleTweaksPlugin.Utility;
@@ -14,12 +13,12 @@ public unsafe class ImprovedWorldVisit : UiAdjustments.SubTweak {
     public override string Description => "Cleans up the world visit menu and shows your current location in order on the list.";
 
     protected override void Enable() {
-        Service.Framework.Update += FrameworkOnOnUpdateEvent;
+        Common.FrameworkUpdate += FrameworkOnOnUpdateEvent;
         base.Enable();
     }
 
     protected override void Disable() {
-        Service.Framework.Update -= FrameworkOnOnUpdateEvent;
+        Common.FrameworkUpdate -= FrameworkOnOnUpdateEvent;
         base.Disable();
     }
         
@@ -134,7 +133,7 @@ public unsafe class ImprovedWorldVisit : UiAdjustments.SubTweak {
 
                 if (!inserted) continue;
                 nodes[i]->AtkResNode.Y += 24;
-                nodes[i]->AtkResNode.Flags_2 |= 0x1;
+                nodes[i]->AtkResNode.DrawFlags |= 0x1;
             }
 
             if (!inserted) {
@@ -166,7 +165,7 @@ public unsafe class ImprovedWorldVisit : UiAdjustments.SubTweak {
         }
     }
 
-    private void FrameworkOnOnUpdateEvent(Framework framework) {
+    private void FrameworkOnOnUpdateEvent() {
         try {
             CheckWindow();
         } catch (Exception ex) {

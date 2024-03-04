@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Dalamud.Game;
 using Dalamud.Game.ClientState.Conditions;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -47,11 +46,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         protected override void Enable() {
             outOfCombatTimer.Restart();
             Config = LoadConfig<Configs>() ?? new Configs();
-            Service.Framework.Update += FrameworkUpdate;
+            Common.FrameworkUpdate += FrameworkUpdate;
             base.Enable();
         }
         
-        private void FrameworkUpdate(Framework framework) {
+        private void FrameworkUpdate() {
             try {
                 Update();
             } catch {
@@ -70,14 +69,15 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             if (Common.GetUnitBase("JobHudNotice") != null) reset = true;
             var stage = AtkStage.GetSingleton();
             var loadedUnitsList = &stage->RaptureAtkUnitManager->AtkUnitManager.AllLoadedUnitsList;
-            var addonList = &loadedUnitsList->AtkUnitEntries;
-            #if DEBUG
+#if DEBUG
             PerformanceMonitor.Begin();
             #endif
             var character = (Character*)(Service.ClientState.LocalPlayer?.Address ?? nint.Zero);
-            for (var i = 0; i < loadedUnitsList->Count; i++) {
-                var addon = addonList[i];
-                var name = Marshal.PtrToStringUTF8(new IntPtr(addon->Name));
+
+            foreach (var j in Enumerable.Range(0, Math.Min(loadedUnitsList->Count, loadedUnitsList->EntriesSpan.Length))) {
+                var addon = loadedUnitsList->EntriesSpan[j].Value;
+                if (addon == null) continue;
+                var name = Marshal.PtrToStringAnsi(new IntPtr(addon->Name));
                 
                 if (name != null && name.StartsWith("JobHud")) {
                     if (reset || Config.ShowInDuty && InCombatDuty) {
@@ -101,7 +101,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         }
 
         protected override void Disable() {
-            Service.Framework.Update -= FrameworkUpdate;
+            Common.FrameworkUpdate -= FrameworkUpdate;
             try {
                 Update(true);
             } catch {

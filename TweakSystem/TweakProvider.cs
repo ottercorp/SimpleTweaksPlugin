@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Dalamud.Logging;
 
 namespace SimpleTweaksPlugin.TweakSystem; 
 
@@ -24,6 +23,11 @@ public class TweakProvider : IDisposable {
             SimpleLog.Debug($"Initalizing Tweak: {t.Name}");
             try {
                 var tweak = (BaseTweak) Activator.CreateInstance(t)!;
+                if (SimpleTweaksPlugin.Plugin.GetTweakById(tweak.Key) != null) {
+                    SimpleLog.Warning($"Skipped loading tweak from class '{t.Namespace}.{t.Name}'. Tweak with key '{tweak.Key}' already loaded.");
+                    continue;
+                }
+
                 tweak.InterfaceSetup(SimpleTweaksPlugin.Plugin, Service.PluginInterface, SimpleTweaksPlugin.Plugin.PluginConfig, this);
                 if (tweak.CanLoad) {
                     var blacklistKey = tweak.Key;
@@ -51,10 +55,11 @@ public class TweakProvider : IDisposable {
                     Tweaks.Add(tweak);
                 }
             } catch (Exception ex) {
-                PluginLog.Error(ex, $"Failed loading tweak '{t.Name}'.");
+                SimpleLog.Error(ex, $"Failed loading tweak '{t.Name}'.");
             }
         }
         SimpleTweaksPlugin.Plugin.PluginConfig.RefreshSearch();
+        SimpleTweaksPluginConfig.RebuildTweakList();
     }
 
     public void UnloadTweaks() {
@@ -78,6 +83,7 @@ public class TweakProvider : IDisposable {
         }
         Tweaks.Clear();
         SimpleTweaksPlugin.Plugin.PluginConfig.RefreshSearch();
+        SimpleTweaksPluginConfig.RebuildTweakList();
     }
 
 

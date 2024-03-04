@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Numerics;
-using Dalamud.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
+using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 
@@ -65,48 +65,48 @@ public unsafe class MinimapAdjustments : UiAdjustments.SubTweak {
     protected override void Enable() {
         Config = LoadConfig<Configs>() ?? new Configs();
         Service.ClientState.Login += OnLogin;
-        Service.ClientState.TerritoryChanged += OnTerritoryChanged;
         base.Enable();
         Update();
     }
 
-    private void OnTerritoryChanged(object sender, ushort e) {
+    [TerritoryChanged]
+    private void OnTerritoryChanged(ushort _) {
         sw.Restart();
-        Service.Framework.Update -= WaitForUpdate;
-        Service.Framework.Update += WaitForUpdate;
+        Common.FrameworkUpdate -= WaitForUpdate;
+        Common.FrameworkUpdate += WaitForUpdate;
     }
 
     protected override void Disable() {
         SaveConfig(Config);
-        Service.Framework.Update -= WaitForUpdate;
+        Common.FrameworkUpdate -= WaitForUpdate;
         Service.ClientState.Login -= OnLogin;
         base.Disable();
         Update();
     }
 
         
-    private void OnLogin(object sender, EventArgs e) {
+    private void OnLogin() {
         sw.Restart();
-        Service.Framework.Update -= WaitForUpdate;
-        Service.Framework.Update += WaitForUpdate;
+        Common.FrameworkUpdate -= WaitForUpdate;
+        Common.FrameworkUpdate += WaitForUpdate;
     }
 
-    private void WaitForUpdate(Framework framework) {
+    private void WaitForUpdate() {
         try {
             if (!sw.IsRunning) sw.Restart();
             var unitBase = (AtkUnitBase*) Service.GameGui.GetAddonByName("_NaviMap", 1);
             if (unitBase == null) {
                 if (sw.ElapsedMilliseconds > 30000) {
                     sw.Stop();
-                    Service.Framework.Update -= WaitForUpdate;
+                    Common.FrameworkUpdate -= WaitForUpdate;
                 }
                 return;
             }
             Update();
-            Service.Framework.Update -= WaitForUpdate;
+            Common.FrameworkUpdate -= WaitForUpdate;
         } catch (Exception ex) {
             SimpleLog.Error(ex);
-            Service.Framework.Update -= WaitForUpdate;
+            Common.FrameworkUpdate -= WaitForUpdate;
         }
     }
 

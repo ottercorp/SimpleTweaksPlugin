@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
-using Dalamud.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
+using FFXIVClientStructs.Interop;
 using ImGuiNET;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -68,11 +68,11 @@ public unsafe class SyncGathererBars : Tweak {
 
     protected override void Enable() {
         Config = LoadConfig<Configs>() ?? new Configs();
-        Service.Framework.Update += FrameworkOnUpdate;
+        Common.FrameworkUpdate += FrameworkOnUpdate;
         base.Enable();
     }
 
-    private void FrameworkOnUpdate(Framework framework) {
+    private void FrameworkOnUpdate() {
         if (++checkBar >= 18) checkBar = 0;
         if (checkBar < 10 && !Config.StandardBars[checkBar]) return;
         if (checkBar >= 10 && !Config.CrossBars[checkBar - 10]) return;
@@ -90,36 +90,36 @@ public unsafe class SyncGathererBars : Tweak {
         }
 
         var hotbarModule = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GetUiModule()->GetRaptureHotbarModule();
-
-        var currentId = (int)Service.ClientState.LocalPlayer?.ClassJob.Id;
+        if (Service.ClientState.LocalPlayer == null) return;
+        var currentId = (int)Service.ClientState.LocalPlayer.ClassJob.Id;
         if (currentId is not (16 or 17)) return;
         var otherId = currentId is 16 ? 17 : 16;
 
         var swapDict = actionSwaps[currentId is 16 ? 0 : 1];
-        var current = hotbarModule->SavedClassJob[currentId];
-        var other = hotbarModule->SavedClassJob[otherId];
+        var current = hotbarModule->SavedHotBarsSpan.GetPointer(currentId);
+        var other = hotbarModule->SavedHotBarsSpan.GetPointer(otherId);
 
-        var cBar = current->Bar[checkBar];
-        var oBar = other->Bar[checkBar];
+        var cBar = current->HotBarsSpan.GetPointer(checkBar);
+        var oBar = other->HotBarsSpan.GetPointer(checkBar);
 
         for (var i = 0; i < 16; i++) {
-            var cSlot = cBar->Slot[i];
-            var oSlot = oBar->Slot[i];
-            oSlot->Type = cSlot->Type;
-            if (cSlot->Type == HotbarSlotType.Action) {
-                if (swapDict.ContainsKey(cSlot->ID)) {
-                    oSlot->ID = swapDict[cSlot->ID];
+            var cSlot = cBar->SlotsSpan.GetPointer(i);
+            var oSlot = oBar->SlotsSpan.GetPointer(i);
+            oSlot->CommandType = cSlot->CommandType;
+            if (cSlot->CommandType == HotbarSlotType.Action) {
+                if (swapDict.ContainsKey(cSlot->CommandId)) {
+                    oSlot->CommandId = swapDict[cSlot->CommandId];
                 } else {
-                    oSlot->ID = cSlot->ID;
+                    oSlot->CommandId = cSlot->CommandId;
                 }
             } else {
-                oSlot->ID = cSlot->ID;
+                oSlot->CommandId = cSlot->CommandId;
             }
         }
     }
 
     protected override void Disable() {
-        Service.Framework.Update -= FrameworkOnUpdate;
+        Common.FrameworkUpdate -= FrameworkOnUpdate;
         SaveConfig(Config);
         base.Disable();
     }

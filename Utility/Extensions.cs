@@ -2,13 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.System.String;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
+using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace SimpleTweaksPlugin.Utility; 
 
@@ -72,8 +76,8 @@ public static class Extensions {
         { VirtualKey.MENU, "Alt"},
         { VirtualKey.SHIFT, "Shift"},
     };
-    public static bool Cutscene(this Condition condition) => condition[ConditionFlag.WatchingCutscene] || condition[ConditionFlag.WatchingCutscene78] || condition[ConditionFlag.OccupiedInCutSceneEvent];
-    public static bool Duty(this Condition condition) => condition[ConditionFlag.BoundByDuty] || condition[ConditionFlag.BoundByDuty56] || condition[ConditionFlag.BoundToDuty97];
+    public static bool Cutscene(this ICondition condition) => condition[ConditionFlag.WatchingCutscene] || condition[ConditionFlag.WatchingCutscene78] || condition[ConditionFlag.OccupiedInCutSceneEvent];
+    public static bool Duty(this ICondition condition) => condition[ConditionFlag.BoundByDuty] || condition[ConditionFlag.BoundByDuty56] || condition[ConditionFlag.BoundToDuty97];
     public static string GetKeyName(this VirtualKey k) => NamedKeys.ContainsKey(k) ? NamedKeys[k] : k.ToString();
     
     public static void Replace(this List<byte> byteList, IEnumerable<byte> search, IEnumerable<byte> replace) {
@@ -101,7 +105,7 @@ public static class Extensions {
         str.Append(NewLinePayload.Payload);
     }
     
-    public static bool AnyExcept(this Condition condition, params ConditionFlag[] exceptFlags) {
+    public static bool AnyExcept(this ICondition condition, params ConditionFlag[] exceptFlags) {
         for (int flag = 0; flag < 100; ++flag) {
             if (exceptFlags.Contains((ConditionFlag)flag)) continue;
             if (condition[flag]) return true;
@@ -114,7 +118,7 @@ public static class Extensions {
         private readonly Span<Pointer<T>> items;
         public PointerSpanUnboxer(Span<Pointer<T>> span) {
             items = span;
-            currentIndex = 0;
+            currentIndex = -1;
         }
 
         public bool MoveNext() {
@@ -128,11 +132,48 @@ public static class Extensions {
         public PointerSpanUnboxer<T> GetEnumerator() => new(items);
     }
     
+    public static PointerReadOnlySpanUnboxer<T> Unbox<T>(this ReadOnlySpan<Pointer<T>> span) where T : unmanaged {
+        return new PointerReadOnlySpanUnboxer<T>(span);
+    }
+    
+    public unsafe ref struct PointerReadOnlySpanUnboxer<T> where T : unmanaged {
+        private int currentIndex;
+        private readonly ReadOnlySpan<Pointer<T>> items;
+        public PointerReadOnlySpanUnboxer(ReadOnlySpan<Pointer<T>> span) {
+            items = span;
+            currentIndex = -1;
+        }
+
+        public bool MoveNext() {
+            currentIndex++;
+            if (currentIndex >= items.Length) return false;
+            if (items[currentIndex].Value == null) return MoveNext();
+            return true;
+        }
+
+        public readonly T* Current => items[currentIndex].Value;
+        public PointerReadOnlySpanUnboxer<T> GetEnumerator() => new(items);
+    }
+    
     public static PointerSpanUnboxer<T> Unbox<T>(this Span<Pointer<T>> span) where T : unmanaged {
         return new PointerSpanUnboxer<T>(span);
     }
 
     internal static IEnumerable<(FieldInfo Field, TAttribute Attribute)> GetFieldsWithAttribute<TAttribute>(this object obj, BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) where TAttribute : Attribute {
         return obj.GetType().GetFields(flags).Select(f => (f, f.GetCustomAttribute<TAttribute>())).Where(f => f.Item2 != null);
+    }
+    
+    public static unsafe string ValueString(this AtkValue v) {
+        return v.Type switch {
+            ValueType.Int => $"{v.Int}",
+            ValueType.String => Marshal.PtrToStringUTF8(new IntPtr(v.String)),
+            ValueType.UInt => $"{v.UInt}",
+            ValueType.Bool => $"{v.Byte != 0}",
+            ValueType.Float => $"{v.Float}",
+            ValueType.Vector => "[Vector]",
+            ValueType.AllocatedString => Marshal.PtrToStringUTF8(new IntPtr(v.String))?.TrimEnd('\0') ?? string.Empty,
+            ValueType.AllocatedVector => "[Allocated Vector]",
+            _ => $"Unknown Type: {v.Type}"
+        };
     }
 }

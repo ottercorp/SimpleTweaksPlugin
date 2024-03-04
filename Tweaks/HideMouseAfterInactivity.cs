@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Numerics;
-using Dalamud.Game;
 using Dalamud.Game.ClientState.Conditions;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
@@ -48,13 +47,13 @@ public unsafe class HideMouseAfterInactivity : Tweak {
             Service.SigScanner.TryGetStaticAddressFromSig(Signatures.MouseButtonHoldState, out mouseButtonHoldState);
         }
 
-        Service.Framework.Update += HideMouse;
+        Common.FrameworkUpdate += HideMouse;
 
         base.Enable();
     }
 
     protected override void Disable() {
-        Service.Framework.Update -= HideMouse;
+        Common.FrameworkUpdate -= HideMouse;
         SaveConfig(TweakConfig);
 
         base.Disable();
@@ -69,7 +68,7 @@ public unsafe class HideMouseAfterInactivity : Tweak {
         this.lastPosition = ImGui.GetMousePos();
     }
 
-    private void HideMouse(Framework framework) {
+    private void HideMouse() {
         GetInfo();
         if (TweakConfig.NoHideInCutscenes && Service.Condition.Cutscene()) return;
         if (TweakConfig.NoHideInCombat && Service.Condition[ConditionFlag.InCombat]) return;

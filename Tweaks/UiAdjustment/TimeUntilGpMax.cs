@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Numerics;
-using Dalamud.Game;
-using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
@@ -55,7 +53,7 @@ public unsafe class TimeUntilGpMax : UiAdjustments.SubTweak {
         lastUpdate.Restart();
         updateParamHook ??= Common.Hook<UpdateParamDelegate>("48 89 5C 24 ?? 48 89 6C 24 ?? 56 48 83 EC 20 83 3D ?? ?? ?? ?? ?? 41 0F B6 E8 48 8B DA 8B F1 0F 84 ?? ?? ?? ?? 48 89 7C 24", UpdateParamDetour);
         updateParamHook.Enable();
-        Service.Framework.Update += FrameworkUpdate;
+        Common.FrameworkUpdate += FrameworkUpdate;
         base.Enable();
     }
 
@@ -89,7 +87,7 @@ public unsafe class TimeUntilGpMax : UiAdjustments.SubTweak {
         SaveConfig(Config);
         lastUpdate.Stop();
         updateParamHook?.Disable();
-        Service.Framework.Update -= FrameworkUpdate;
+        Common.FrameworkUpdate -= FrameworkUpdate;
         Update(true);
         base.Disable();
     }
@@ -100,7 +98,7 @@ public unsafe class TimeUntilGpMax : UiAdjustments.SubTweak {
         base.Dispose();
     }
 
-    private void FrameworkUpdate(Framework framework) {
+    private void FrameworkUpdate() {
         try {
             if (Service.ClientState.LocalContentId == 0) return;
             if (!lastUpdate.IsRunning) lastUpdate.Restart();
@@ -137,14 +135,14 @@ public unsafe class TimeUntilGpMax : UiAdjustments.SubTweak {
 
         if (textNode == null) {
 
-            var newTextNode = (AtkTextNode*)IMemorySpace.GetUISpace()->Malloc((ulong)sizeof(AtkTextNode), 8);
+            var newTextNode = IMemorySpace.GetUISpace()->Create<AtkTextNode>();
             if (newTextNode != null) {
 
                 var lastNode = paramWidget->RootNode;
                 if (lastNode == null) return;
 
-                IMemorySpace.Memset(newTextNode, 0, (ulong)sizeof(AtkTextNode));
-                newTextNode->Ctor();
+
+
                 textNode = newTextNode;
 
                 newTextNode->AtkResNode.Type = NodeType.Text;

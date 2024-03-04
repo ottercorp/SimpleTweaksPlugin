@@ -1,24 +1,20 @@
 using System.Numerics;
-using Dalamud.Interface;
-using Dalamud.Interface.Windowing;
 using ImGuiNET;
-using SimpleTweaksPlugin.TweakSystem;
 
 namespace SimpleTweaksPlugin; 
 
-public class ConfigWindow : Window {
+public class ConfigWindow : SimpleWindow {
     public ConfigWindow() : base("Simple Tweaks Config") {
-        
-    }
-
-    public override void PreDraw() {
+        Size = new Vector2(600, 400);
         SizeConstraints = new WindowSizeConstraints() {
-            MinimumSize = ImGuiHelpers.ScaledVector2(600, 200),
-            MaximumSize = ImGuiHelpers.ScaledVector2(800, 800)
+            MinimumSize = new Vector2(600, 200),
+            MaximumSize = new Vector2(float.MaxValue, float.MaxValue),
         };
+        SizeCondition = ImGuiCond.FirstUseEver;
     }
 
     public override void Draw() {
+        base.Draw();
         SimpleTweaksPlugin.Plugin.PluginConfig.DrawConfigUI();
     }
 

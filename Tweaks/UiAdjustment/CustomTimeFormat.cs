@@ -6,7 +6,6 @@ using Dalamud;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
-using Dalamud.Game;
 using Dalamud.Game.Config;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
@@ -214,7 +213,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
 
             setTextHook ??= Common.Hook(setTextAddress, new SetText(SetTextDetour));
             setTextHook?.Enable();
-            Service.Framework.Update += OnFrameworkUpdate;
+            Common.FrameworkUpdate += OnFrameworkUpdate;
             base.Enable();
         }
 
@@ -227,7 +226,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             setTextHook?.Disable();
             SaveConfig(TweakConfig);
             PluginConfig.UiAdjustments.CustomTimeFormats = null;
-            Service.Framework.Update -= OnFrameworkUpdate;
+            Common.FrameworkUpdate -= OnFrameworkUpdate;
             base.Disable();
         }
 
@@ -284,7 +283,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             }
         }
 
-        private unsafe void OnFrameworkUpdate(Framework framework) {
+        private unsafe void OnFrameworkUpdate() {
             try {
                 if (textNodePtr != null) {
                     if (textNodePtr->AtkResNode.AtkEventTarget.vtbl == textNodeVtablePtr) {

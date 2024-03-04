@@ -11,9 +11,9 @@ using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
 using Dalamud;
-using Dalamud.Game;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Interface.Windowing;
+using Dalamud.Plugin.Services;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Debugging;
 using SimpleTweaksPlugin.Utility;
@@ -90,6 +90,8 @@ namespace SimpleTweaksPlugin {
         public SimpleTweaksPlugin(DalamudPluginInterface pluginInterface) {
             Plugin = this;
             pluginInterface.Create<Service>();
+            pluginInterface.Create<SimpleLog>();
+            pluginInterface.Create<Common>();
             
             this.PluginConfig = (SimpleTweaksPluginConfig)Service.PluginInterface.GetPluginConfig() ?? new SimpleTweaksPluginConfig();
             this.PluginConfig.Init(this);
@@ -100,12 +102,12 @@ namespace SimpleTweaksPlugin {
                 FFXIVClientStructs.Interop.Resolver.GetInstance.SetupSearchSpace(Service.SigScanner.SearchBase);
                 FFXIVClientStructs.Interop.Resolver.GetInstance.Resolve();
                 UpdateBlacklist();
-                Service.Framework.RunOnFrameworkThread(Initalize);
+                Service.Framework.RunOnFrameworkThread(Initialize);
             });
 #else
             Task.Run(() => {
                 UpdateBlacklist();
-                Service.Framework.RunOnFrameworkThread(Initalize);
+                Service.Framework.RunOnFrameworkThread(Initialize);
             });
 #endif
         }
@@ -133,7 +135,7 @@ namespace SimpleTweaksPlugin {
             }
         }
         
-        private void Initalize() {
+        private void Initialize() {
 
             IconManager = new IconManager();
 
@@ -159,7 +161,7 @@ namespace SimpleTweaksPlugin {
             simpleTweakProvider.LoadTweaks();
             TweakProviders.Add(simpleTweakProvider);
 
-            foreach (var provider in PluginConfig.CustomProviders) {
+            foreach (var provider in PluginConfig.CustomTweakProviders) {
                 LoadCustomProvider(provider);
             }
 
@@ -177,7 +179,7 @@ namespace SimpleTweaksPlugin {
         }
         
 
-        private void FrameworkOnUpdate(Framework framework) => Common.InvokeFrameworkUpdate();
+        private void FrameworkOnUpdate(IFramework framework) => Common.InvokeFrameworkUpdate();
 
         public void SetupLocalization() {
             this.PluginConfig.Language ??= Service.ClientState.ClientLanguage switch {
@@ -202,7 +204,7 @@ namespace SimpleTweaksPlugin {
 
         private void OnOpenConfig() {
             if (ImGui.GetIO().KeyShift && ImGui.GetIO().KeyCtrl) {
-                DebugWindow.IsOpen = true;
+                DebugWindow.UnCollapseOrToggle();
                 return;
             }
             OnConfigCommandHandler(null, null);
@@ -211,7 +213,7 @@ namespace SimpleTweaksPlugin {
         public void OnConfigCommandHandler(object command, object args) {
             if (args is string argString) {
                 if (argString == "Debug") {
-                    DebugWindow.IsOpen = !DebugWindow.IsOpen;
+                    DebugWindow.UnCollapseOrToggle();
                     return;
                 }
 
@@ -327,7 +329,7 @@ namespace SimpleTweaksPlugin {
                 }
             }
 
-            ConfigWindow.IsOpen = !ConfigWindow.IsOpen;
+            ConfigWindow.UnCollapseOrToggle();
         }
 
         public BaseTweak? GetTweakById(string s, IEnumerable<BaseTweak>? tweakList = null) {
@@ -358,6 +360,7 @@ namespace SimpleTweaksPlugin {
         
 
         public void SaveAllConfig() {
+            PluginConfig.Save();
             foreach (var tp in TweakProviders.Where(tp => !tp.IsDisposed)) {
                 foreach (var t in tp.Tweaks) {
                     t.RequestSaveConfig();
@@ -428,9 +431,9 @@ namespace SimpleTweaksPlugin {
                 if (ImGui.BeginMainMenuBar()) {
                     if (ImGui.MenuItem("Simple Tweaks")) {
                         if (ImGui.GetIO().KeyShift) {
-                            DebugWindow.IsOpen = !DebugWindow.IsOpen;
+                            DebugWindow.UnCollapseOrToggle();
                         } else {
-                            ConfigWindow.IsOpen = !ConfigWindow.IsOpen;
+                            ConfigWindow.UnCollapseOrToggle();
                         }
                     }
                     ImGui.EndMainMenuBar();
@@ -541,11 +544,12 @@ namespace SimpleTweaksPlugin {
             }
         }
 
-        public void LoadCustomProvider(string path) {
-            if (path.StartsWith("!")) return;
+        public void LoadCustomProvider(CustomTweakProviderConfig provider) {
+            if (!provider.Enabled) return;
+            var path = provider.Assembly;
             if (!File.Exists(path)) return;
             TweakProviders.RemoveAll(t => t.IsDisposed);
-            var tweakProvider = new CustomTweakProvider(path);
+            var tweakProvider = new CustomTweakProvider(provider);
             tweakProvider.LoadTweaks();
             TweakProviders.Add(tweakProvider);
             Loc.ClearCache();

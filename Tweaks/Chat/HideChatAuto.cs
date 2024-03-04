@@ -1,5 +1,4 @@
-﻿using Dalamud.Game;
-using Dalamud.Game.ClientState.Conditions;
+﻿using Dalamud.Game.ClientState.Conditions;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using SimpleTweaksPlugin.TweakSystem;
@@ -48,19 +47,19 @@ public unsafe class HideChatAuto : ChatTweaks.SubTweak
     protected override void Enable()
     {
         Config = LoadConfig<HideChatAutoConfig>() ?? new HideChatAutoConfig();
-        Service.Framework.Update += FrameworkUpdate;
+        Common.FrameworkUpdate += FrameworkUpdate;
         base.Enable();
     }
 
     protected override void Disable()
     {
         SaveConfig(Config);
-        Service.Framework.Update -= FrameworkUpdate;
+        Common.FrameworkUpdate -= FrameworkUpdate;
         SetVisibility(true);
         base.Disable();
     }
 
-    private void FrameworkUpdate(Framework framework)
+    private void FrameworkUpdate()
     {
         try
         {

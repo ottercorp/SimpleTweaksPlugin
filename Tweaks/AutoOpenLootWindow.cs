@@ -1,6 +1,5 @@
 ﻿using System;
 using Dalamud;
-using Dalamud.Game;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
@@ -36,8 +35,8 @@ public unsafe class AutoOpenLootWindow : Tweak {
                     || Service.Condition[ConditionFlag.WatchingCutscene78]
                     || Service.Condition[ConditionFlag.OccupiedInCutSceneEvent])
                 {
-                    Service.Framework.Update -= TryOpenAfterCutsceneFrameworkUpdate;
-                    Service.Framework.Update += TryOpenAfterCutsceneFrameworkUpdate;
+                    Common.FrameworkUpdate -= TryOpenAfterCutsceneFrameworkUpdate;
+                    Common.FrameworkUpdate += TryOpenAfterCutsceneFrameworkUpdate;
                 }
                 else
                 {
@@ -50,7 +49,7 @@ public unsafe class AutoOpenLootWindow : Tweak {
     }
 
     private byte throttle;
-    private void TryOpenAfterCutsceneFrameworkUpdate(Framework framework)
+    private void TryOpenAfterCutsceneFrameworkUpdate()
     {
         throttle++;
         if (throttle <= 10) return;
@@ -61,7 +60,7 @@ public unsafe class AutoOpenLootWindow : Tweak {
         {
             return;
         }
-        Service.Framework.Update -= TryOpenAfterCutsceneFrameworkUpdate;
+        Common.FrameworkUpdate -= TryOpenAfterCutsceneFrameworkUpdate;
         TryOpenWindow();
     }
 
@@ -85,7 +84,7 @@ public unsafe class AutoOpenLootWindow : Tweak {
 
     protected override void Disable() {
         Service.Chat.CheckMessageHandled -= HandleChat;
-        Service.Framework.Update -= TryOpenAfterCutsceneFrameworkUpdate;
+        Common.FrameworkUpdate -= TryOpenAfterCutsceneFrameworkUpdate;
         base.Disable();
     }
 }

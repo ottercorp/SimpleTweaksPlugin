@@ -1,5 +1,82 @@
 # Changelog
 
+## 1.9.2.1
+***Tweak Changes***
+- **`Always Yes`** - Added support for Blunderville exit dialog.
+
+- **`Target Castbar Countdown`** - Fix updating slowly for really slow castbars
+
+
+## 1.9.2.0
+***New Tweaks***
+- **`Alt + F4 Exit Game`** - Pressing Alt + F4 will cause the game to close safely. *(MidoriKami)*
+
+- **`Fast Item Search`** - Enable superfast searches for the market board & crafting log. *(Asriel)*
+
+- **`Hide 'Character not found' Message`** - Prevent the game from displaying the "The character you last logged out with could not be found on the current data center." message.
+
+- **`Use Custom Time for Furniture Clocks`** - Changes the time displayed on chronometer furniture.
+
+
+***Tweak Changes***
+- **`Fade Unavailable Actions`** - Added option to make skills that are out of range red
+
+
+## 1.9.1.1
+***Tweak Changes***
+- **`Duplicate Keybind Hints Between Hotbars`** - Fixed flickering while cooldown is active.
+
+- **`Remember Selected World`** - Now uses a more reliable method for selecting worlds.
+
+- **`Remove Quest Marker Limit`** - Fix tweak not working since API 9
+
+
+## 1.9.1.0
+***New Tweaks***
+- **`Remember Selected World`** - Remembers which world was selected for each datacentre.
+
+
+***Tweak Changes***
+- **`Adjust Equipment Positions`** - Further improved gamepad navigation on Character window.
+
+- **`Duplicate Action Presses Between Hotbars`** - Fixed crashes and re-enabled tweak.
+
+- **`Duplicate Keybind Hints Between Hotbars`** - Rewritten & re-enabled
+
+- **`Improved Crafting Log`**
+  - Made attempt to fix some issues
+  - Tweak has been disabled for everyone and marked as experimental.
+
+
+## 1.9.0.0
+***General Changes***
+- Tweaks that add commands can now have their commands customized.
+- The tweak list is now split into more categories
+	 - Tweaks can be in multiple categories.
+	 - Categories can be disabled in settings.
+		 - The 'All Tweaks' pseudo-category displays all available tweaks.
+		 - The 'Enabled Tweaks' pesudo-category displays only enabled tweaks.
+
+***New Tweaks***
+- **`Leave Duty Command`** - Adds a command to leave the currenty duty. /leaveduty
+
+- **`Open Glamour Dresser to Current Job`** - Sets the job selection dropdown to your current job when opening the Glamour Dresser. *(MidoriKami)*
+
+- **`Scenario Progression Display`** - Shows the percentage of completion of the main scenario.
+
+
+***Tweak Changes***
+- **`Adjust Equipment Positions`** - Improved gamepad navigation on Character window.
+
+- **`Duty List Background`** - Reimplemented with a new method to avoid crashes.
+
+- **`Expanded Currency Display`**
+  - Added an option to disable tooltips.
+  - Fixed currency window positioning breaking when resizing game window.
+
+- **`Improved Duty Finder Settings`** - Rewritten to use native UI
+
+
 ## 1.8.9.2
 ***General Changes***
 - Added preview images to some tweaks.

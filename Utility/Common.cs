@@ -9,34 +9,26 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Game.Text.SeStringHandling;
-using Dalamud.Hooking;
-using Dalamud.Memory;
+using Dalamud.IoC;
 using Dalamud.Networking.Http;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.Attributes;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using FFXIVClientStructs.Interop;
 using SimpleTweaksPlugin.Debugging;
 using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace SimpleTweaksPlugin.Utility; 
 
-public static unsafe class Common {
-
-    // Common Delegates
-    public delegate void* AddonOnUpdate(AtkUnitBase* atkUnitBase, NumberArrayData** nums, StringArrayData** strings);
-    public delegate void NoReturnAddonOnUpdate(AtkUnitBase* atkUnitBase, NumberArrayData** numberArrayData, StringArrayData** stringArrayData);
-
-    private delegate void* AddonSetupDelegate(AtkUnitBase* addon);
-    private static HookWrapper<AddonSetupDelegate> addonSetupHook;
+public unsafe class Common {
+    [PluginService] private static IGameInteropProvider ImNotGonnaCallItThat { get; set; } = null!;
     
-    private delegate void FinalizeAddonDelegate(AtkUnitManager* unitManager, AtkUnitBase** atkUnitBase);
-    private static HookWrapper<FinalizeAddonDelegate> finalizeAddonHook;
-
     private static IntPtr LastCommandAddress;
-        
+    
     public static Utf8String* LastCommand { get; private set; }
     
     public static event Action FrameworkUpdate;
@@ -56,53 +48,12 @@ public static unsafe class Common {
     }
     public static void* ThrowawayOut { get; private set; } = (void*) Marshal.AllocHGlobal(1024);
 
-    public static event Action<SetupAddonArgs> AddonSetup; 
-    public static event Action<SetupAddonArgs> AddonPreSetup; 
-    public static event Action<SetupAddonArgs> AddonFinalize;
-    
     public static void Setup() {
         LastCommandAddress = Service.SigScanner.GetStaticAddressFromSig("4C 8D 05 ?? ?? ?? ?? 41 B1 01 49 8B D4 E8 ?? ?? ?? ?? 83 EB 06");
         LastCommand = (Utf8String*) (LastCommandAddress);
-        
-        addonSetupHook = Hook<AddonSetupDelegate>("E8 ?? ?? ?? ?? 8B 83 ?? ?? ?? ?? C1 E8 14", AddonSetupDetour);
-        addonSetupHook?.Enable();
-
-        finalizeAddonHook = Hook<FinalizeAddonDelegate>("E8 ?? ?? ?? ?? 48 8B 7C 24 ?? 41 8B C6", FinalizeAddonDetour);
-        finalizeAddonHook?.Enable();
 
         updateCursorHook = Hook<AtkModuleUpdateCursor>("48 89 74 24 ?? 48 89 7C 24 ?? 41 56 48 83 EC 20 4C 8B F1 E8 ?? ?? ?? ?? 49 8B CE", UpdateCursorDetour);
         updateCursorHook?.Enable();
-    }
-
-    private static void* AddonSetupDetour(AtkUnitBase* addon) {
-        try {
-            AddonPreSetup?.Invoke(new SetupAddonArgs() {
-                Addon = addon
-            });
-        } catch (Exception ex) {
-            SimpleLog.Error(ex);
-        }
-        var retVal = addonSetupHook.Original(addon);
-        try {
-            AddonSetup?.Invoke(new SetupAddonArgs() {
-                Addon = addon
-            });
-        } catch (Exception ex) {
-            SimpleLog.Error(ex);
-        }
-
-        return retVal;
-    }
-
-    private static void FinalizeAddonDetour(AtkUnitManager* unitManager, AtkUnitBase** atkUnitBase) {
-        try {
-            AddonFinalize?.Invoke(new SetupAddonArgs() {
-                Addon = atkUnitBase[0]
-            });
-        } catch (Exception ex) {
-            SimpleLog.Error(ex);
-        }
-        finalizeAddonHook?.Original(unitManager, atkUnitBase);
     }
 
     public static UIModule* UIModule => Framework.Instance()->GetUiModule();
@@ -203,53 +154,33 @@ public static unsafe class Common {
 
     public static HookWrapper<T> Hook<T>(string signature, T detour, int addressOffset = 0) where T : Delegate {
         var addr = Service.SigScanner.ScanText(signature);
-        var h = Dalamud.Hooking.Hook<T>.FromAddress(addr + addressOffset, detour);
+        var h = ImNotGonnaCallItThat.HookFromAddress(addr + addressOffset, detour);
         var wh = new HookWrapper<T>(h);
         HookList.Add(wh);
         return wh;
     }
 
     public static HookWrapper<T> Hook<T>(void* address, T detour) where T : Delegate {
-        var h =  Dalamud.Hooking.Hook<T>.FromAddress(new nint(address), detour);
+        var h =  ImNotGonnaCallItThat.HookFromAddress(new nint(address), detour);
         var wh = new HookWrapper<T>(h);
         HookList.Add(wh);
         return wh;
     }
 
     public static HookWrapper<T> Hook<T>(nuint address, T detour) where T : Delegate {
-        var h = Dalamud.Hooking.Hook<T>.FromAddress((nint)address, detour);
+        var h = ImNotGonnaCallItThat.HookFromAddress((nint)address, detour);
         var wh = new HookWrapper<T>(h);
         HookList.Add(wh);
         return wh;
     }
 
     public static HookWrapper<T> Hook<T>(nint address, T detour) where T : Delegate {
-        var h = Dalamud.Hooking.Hook<T>.FromAddress(address, detour);
+        var h = ImNotGonnaCallItThat.HookFromAddress(address, detour);
         var wh = new HookWrapper<T>(h);
         HookList.Add(wh);
         return wh;
     }
-
-    public static HookWrapper<AddonOnUpdate> HookAfterAddonUpdate(IntPtr address, NoReturnAddonOnUpdate after) {
-        Hook<AddonOnUpdate> hook = null;
-        hook = Dalamud.Hooking.Hook<AddonOnUpdate>.FromAddress(address, (atkUnitBase, nums, strings) => {
-            var retVal = hook.Original(atkUnitBase, nums, strings);
-            try {
-                after(atkUnitBase, nums, strings);
-            } catch (Exception ex) {
-                SimpleLog.Error(ex);
-                hook.Disable();
-            }
-            return retVal;
-        });
-        var wh = new HookWrapper<AddonOnUpdate>(hook);
-        return wh;
-    }
-
-    public static HookWrapper<AddonOnUpdate> HookAfterAddonUpdate(void* address, NoReturnAddonOnUpdate after) => HookAfterAddonUpdate(new IntPtr(address), after);
-    public static HookWrapper<AddonOnUpdate> HookAfterAddonUpdate(string signature, NoReturnAddonOnUpdate after, int addressOffset = 0) => HookAfterAddonUpdate(Service.SigScanner.ScanText(signature) + addressOffset, after);
-    public static HookWrapper<AddonOnUpdate> HookAfterAddonUpdate(AtkUnitBase* atkUnitBase, NoReturnAddonOnUpdate after) => HookAfterAddonUpdate(atkUnitBase->AtkEventListener.vfunc[46], after);
-
+    
     public static List<IHookWrapper> HookList = new();
 
     public static void OpenBrowser(string url) {
@@ -378,16 +309,9 @@ public static unsafe class Common {
             Marshal.FreeHGlobal(new IntPtr(ThrowawayOut));
             ThrowawayOut = null;
         }
-        
-        addonSetupHook?.Disable();
-        addonSetupHook?.Dispose();
-        
+
         updateCursorHook?.Disable();
         updateCursorHook?.Dispose();
-        
-        finalizeAddonHook?.Disable();
-        finalizeAddonHook?.Dispose();
-        
         httpClient?.Dispose();
     }
 
@@ -396,10 +320,9 @@ public static unsafe class Common {
         var unitManagers = &AtkStage.GetSingleton()->RaptureAtkUnitManager->AtkUnitManager.DepthLayerOneList;
         for (var i = 0; i < UnitListCount; i++) {
             var unitManager = &unitManagers[i];
-            var unitBaseArray = &(unitManager->AtkUnitEntries);
-            for (var j = 0; j < unitManager->Count; j++) {
-                var unitBase = unitBaseArray[j];
-                if (unitBase->ID == id) {
+            foreach (var j in Enumerable.Range(0, Math.Min(unitManager->Count, unitManager->EntriesSpan.Length))) {
+                var unitBase = unitManager->EntriesSpan[j].Value;
+                if (unitBase != null && unitBase->ID == id) {
                     return unitBase;
                 }
             }
@@ -408,23 +331,9 @@ public static unsafe class Common {
         return null;
     }
 
-    public static string ValueString(this AtkValue v) {
-        return v.Type switch {
-            ValueType.Int => $"{v.Int}",
-            ValueType.String => Marshal.PtrToStringUTF8(new IntPtr(v.String)),
-            ValueType.UInt => $"{v.UInt}",
-            ValueType.Bool => $"{v.Byte != 0}",
-            ValueType.Float => $"{v.Float}",
-            ValueType.Vector => "[Vector]",
-            ValueType.AllocatedString => Marshal.PtrToStringUTF8(new IntPtr(v.String))?.TrimEnd('\0') ?? string.Empty,
-            ValueType.AllocatedVector => "[Allocated Vector]",
-            _ => $"Unknown Type: {v.Type}"
-        };
-    }
-
-    public static void CloseAddon(string name, bool unk = true) {
+    public static void CloseAddon(string name, bool unk = true, bool callHideCallback = true, uint setShowHideFlags = 0) {
         var addon = GetUnitBase(name);
-        if (addon != null) addon->Hide(unk);
+        if (addon != null) addon->Hide(unk, callHideCallback, setShowHideFlags);
     }
 
     public static AgentInterface* GetAgent(AgentId agentId) {
@@ -511,10 +420,7 @@ public static unsafe class Common {
     }
 
 
-}
-
-public unsafe class SetupAddonArgs {
-    public AtkUnitBase* Addon { get; init; }
-    private string addonName;
-    public string AddonName => addonName ??= MemoryHelper.ReadString(new IntPtr(Addon->Name), 0x20).Split('\0')[0];
+    public static Extensions.PointerReadOnlySpanUnboxer<AtkResNode> GetNodeList(AtkUldManager* uldManager) => new ReadOnlySpan<Pointer<AtkResNode>>(uldManager->NodeList, uldManager->NodeListCount).Unbox();
+    public static Extensions.PointerReadOnlySpanUnboxer<AtkResNode> GetNodeList(AtkUnitBase* unitBase) => GetNodeList(&unitBase->UldManager);
+    public static Extensions.PointerReadOnlySpanUnboxer<AtkResNode> GetNodeList(AtkComponentBase* component) => GetNodeList(&component->UldManager);
 }
