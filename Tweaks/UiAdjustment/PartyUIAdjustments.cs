@@ -38,7 +38,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private delegate long PartyUiUpdate(long a1, long a2, long a3);
 
-        private Hook<PartyUiUpdate> partyUiUpdateHook;
+        private HookWrapper<PartyUiUpdate> partyUiUpdateHook;
 
         private AddonPartyList* party;
         private DataArray* data;
@@ -65,7 +65,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             try
             {
-                partyUiUpdateHook ??= Hook<PartyUiUpdate>.FromAddress(
+                partyUiUpdateHook ??= Common.Hook<PartyUiUpdate>(
                     Service.SigScanner.ScanText(
                         "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B 7A ?? 48 8B D9 49 8B 70 ?? 48 8B 47"),
                     new PartyUiUpdate(PartyListUpdateDelegate));
