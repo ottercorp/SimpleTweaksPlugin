@@ -1,5 +1,99 @@
 # Changelog
 
+## 1.9.7.1
+***Tweak Changes***
+- **`Screenshot Improvements`** - Re-added 'Use ReShade' option
+
+
+## 1.9.7.0
+***New Tweaks***
+- **`Equip items from Hotbars`** - Enables the ability to equip items assigned to hotbars.
+
+- **`Use Collection Command`** - Adds a command to use Collection items. /usecollection *(nebel)*
+
+
+***Tweak Changes***
+- **`Quick Sell Items at Vendors`** - Allowed selling from player inventory while accessing retainer's market inventory.
+
+- **`Set Option Command`** - Added support for cutscene skipping options. *(Gehock)*
+
+
+## 1.9.6.0
+***New Tweaks***
+- **`Equip Job Command`** - Adds a command to switch to a class or job's gearset. *(Lumina Sapphira)*
+
+- **`Sticky Shout Chat`** - Prevents the game from automatically switching out of shout chat.
+
+
+***Tweak Changes***
+- **`Casting Text Visibility`** - Fixed tweak not working with a split primary target window
+
+- **`Quick Sell Items at Vendors`** - Added option to allow quick selling items from player inventory while using a retainer.
+
+- **`Target Castbar Countdown`**
+  - Added option to change font size
+  - Added option to adjust position
+  - Fixed disable on primary and focus target
+
+
+## 1.9.5.0
+***General Changes***
+- The Simple Tweaks config window will now be decorated during various festive periods.
+	 - This can be disabled in the 'General Options' tab.
+	 - You can also set a permanent decoration to be used all year round.
+
+***New Tweaks***
+- **`Remove Client Limit`** - Allows opening more than the standard two FFXIV clients.
+
+- **`Reposition Cutscene Dialogue Box`** - Allows setting a custom position for dialogue boxes used in cutscenes.
+
+
+## 1.9.4.0
+***New Tweaks***
+- **`Customize default deposit and withdraw quanity`** - Allows setting a custom amount to deposit or withdraw when using the 'Retrieve Quantity' and 'Entrust Quantity' options.
+
+- **`Cutscene commands`** - Enable the use of certain commands in cutscenes *(Kurochi)*
+
+- **`Hide Guildhest Objective Popup`** - Hides the objective popup when starting a guildhest. *(MidoriKami)*
+
+
+***Tweak Changes***
+- **`Set Option Command`**
+  - Added support for changing the cutscene audio language.
+  - Added support for changing title display options. *(Gehock)*
+  - Added support for 'Small' and 'Smallest' for nameplate size options. *(Gehock)*
+
+- **`Show Experience Percentage`** - Added the ability to show rested experience without showing experience percentage.
+
+
+## 1.9.3.0
+***General Changes***
+- Added optional metrics collection
+	 - Everyone will be given a chance to opt in or our to the collection of a list of enabled tweaks when first accessing the simple tweaks config window.
+	 - Anyone who preemptivly opted out will not see the notice as they already made the choice.
+	 - No information will be collected until the 'Allow collection' button is pressed.
+
+***New Tweaks***
+- **`Casting Text Visibility`** - Change the font size, color, and background of the casting text. *(img)*
+
+- **`Chat Sounds Everywhere`** - Enables <se.#> chat sounds everywhere, regardless of channel. *(Asriel)*
+
+- **`Duty Timer`** - When completing a duty, tells you how much time the duty took. *(MidoriKami)*
+
+- **`Emote Log Status in Server Bar`** - Show the emote log status in the server bar. *(Sythiri)*
+
+- **`Show Glamour in Item Name`** - Displays the glamoured item name underneath the real item name. *(Enriath)*
+
+
+***Tweak Changes***
+- **`Track Faded Orchestrion Rolls`** - Added tracking for faded rolls with multiple crafts. *(KazWolfe)*
+
+
+## 1.9.2.2
+***Tweak Changes***
+- **`Fast Item Search`** - Fix random ordering (results are now always in the same order)
+
+
 ## 1.9.2.1
 ***Tweak Changes***
 - **`Always Yes`** - Added support for Blunderville exit dialog.

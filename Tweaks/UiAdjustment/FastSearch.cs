@@ -11,8 +11,6 @@ using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Dalamud.Utility.Signatures;
-using Dalamud.Game.Addon.Lifecycle;
-using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using FFXIVClientStructs.Interop.Attributes;
 using Dalamud.Memory;
 using LuminaAddon = Lumina.Excel.GeneratedSheets.Addon;
@@ -27,6 +25,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 [TweakAuthor("Asriel")]
 [TweakAutoConfig]
 [TweakReleaseVersion("1.9.2.0")]
+[Changelog("1.9.2.1", "Fix random ordering (results are now always in the same order)")]
 public unsafe class FastSearch : UiAdjustments.SubTweak {
     public class FastSearchConfig : TweakConfig {
         [TweakConfigOption("Use Fuzzy Search")]
@@ -126,11 +125,11 @@ public unsafe class FastSearch : UiAdjustments.SubTweak {
     private delegate void RecipeNoteRecieveDelegate(AgentRecipeNote2* a1, Utf8String* a2, bool a3, bool a4);
     [TweakHook, Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 56 48 83 EC 20 80 B9", DetourName = nameof(RecipeNoteRecieveDetour))]
     private readonly HookWrapper<RecipeNoteRecieveDelegate> recipeNoteRecieveHook;
-
+    
     private delegate void RecipeNoteIterateDelegate(SearchContext* a1);
     [TweakHook, Signature("80 B9 ?? ?? ?? ?? ?? 74 27 8B 81", DetourName = nameof(RecipeNoteIterateDetour))]
     private readonly HookWrapper<RecipeNoteIterateDelegate> recipeNoteIterateHook;
-
+    
     private delegate void AgentItemSearchUpdate1Delegate(AgentItemSearch2* a1);
     [TweakHook, Signature("E8 ?? ?? ?? ?? 48 8B CB E8 ?? ?? ?? ?? 48 8B CB E8 ?? ?? ?? ?? 80 BB ?? ?? ?? ?? ?? 75 19", DetourName = nameof(AgentItemSearchUpdate1Detour))]
     private readonly HookWrapper<AgentItemSearchUpdate1Delegate> agentItemSearchUpdate1Hook;
@@ -196,6 +195,7 @@ public unsafe class FastSearch : UiAdjustments.SubTweak {
             .Select(i => (Item: i, Score: matcher.Matches(i.ItemResult.Value!.Name.ToDalamudString().ToString().ToLowerInvariant())))
             .Where(t => t.Score > 0)
             .OrderByDescending(t => t.Score)
+            .ThenBy(t => t.Item.RowId)
             .Select(t => t.Item.RowId);
 
         foreach (var v in query)
@@ -211,6 +211,7 @@ public unsafe class FastSearch : UiAdjustments.SubTweak {
             .Select(i => (Item: i, Score: matcher.Matches(i.Name.ToDalamudString().ToString().ToLowerInvariant())))
             .Where(t => t.Score > 0)
             .OrderByDescending(t => t.Score)
+            .ThenBy(t => t.Item.RowId)
             .Select(t => t.Item.RowId);
         foreach (var item in query) {
             agent->ItemBuffer[agent->ItemCount++] = item;

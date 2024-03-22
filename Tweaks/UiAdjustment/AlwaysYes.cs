@@ -3,6 +3,7 @@ using System.Linq;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Interface;
 using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using SimpleTweaksPlugin.Events;
@@ -153,10 +154,10 @@ public unsafe class AlwaysYes : UiAdjustments.SubTweak {
                 if (Config.Lobby) SetFocusYes(args.Addon, 4);
                 return;
             case "LobbyDKTWorldList":
-                if (Config.Lobby) SetFocusYes(args.Addon, 23);
+                if (Config.Lobby) DelayedSetFocusYes(args.AddonName, 23);
                 return;
             case "LobbyDKTCheckExec":
-                if (Config.Lobby) SetFocusYes(args.Addon, 3);
+                if (Config.Lobby) DelayedSetFocusYes(args.AddonName, 3);
                 return;
             case "ShopExchangeItemDialog":
                 if (Config.ItemExchangeConfirmations) SetFocusYes(args.Addon, 18);
@@ -166,20 +167,28 @@ public unsafe class AlwaysYes : UiAdjustments.SubTweak {
                 return;
         }
     }
+
+    private void DelayedSetFocusYes(string addon, uint yesButtonId, int delay = 0) {
+        Service.Framework.RunOnTick(() => {
+            if (Common.GetUnitBase(addon, out var unitBase)) SetFocusYes((nint)unitBase, yesButtonId);
+        }, delayTicks: delay);
+    }
+    
     private void SetFocusYes(nint unitBaseAddress, uint yesButtonId, uint? yesHoldButtonId = null, uint? checkBoxId = null) {
         var unitBase = (AtkUnitBase*)unitBaseAddress;
         if (unitBase == null) return;
+        if (unitBase->UldManager.LoadedState != AtkLoadState.Loaded) return;
 
         var yesButton = unitBase->UldManager.SearchNodeById(yesButtonId);
         if (yesButton == null) return;
 
         uint collisionId;
         AtkResNode* targetNode;
-        var checkBox = checkBoxId != null ? unitBase->UldManager.SearchNodeById(checkBoxId.Value) : null;
-        var textCheckBox = checkBox != null ? (AtkTextNode*)((AtkComponentNode *)checkBox)->Component->UldManager.SearchNodeById(2) : null;
-        if (Config.SelectCheckBox && checkBox != null && checkBox->IsVisible && textCheckBox != null && !textCheckBox->NodeText.ToString().IsNullOrWhitespace()) {
+        var checkBox = checkBoxId != null ? (AtkComponentNode*)unitBase->UldManager.SearchNodeById(checkBoxId.Value) : null;
+        var textCheckBox = checkBox != null && checkBox->Component != null && checkBox->Component->UldManager.LoadedState == AtkLoadState.Loaded ? (AtkTextNode*)checkBox->Component->UldManager.SearchNodeById(2) : null;
+        if (Config.SelectCheckBox && checkBox != null && checkBox->AtkResNode.IsVisible && textCheckBox != null && !textCheckBox->NodeText.ToString().IsNullOrWhitespace()) {
             collisionId = 5;
-            targetNode = checkBox;
+            targetNode = &checkBox->AtkResNode;
         } else {
             var holdButton = yesHoldButtonId != null ? unitBase->UldManager.SearchNodeById(yesHoldButtonId.Value) : null;
             if (holdButton != null && !yesButton->IsVisible) {
@@ -192,7 +201,10 @@ public unsafe class AlwaysYes : UiAdjustments.SubTweak {
             }
         }
 
-        var yesCollision = ((AtkComponentNode *)targetNode)->Component->UldManager.SearchNodeById(collisionId);
+        var targetComponent = ((AtkComponentNode*)targetNode)->Component;
+        if (targetComponent == null || targetComponent->UldManager.LoadedState != AtkLoadState.Loaded) return;
+
+        var yesCollision = targetComponent->UldManager.SearchNodeById(collisionId);
         if (yesCollision == null) return;
 
         unitBase->SetFocusNode(yesCollision);

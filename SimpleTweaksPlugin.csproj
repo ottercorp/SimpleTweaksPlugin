@@ -7,7 +7,7 @@
         <Configurations>Debug;Release</Configurations>
     </PropertyGroup>
     <PropertyGroup Label="Build">
-        <NoWarn>CS8632,CS0649</NoWarn>
+        <NoWarn>CS8632,CS0649,CS0169</NoWarn>
         <OutputType>Library</OutputType>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <AppendPlatformToOutputPath>false</AppendPlatformToOutputPath>
@@ -18,7 +18,7 @@
     </PropertyGroup>
     <PropertyGroup Label="Feature">
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <Version>1.9.7.0</Version>
+        <Version>1.9.7.3</Version>
     </PropertyGroup>
 	<PropertyGroup>
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
@@ -42,8 +42,12 @@
       <None Update="TweakPreviews\**">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+        <None Update="Decorations\**">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
     <ItemGroup>
+      <PackageReference Include="Dalamud.ContextMenu" Version="1.3.1" />
       <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
       <PackageReference Include="DalamudPackager" Version="2.1.12" />
     </ItemGroup>

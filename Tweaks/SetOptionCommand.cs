@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,9 +6,14 @@ using Dalamud.Game.Config;
 using ImGuiNET;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using SimpleTweaksPlugin.Tweaks.AbstractTweaks;
+using SimpleTweaksPlugin.TweakSystem;
 
 namespace SimpleTweaksPlugin.Tweaks; 
 
+[Changelog("1.9.4.0", "Added support for changing the cutscene audio language.")]
+[Changelog("1.9.4.0", "Added support for changing title display options.", Author = "Gehock")]
+[Changelog("1.9.4.0", "Added support for 'Small' and 'Smallest' for nameplate size options.", Author = "Gehock")]
+[Changelog("1.9.7.0", "Added support for cutscene skipping options.", Author = "Gehock")]
 public unsafe class SetOptionCommand : CommandTweak {
 
     public override string Name => "Set Option Command";
@@ -100,6 +105,31 @@ public unsafe class SetOptionCommand : CommandTweak {
             };
             return (main, alias);
         }
+        public static (Dictionary<string, uint>, Dictionary<string, uint>) AudioLanguage() {
+            var main = new Dictionary<string, uint> {
+                ["auto"] = uint.MaxValue,
+                ["japanese"] = 0,
+                ["english"] = 1,
+                ["german"] = 2,
+                ["french"] = 3,
+            };
+            var alias = new Dictionary<string, uint> {
+                ["a"] = uint.MaxValue,
+                ["j"] = 0,
+                ["jp"] = 0,
+                ["jpn"] = 0,
+                ["e"] = 1,
+                ["en"] = 1,
+                ["eng"] = 1,
+                ["g"] = 2,
+                ["de"] = 2,
+                ["ger"] = 2,
+                ["f"] = 3,
+                ["fr"] = 3,
+                ["fre"] = 3,
+            };
+            return (main, alias);
+        }
     }
     
     private readonly List<IOptionDefinition> optionDefinitions = new() {
@@ -116,9 +146,21 @@ public unsafe class SetOptionCommand : CommandTweak {
         new OptionDefinition<uint>("OtherPlayerDisplayName", "NamePlateDispTypeOther", OptionGroup.UiConfig, ValueType.NamePlateDisplay, "opcdn") { AllowToggle = true },
         new OptionDefinition<uint>("FriendDisplayName", "NamePlateDispTypeFriend", OptionGroup.UiConfig, ValueType.NamePlateDisplay, "fdn") { AllowToggle = true },
         
+        new OptionDefinition<uint>("SelfNameTitle", "NamePlateNameTitleTypeSelf", OptionGroup.UiConfig, ValueType.Boolean, "snt") { AllowToggle = true },
+        new OptionDefinition<uint>("PartyNameTitle", "NamePlateNameTitleTypeParty", OptionGroup.UiConfig, ValueType.Boolean, "pnt") { AllowToggle = true },
+        new OptionDefinition<uint>("AllianceNameTitle", "NamePlateNameTitleTypeAlliance", OptionGroup.UiConfig, ValueType.Boolean, "ant") { AllowToggle = true },
+        new OptionDefinition<uint>("OtherNameTitle", "NamePlateNameTitleTypeOther", OptionGroup.UiConfig, ValueType.Boolean, "ont") { AllowToggle = true },
+        new OptionDefinition<uint>("FriendNameTitle", "NamePlateNameTitleTypeFriend", OptionGroup.UiConfig, ValueType.Boolean, "fnt") { AllowToggle = true },
+        
+        new OptionDefinition<uint>("CutsceneAudioLanguage", "CutsceneMovieVoice", OptionGroup.System, ValueType.AudioLanguage, "cl"),
+
+        new OptionDefinition<uint>("SkipTransportCutscenes", "CutsceneSkipIsShip", OptionGroup.UiConfig, ValueType.Boolean, "stc") { AllowToggle = true },
+        new OptionDefinition<uint>("SkipScenarioCutscenes", "CutsceneSkipIsContents", OptionGroup.UiConfig, ValueType.Boolean, "scc") { AllowToggle = true },
+        new OptionDefinition<uint>("SkipHousingCutscenes", "CutsceneSkipIsHousing", OptionGroup.UiConfig, ValueType.Boolean, "shc") { AllowToggle = true },
+
         new OptionDefinition<uint>("DisplayNameSize", "NamePlateDispSize", OptionGroup.UiConfig, () => {
             return (
-                new() { ["maximum"] = 2, ["large"] = 1, ["standard"] = 0 },
+                new() { ["maximum"] = 2, ["large"] = 1, ["standard"] = 0, ["small"] = 3, ["smallest"] = 4 },
                 new() { ["m"] = 2, ["max"] = 2, ["l"] = 1, ["s"] = 0, }
             );
         }, "dns") { AllowToggle = true },

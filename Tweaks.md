@@ -46,6 +46,16 @@
   Allows replacing commands typed into chat box with other commands.
 
 
+- **Customize default deposit and withdraw quantity**
+
+  Allows setting a custom amount to deposit or withdraw when using the 'Retrieve Quantity' and 'Entrust Quantity' options.
+
+
+- **Cutscene commands**
+
+  Enable the use of certain commands in cutscenes
+
+
 - **Data Centre on Title Screen**
 
   Shows the current Data Centre on the Title Screen
@@ -81,9 +91,29 @@
   Click 'Previous' class icon in Duty Ready window to switch class.
 
 
+- **Duty Timer**
+
+  When completing a duty, tells you how much time the duty took.
+
+
+- **Emote Log Status in Server Bar**
+
+  Show the emote log status in the server bar.
+
+
 - **Emote Log Subcommand**
 
   Adds a 'text' subcommand for emotes when emotelog is disabled.  /yes text
+
+
+- **Equip items from Hotbars**
+
+  Enables the ability to equip items assigned to hotbars.
+
+
+- **Equip Job Command**
+
+  Adds a command to switch to a class or job's gearset.
 
 
 - **Equip Recommended Command**
@@ -109,6 +139,11 @@
 - **Fixed Shadow Distance**
 
   Sets a fixed value for the shadow rendering, preventing it from changing when flying.
+
+
+- **Gearset Update Command**
+
+  Updates the active gearset with your current equipment.
 
 
 - **Hide 'Character not found' Message**
@@ -211,6 +246,16 @@
   Remembers which world was selected for each datacentre.
 
 
+- **Remove Client Limit**
+
+  Allows opening more than the standard two FFXIV clients.
+
+
+- **Reposition Cutscene Dialogue Box**
+
+  Allows setting a custom position for dialogue boxes used in cutscenes.
+
+
 - **Screenshot File Name**
 
   Change the file name format for screenshots.
@@ -258,6 +303,11 @@
   Show the correct item when trying on a glamoured item.
 
 
+- **Use Collection Command**
+
+  Adds a command to use Collection items. /usecollection
+
+
 - **Use Custom Time for Furniture Clocks**
 
   Changes the time displayed on chronometer furniture.
@@ -270,6 +320,11 @@
 - **Chat Name Colours**
 
   Gives players a random colour in chat, or set the name manually.
+
+
+- **Chat Sounds Everywhere**
+
+  Enables <se.#> chat sounds everywhere, regardless of channel.
 
 
 - **Clickable Links in Chat**
@@ -344,6 +399,11 @@
   Example: "/p hello!" will set the chat channel to Party
 
 
+- **Sticky Shout Chat**
+
+  Prevents the game from automatically switching out of shout chat.
+
+
 - **Zoomed Chat Customization**
 
   Allows customization of the size and position of the zoomed chat view.
@@ -407,6 +467,11 @@
   Calculates the stat results a consumable will have based on your current stats.
 
   ![Show expected food and potion stats Preview](TweakPreviews/TooltipTweaks@FoodStats.png)
+
+
+- **Show Glamour in Item Name**
+
+  Displays the glamoured item name underneath the real item name.
 
 
 - **Show ID**
@@ -473,6 +538,11 @@
 - **Cast Bar Adjustments**
 
   Allows hiding or moving specific parts of the castbar.
+
+
+- **Casting Text Visibility**
+
+  Change the font size, color, and background of the casting text.
 
 
 - **Change Map Area Colors**
@@ -560,6 +630,11 @@
 - **Hide Experience Bar at Max Level**
 
   Hides the experience bar when at max level.
+
+
+- **Hide Guildhest Objective Popup**
+
+  Hides the objective popup when starting a guildhest.
 
 
 - **Hide Job Gauge**

@@ -8,11 +8,23 @@ using System.Linq;
 using System.Numerics;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
+using Dalamud.Interface.Utility;
 using SimpleTweaksPlugin.Debugging;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 
 namespace SimpleTweaksPlugin;
+
+public enum DecorationType {
+    Christmas,
+    Easter,
+    Valentines,
+    Halloween,
+    
+    None = -3,
+    Auto = -2,
+    Random = -1,
+}
 
 public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
     [NonSerialized]
@@ -44,6 +56,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
     public bool ShowEnabledTweaksTab = true;
     public bool ShowOtherTweaksTab = true;
     public bool NoCallerInLog;
+    public bool UseFuzzyTweakSearch = true;
 
     public bool ShowTweakDescriptions = true;
     public bool ShowTweakIDs;
@@ -55,6 +68,10 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
     public bool AutoOpenChangelog;
     public bool DisableChangelogNotification;
 
+    public string MetricsIdentifier;
+    
+    public DecorationType FestiveDecorationType = DecorationType.Auto;
+    
     public void Init(SimpleTweaksPlugin plugin) {
         this.plugin = plugin;
         Update();
@@ -62,8 +79,6 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
     }
 
     private void Update() {
-        var didUpdate = false;
-
         if (CustomProviders != null) {
             foreach (var p in CustomProviders) {
                 var enabled = !p.StartsWith("!");
@@ -337,17 +352,22 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                 lastSearchInput = searchInput;
                 searchResults = new List<BaseTweak>();
                 var searchValue = searchInput.ToLowerInvariant();
+                var fuzzyMatcher = new FuzzyMatcher(searchValue, UseFuzzyTweakSearch ? MatchMode.FuzzyParts : MatchMode.Simple);
                 foreach (var t in plugin.Tweaks) {
                     if (t is SubTweakManager stm) {
                         if (!stm.Enabled) continue;
                         foreach (var st in stm.GetTweakList()) {
-                            if (st.Name.ToLowerInvariant().Contains(searchValue) || st.Tags.Any(tag => tag.ToLowerInvariant().Contains(searchValue)) || st.LocalizedName.ToLowerInvariant().Contains(searchValue)) {
+                            if (fuzzyMatcher.MatchesAny(st.LocalizedName.ToLowerInvariant(), st.Name.ToLowerInvariant()) > 0) {
+                                searchResults.Add(st);
+                            } else if (st.Name.ToLowerInvariant().Contains(searchValue) || st.Tags.Any(tag => tag.ToLowerInvariant().Contains(searchValue)) || st.LocalizedName.ToLowerInvariant().Contains(searchValue)) {
                                 searchResults.Add(st);
                             }
                         }
                         continue;
                     }
-                    if (t.Name.ToLowerInvariant().Contains(searchValue) || t.Tags.Any(tag => tag.ToLowerInvariant().Contains(searchValue))|| t.LocalizedName.ToLowerInvariant().Contains(searchValue)) {
+                    if (fuzzyMatcher.MatchesAny(t.LocalizedName.ToLowerInvariant(), t.Name.ToLowerInvariant()) > 0) {
+                        searchResults.Add(t);
+                    } else if (t.Name.ToLowerInvariant().Contains(searchValue) || t.Tags.Any(tag => tag.ToLowerInvariant().Contains(searchValue))|| t.LocalizedName.ToLowerInvariant().Contains(searchValue)) {
                         searchResults.Add(t);
                     }
                 }
@@ -428,12 +448,19 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                 if (ImGui.BeginTabItem(Loc.Localize("General Options / TabHeader", "General Options") + $"###generalOptionsTab")) {
                     ImGui.BeginChild($"generalOptions-scroll", new Vector2(-1, -1));
 
-                    if (ImGui.Checkbox(Loc.Localize("General Options / Analytics Opt Out", "Opt out of analytics"), ref AnalyticsOptOut)) Save();
-                    ImGui.Indent();
-                    ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetColorU32(ImGuiCol.TextDisabled));
-                    ImGui.TextWrapped("Note: The current version of simple tweaks does not collect any analytics regardless of this setting. This is here to preemptively opt out of any future analytics that may or may not be added to the plugin. All information that may be collected will be anonymous, but may include information such as the list of enabled tweaks and a subset of configured options within those tweaks.");
-                    ImGui.PopStyleColor();
-                    ImGui.Unindent();
+                    if (ImGui.Checkbox(Loc.Localize("General Options / Analytics Opt Out", "Opt out of metrics"), ref AnalyticsOptOut)) Save();
+                    
+                    #if DEBUG
+                    ImGui.SameLine();
+                    if (ImGui.Button("Report Metrics")) {
+                        MetricsService.ReportMetrics();
+                    }
+                    #endif
+                    
+                    
+                    ImGui.SameLine();
+                    ImGuiComponents.HelpMarker("Simple tweaks collects a list of enabled tweaks to give me an idea of which tweaks are being used. You can choose to opt out of this data collection and no information will be sent. No identifying information will be collected in any way.");
+
                     ImGui.Separator();
 
                     if (ImGui.CollapsingHeader(Loc.Localize("General Options / Visible Category Tabs", "Visible Category Tabs") + $" ({tweakCategories.Count + (ShowAllTweaksTab ? 1 : 0) + (ShowEnabledTweaksTab ? 1 : 0)})###visibleCategoryTabs") ) {
@@ -486,7 +513,22 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                         ImGui.Separator();
                         if (ImGui.Checkbox(Loc.Localize("General Options / Show Tweak Descriptions","Show tweak descriptions."), ref ShowTweakDescriptions)) Save();
                         ImGui.Separator();
+                        if (ImGui.Checkbox(Loc.Localize("General Options / Use Fuzzy Search", "Use fuzzy search"), ref UseFuzzyTweakSearch)) Save();
+                        ImGui.Separator();
                         if (ImGui.Checkbox(Loc.Localize("General Options / Show Tweak IDs", "Show tweak IDs."), ref ShowTweakIDs)) Save();
+                        ImGui.Separator();
+                        ImGui.SetNextItemWidth(150 * ImGuiHelpers.GlobalScale);
+                        if (ImGui.BeginCombo(Loc.Localize("General Options / Festive Decorations", "Festive Decorations"), $"{FestiveDecorationType}")) {
+                            foreach (var v in Enum.GetValues<DecorationType>().OrderBy(v => (int)v)) {
+                                if (ImGui.Selectable($"{v}", FestiveDecorationType == v)) {
+                                    FestiveDecorationType = v;
+                                    Save();
+                                }
+                            }
+                            
+                            ImGui.EndCombo();
+                        }
+                        
                         ImGui.Separator();
                         if (ImGui.Checkbox(Loc.Localize("General Options / Hide KoFi", "Hide Ko-fi link."), ref HideKofi)) Save();
                         ImGui.Unindent();

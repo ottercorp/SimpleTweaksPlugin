@@ -8,6 +8,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using Dalamud.ContextMenu;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.IoC;
 using Dalamud.Networking.Http;
@@ -48,12 +49,16 @@ public unsafe class Common {
     }
     public static void* ThrowawayOut { get; private set; } = (void*) Marshal.AllocHGlobal(1024);
 
+    public static DalamudContextMenu ContextMenu;
+    
     public static void Setup() {
         LastCommandAddress = Service.SigScanner.GetStaticAddressFromSig("4C 8D 05 ?? ?? ?? ?? 41 B1 01 49 8B D4 E8 ?? ?? ?? ?? 83 EB 06");
         LastCommand = (Utf8String*) (LastCommandAddress);
 
         updateCursorHook = Hook<AtkModuleUpdateCursor>("48 89 74 24 ?? 48 89 7C 24 ?? 41 56 48 83 EC 20 4C 8B F1 E8 ?? ?? ?? ?? 49 8B CE", UpdateCursorDetour);
         updateCursorHook?.Enable();
+
+        ContextMenu = new DalamudContextMenu(Service.PluginInterface);
     }
 
     public static UIModule* UIModule => Framework.Instance()->GetUiModule();
@@ -134,12 +139,7 @@ public unsafe class Common {
         *(dst + bytes.Length) = 0;
     }
 
-    public static SeString ReadSeString(Utf8String xivString) {
-        var len = (int) (xivString.BufUsed > int.MaxValue ? int.MaxValue : xivString.BufUsed);
-        var bytes = new byte[len];
-        Marshal.Copy(new IntPtr(xivString.StringPtr), bytes, 0, len);
-        return SeString.Parse(bytes);
-    }
+    public static SeString ReadSeString(Utf8String xivString) => SeString.Parse(xivString);
 
     public static void WriteSeString(Utf8String xivString, SeString s) {
         var bytes = s.Encode();
@@ -296,9 +296,10 @@ public unsafe class Common {
     public static AtkResNode* GetNodeByID(AtkComponentBase* component, uint nodeId, NodeType? type = null) => GetNodeByID(&component->UldManager, nodeId, type);
     public static AtkResNode* GetNodeByID(AtkUldManager* uldManager, uint nodeId, NodeType? type = null) => GetNodeByID<AtkResNode>(uldManager, nodeId, type);
     public static T* GetNodeByID<T>(AtkUldManager* uldManager, uint nodeId, NodeType? type = null) where T : unmanaged {
+        if (uldManager->NodeList == null) return null;
         for (var i = 0; i < uldManager->NodeListCount; i++) {
             var n = uldManager->NodeList[i];
-            if (n->NodeID != nodeId || type != null && n->Type != type.Value) continue;
+            if (n == null || n->NodeID != nodeId || type != null && n->Type != type.Value) continue;
             return (T*)n;
         }
         return null;
@@ -313,6 +314,7 @@ public unsafe class Common {
         updateCursorHook?.Disable();
         updateCursorHook?.Dispose();
         httpClient?.Dispose();
+        ContextMenu.Dispose();
     }
 
     public const int UnitListCount = 18;
