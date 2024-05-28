@@ -132,14 +132,27 @@
 //         var textNode = Common.GetNodeByID<AtkTextNode>(&parent->UldManager, CastBarTextNodeId);
 //         if (textNode is null) return;
         
-//         if (target as BattleChara is { IsCasting: true } targetInfo && castBarVisible && targetInfo.TotalCastTime > targetInfo.CurrentCastTime) {
-//             textNode->AtkResNode.ToggleVisibility(true);
-//             textNode->SetText($"{targetInfo.TotalCastTime - targetInfo.CurrentCastTime:00.00}");
-//         }
-//         else {
-//             textNode->AtkResNode.ToggleVisibility(false);
-//         }
-//     }
+    //     if (target is BattleChara targetInfo && castBarVisible && targetInfo.AdjustedTotalCastTime > targetInfo.CurrentCastTime) {
+    //         textNode->AtkResNode.ToggleVisibility(true);
+    //         textNode->SetText($"{targetInfo.AdjustedTotalCastTime - targetInfo.CurrentCastTime:00.00}");
+    //         textNode->FontSize = (byte) Math.Clamp(focusTarget ? TweakConfig.FocusFontSize : TweakConfig.FontSize, 8, 30);
+            
+    //         var nodePosition = (focusTarget ? TweakConfig.FocusTargetPosition : TweakConfig.CastbarPosition) switch {
+    //             NodePosition.Left => new Vector2(positioningNode->X - 80, positioningNode->Y),
+    //             NodePosition.Right => new Vector2(positioningNode->X + positioningNode->Width, positioningNode->Y),
+    //             NodePosition.TopLeft => new Vector2(positioningNode->X, positioningNode->Y - 14),
+    //             NodePosition.TopRight => new Vector2(positioningNode->X + positioningNode->Width - 80, positioningNode->Y - 14),
+    //             NodePosition.BottomLeft => new Vector2(positioningNode->X, positioningNode->Y + 14),
+    //             NodePosition.BottomRight => new Vector2(positioningNode->X + positioningNode->Width - 80, positioningNode->Y + 14),
+    //             _ => Vector2.Zero
+    //         } + (focusTarget ? TweakConfig.FocusOffset : TweakConfig.Offset);
+        
+    //         textNode->AtkResNode.SetPositionFloat(nodePosition.X, nodePosition.Y);
+    //     }
+    //     else {
+    //         textNode->AtkResNode.ToggleVisibility(false);
+    //     }
+    // }
     
 //     private void MakeTextNode(AtkUnitBase* parent, uint nodeId, AtkResNode* positioningNode, bool focusTarget) {
 //         var textNode = UiHelper.MakeTextNode(nodeId);

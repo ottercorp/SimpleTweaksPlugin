@@ -9,14 +9,17 @@ using System.Net;
 using System.Net.Http;
 using System.Numerics;
 using System.Reflection;
-using System.Threading.Tasks;
 using Dalamud;
+using Dalamud.Interface;
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Debugging;
 using SimpleTweaksPlugin.Utility;
+using Task = System.Threading.Tasks.Task;
 #if DEBUG
 using System.Runtime.CompilerServices;
 #endif
@@ -241,14 +244,14 @@ namespace SimpleTweaksPlugin {
                                     if (PluginConfig.EnabledTweaks.Contains(tweak.Key)) {
                                         PluginConfig.EnabledTweaks.Remove(tweak.Key);
                                     }
-                                    Service.PluginInterface.UiBuilder.AddNotification($"Disabled {tweak.Name}", "Simple Tweaks", NotificationType.Info);
+
+                                    Service.NotificationManager.AddNotification(new Notification { Content = $"Disabled {tweak.Name}", Title = "Simple Tweaks", Type = NotificationType.Info });
                                 } else {
                                     tweak.InternalEnable();
                                     if (!PluginConfig.EnabledTweaks.Contains(tweak.Key)) {
                                         PluginConfig.EnabledTweaks.Add(tweak.Key);
                                     }
-                                    Service.PluginInterface.UiBuilder.AddNotification($"Enabled {tweak.Name}", "Simple Tweaks", NotificationType.Info);
-                                }
+                                    Service.NotificationManager.AddNotification(new Notification { Content = $"Enabled {tweak.Name}", Title = "Simple Tweaks", Type = NotificationType.Info });}
                                 PluginConfig.Save();
                                 return;
                             }
@@ -269,7 +272,7 @@ namespace SimpleTweaksPlugin {
                                     if (!PluginConfig.EnabledTweaks.Contains(tweak.Key)) {
                                         PluginConfig.EnabledTweaks.Add(tweak.Key);
                                     }
-                                    Service.PluginInterface.UiBuilder.AddNotification($"Enabled {tweak.Name}", "Simple Tweaks", NotificationType.Info);
+                                    Service.NotificationManager.AddNotification(new Notification { Content = $"Enabled {tweak.Name}", Title = "Simple Tweaks", Type = NotificationType.Info });
                                     PluginConfig.Save();
                                 }
                                 return;
@@ -291,7 +294,7 @@ namespace SimpleTweaksPlugin {
                                     if (PluginConfig.EnabledTweaks.Contains(tweak.Key)) {
                                         PluginConfig.EnabledTweaks.Remove(tweak.Key);
                                     }
-                                    Service.PluginInterface.UiBuilder.AddNotification($"Disabled {tweak.Name}", "Simple Tweaks", NotificationType.Info);
+                                    Service.NotificationManager.AddNotification(new Notification { Content = $"Disabled {tweak.Name}", Title = "Simple Tweaks", Type = NotificationType.Info });
                                     PluginConfig.Save();
                                 }
                                 return;
@@ -322,7 +325,7 @@ namespace SimpleTweaksPlugin {
                                 tweak.HandleBasicCommand(splitArgString.Skip(1).ToArray());
                                 return;
                             }
-
+                            
                             Service.Chat.PrintError($"\"{splitArgString[1]}\" is not a valid tweak id.");
                             return;
                         }
@@ -381,7 +384,7 @@ namespace SimpleTweaksPlugin {
             foreach (var e in ErrorList.Where(e => e.IsNew && e.Tweak != null)) {
                 e.IsNew = false;
                 e.Tweak.InternalDisable();
-                Service.PluginInterface.UiBuilder.AddNotification($"{e.Tweak.Name} has been disabled due to an error.", "Simple Tweaks", NotificationType.Error, 5000);
+                Service.NotificationManager.AddNotification(new Notification { Content = $"{e.Tweak.Name} has been disabled due to an error.", Title = "Simple Tweaks", Type = NotificationType.Error }); 
             }
 
             WindowSystem.Draw();
