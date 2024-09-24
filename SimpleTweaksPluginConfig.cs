@@ -57,6 +57,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
     public bool ShowOtherTweaksTab = true;
     public bool NoCallerInLog;
     public bool UseFuzzyTweakSearch = true;
+    public bool DismissedUpdateNotice;
 
     public bool ShowTweakDescriptions = true;
     public bool ShowTweakIDs;
@@ -187,7 +188,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
         checkboxSize = ImGui.GetItemRectSize();
         ImGui.SameLine();
         var descriptionX = ImGui.GetCursorPosX();
-        if (!t.DrawConfig(ref hasChange)) {
+        if (!t.DrawConfigUI(ref hasChange)) {
             if (t is IDisabledTweak dt) {
                 if (!string.IsNullOrEmpty(dt.DisabledMessage)) {
                     ImGui.SetCursorPosX(descriptionX);
@@ -684,7 +685,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                                         try {
                                             t.InternalEnable();
                                             if (t.Enabled) {
-                                                EnabledTweaks.Add(t.GetType().Name);
+                                                EnabledTweaks.Add(t.Key);
                                             }
                                         } catch (Exception ex) {
                                             plugin.Error(t, ex, false, $"Error in Enable for '{t.Name}'");
@@ -696,7 +697,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                                         } catch (Exception ex) {
                                             plugin.Error(t, ex, true, $"Error in Disable for '{t.Name}'");
                                         }
-                                        EnabledTweaks.RemoveAll(a => a == t.GetType().Name);
+                                        EnabledTweaks.RemoveAll(a => a == t.Key);
                                     }
                                     Save();
                                 }

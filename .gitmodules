@@ -1,4 +1,0 @@
-[submodule "lib/FFXIVClientStructs"]
-	path = lib/FFXIVClientStructs
-	url = https://github.com/ottercorp/FFXIVClientStructs.git
-	branch = cn

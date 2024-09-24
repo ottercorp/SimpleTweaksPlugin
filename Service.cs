@@ -10,7 +10,7 @@ namespace SimpleTweaksPlugin;
 
 [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
 public class Service {
-    [PluginService] public static DalamudPluginInterface PluginInterface { get; private set; }
+    [PluginService] public static IDalamudPluginInterface PluginInterface { get; private set; }
     [PluginService] public static IChatGui Chat { get; private set; }
     [PluginService] public static IClientState ClientState { get; private set; }
     [PluginService] public static ICommandManager Commands { get; private set; }
@@ -30,4 +30,5 @@ public class Service {
     [PluginService] public static IDutyState DutyState { get; private set; }
     [PluginService] public static INotificationManager NotificationManager { get; private set; }
     [PluginService] public static IContextMenu ContextMenu { get; private set; }
+    [PluginService] public static INamePlateGui NamePlateGui { get; private set; }
 }

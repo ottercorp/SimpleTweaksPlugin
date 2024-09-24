@@ -18,7 +18,7 @@
     </PropertyGroup>
     <PropertyGroup Label="Feature">
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <Version>1.9.7.3</Version>
+        <Version>1.10.2.0</Version>
     </PropertyGroup>
 	<PropertyGroup>
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
@@ -26,16 +26,6 @@
         <AssemblyName>SimpleTweaksPlugin</AssemblyName>
     </PropertyGroup>
     <ItemGroup>
-      <Compile Remove="lib\**" />
-      <Compile Remove="Publish\**" />
-      <EmbeddedResource Remove="lib\**" />
-      <EmbeddedResource Remove="Publish\**" />
-      <None Remove="lib\**" />
-      <None Remove="Publish\**" />
-      <None Remove="SimpleTweaksPlugin.Localization.zh-CN.json" />
-      <None Remove="tweakBlacklist.txt" />
-      <EmbeddedResource Include="Localization\zh-CN.json" />
-      <EmbeddedResource Include="tweakBlacklist.txt" />
       <None Update="images\icon.png">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
@@ -48,7 +38,7 @@
     </ItemGroup>
     <ItemGroup>
       <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
-      <PackageReference Include="DalamudPackager" Version="2.1.12" />
+      <PackageReference Include="DalamudPackager" Version="2.1.13" />
     </ItemGroup>
     <PropertyGroup>
         <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
@@ -59,9 +49,12 @@
             <HintPath>$(DalamudLibPath)\Dalamud.dll</HintPath>
 		</Reference>
 		<Reference Include="FFXIVClientStructs">
-			<Private Condition="'$(Configuration)' == 'Debug'">true</Private>
-			<Private Condition="'$(Configuration)' == 'Release'">false</Private>
-      <HintPath>$(DalamudLibPath)\FFXIVClientStructs.dll</HintPath>
+			<Private>false</Private>
+			<HintPath>$(DalamudLibPath)\FFXIVClientStructs.dll</HintPath>
+		</Reference>
+		<Reference Include="InteropGenerator.Runtime">
+			<Private>false</Private>
+			<HintPath>$(DalamudLibPath)\InteropGenerator.Runtime.dll</HintPath>
 		</Reference>
         <Reference Include="Newtonsoft.Json">
             <Private>false</Private>
