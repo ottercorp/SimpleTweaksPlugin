@@ -18,7 +18,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 [TweakAuthor("Anna")]
 [TweakAutoConfig]
 [TweakReleaseVersion("1.10.2.0")]
-[Changelog(UnreleasedVersion, "Fixed issue causing custom separators to be lost when logging in.")]
+//[Changelog(UnreleasedVersion, "Fixed issue causing custom separators to be lost when logging in.")]
 public unsafe class AddNumberSeparators : UiAdjustments.SubTweak {
     public class Configs : TweakConfig {
         public bool FlyText = true;
