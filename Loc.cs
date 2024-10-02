@@ -94,7 +94,7 @@ internal static class Loc {
             LoadingTranslations = true;
             try {
                 var httpClient = Common.HttpClient;
-                using var request = new HttpRequestMessage(HttpMethod.Get, "https://raw.githubusercontent.com/NiGuangOwO/SimpleTweaksPlugin/refs/heads/test/SimpleTweaks.zip");
+                using var request = new HttpRequestMessage(HttpMethod.Get, "https://raw.githubusercontent.com/ottercorp/SimpleTweaksPlugin/cn/SimpleTweaks.zip");
                 request.Headers.Accept.Clear();
                 request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
                 request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/xhtml+xml"));
