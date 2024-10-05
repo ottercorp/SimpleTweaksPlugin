@@ -38,7 +38,7 @@ public unsafe class ImprovedWorldVisit : UiAdjustments.SubTweak {
         currentWorldNode->SetHeight(24);
         currentWorldNode->SetXShort(25);
 
-        var orderedWorlds = Service.Data.GetExcelSheet<World>()!.Where(w => w.DataCenter.Row == currentDc).OrderBy(w => w.Name.RawString).Select(w => w.Name.RawString).ToList();
+        var orderedWorlds = Service.Data.GetExcelSheet<World>()!.Where(w => w.DataCenter.Row == currentDc && w.RowId > 1000 && w.RowId != 1200).OrderBy(w => w.Name.RawString).Select(w => w.Name.RawString).ToList();
         var currentIndex = orderedWorlds.IndexOf(currentWorld.Name.RawString);
         var pY = -26 + 24 * currentIndex;
         currentWorldNode->SetYFloat(pY);
