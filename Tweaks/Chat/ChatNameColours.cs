@@ -120,11 +120,11 @@ public class ChatNameColours : ChatTweaks.SubTweak {
         }
 
         Region GetRegion(byte regionId, string name) {
-            return new Region() { Name = name, DataCentres = dcSheet.Where(dc => dc.Region == regionId).Select(dc => new Region.DataCentre() { Name = dc.Name.RawString, Worlds = worldSheet.Where(w => w.DataCenter.Row == dc.RowId && w.IsPublic).Select(w => w.Name.RawString).ToList() }).Where(dc => dc.Worlds.Count > 0).ToList() };
+            return new Region() { Name = name, DataCentres = dcSheet.Where(dc => dc.Region == regionId).Select(dc => new Region.DataCentre() { Name = dc.Name.RawString, Worlds = worldSheet.Where(w => w.DataCenter.Row == dc.RowId && w.RowId is > 1000 and not 1200).Select(w => w.Name.RawString).ToList() }).Where(dc => dc.Worlds.Count > 0).ToList() };
         }
 
         Regions = new List<Region>() {
-            GetRegion(1, "JP"), GetRegion(2, "NA"), GetRegion(3, "EU"), GetRegion(4, "OCE"),
+            GetRegion(5, "CN"),
         };
     }
 
@@ -405,7 +405,7 @@ public class ChatNameColours : ChatTweaks.SubTweak {
                 continue;
             }
 
-            if (payload is TextPayload tp && waitingBegin != null && tp.Text != null && tp.Text.Trim().Contains(' ')) {
+            if (payload is TextPayload tp && waitingBegin != null && tp.Text != null) {
                 if (!Config.LegacyColours) {
                     var colour = GetColor(waitingBegin.PlayerName, waitingBegin.World.Name);
                     var glow = GetGlow(waitingBegin.PlayerName, waitingBegin.World.Name);
