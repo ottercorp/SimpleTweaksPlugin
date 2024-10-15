@@ -1,22 +1,14 @@
 {
-  "AutoACT / Description": {
-    "message": "听说自关闭会炸配置,不是很敢.",
-    "description": "[AutoACT] Tweak Description"
-  },
-  "AutoACT / Name": {
-    "message": "ACT自启动",
-    "description": "[AutoACT] Tweak Name"
-  },
   "AutoLockHotbar / Description": {
-    "message": "当满足某些条件时，自动锁定热键栏。",
+    "message": "当满足某些条件时，自动锁定操作栏。",
     "description": "[AutoLockHotbar] Tweak Description"
   },
   "AutoLockHotbar / Name": {
-    "message": "自动锁定热键栏",
+    "message": "自动锁定操作栏",
     "description": "[AutoLockHotbar] Tweak Name"
   },
   "AutoOpenCommendWindow / Description": {
-    "message": "完成副本任务后打开最优队员窗口。",
+    "message": "完成副本任务后打开最优队员窗口",
     "description": "[AutoOpenCommendWindow] Tweak Description"
   },
   "AutoOpenCommendWindow / Name": {
@@ -40,7 +32,7 @@
     "description": "[BaitCommand] Tweak Name"
   },
   "CharaCardCommand / Description": {
-    "message": "添加一个指令来打开所选玩家的冒险者铭牌。",
+    "message": "添加一个指令来打开冒险者铭牌。",
     "description": "[CharaCardCommand] Tweak Description"
   },
   "CharaCardCommand / Name": {
@@ -48,7 +40,7 @@
     "description": "[CharaCardCommand] Tweak Name"
   },
   "CharacterClassSwitcher / Description": {
-    "message": "点击职业名称以切换套装（能工巧匠除外）。",
+    "message": "点击职业名称以切换套装（能工巧匠除外）",
     "description": "[CharacterClassSwitcher] Tweak Description"
   },
   "CharacterClassSwitcher / Name": {
@@ -56,7 +48,7 @@
     "description": "[CharacterClassSwitcher] Tweak Name"
   },
   "CharaViewIncreasedZoom / Description": {
-    "message": "增加角色预览的缩放距离，比如“试穿”和“调查”。",
+    "message": "增加角色预览的缩放距离，比如“试穿”和“调查”",
     "description": "[CharaViewIncreasedZoom] Tweak Description"
   },
   "CharaViewIncreasedZoom / Name": {
@@ -68,12 +60,28 @@
     "description": "[ChatTweaks] Tweak Name"
   },
   "ChatTweaks@ChatNameColours / Description": {
-    "message": "在聊天栏中，每个玩家的名字会随机分配一种颜色，也可以手动设置。",
+    "message": "在聊天栏中，每个玩家的名字会随机分配一种颜色，也可以手动设置",
     "description": "[ChatNameColours] Tweak Description"
   },
   "ChatTweaks@ChatNameColours / Name": {
     "message": "多彩玩家聊天名",
     "description": "[ChatNameColours] Tweak Name"
+  },
+  "ChatTweaks@ChatNameColours / NameAlreadyAddedError": {
+    "message": "名称已在列表中",
+    "description": "[ChatNameColours] Chat Name Colours - Name is already in list."
+  },
+  "ChatTweaks@ChatNameColours / Player Name": {
+    "message": "玩家名称",
+    "description": "[ChatNameColours] Chat Name Colours - Player Name"
+  },
+  "ChatTweaks@ChatNameColours / RandomColours": {
+    "message": "对未列出的玩家使用随机颜色",
+    "description": "[ChatNameColours] Chat Name Colours - Use random colours for unlisted players"
+  },
+  "ChatTweaks@ChatNameColours / Server": {
+    "message": "服务器",
+    "description": "[ChatNameColours] Chat Name Colours - Server"
   },
   "ChatTweaks@ClickableLinks / Description": {
     "message": "解析聊天中的链接，并允许点击它们。",
@@ -83,13 +91,25 @@
     "message": "聊天中可打开链接",
     "description": "[ClickableLinks] Tweak Name"
   },
+  "ChatTweaks@CustomTimestampFormat / Description": {
+    "message": "自定义聊天信息中显示的时间戳。",
+    "description": "[CustomTimestampFormat] Tweak Description"
+  },
+  "ChatTweaks@CustomTimestampFormat / Name": {
+    "message": "自定义时间格式",
+    "description": "[CustomTimestampFormat] Tweak Name"
+  },
   "ChatTweaks@DisableAutoChatInputs / Description": {
     "message": "阻止游戏将<flag>或其他参数插入聊天框。",
     "description": "[DisableAutoChatInputs] Tweak Description"
   },
   "ChatTweaks@DisableAutoChatInputs / Name": {
-    "message": "聊天栏禁止自动插入",
+    "message": "禁用聊天栏自动插入",
     "description": "[DisableAutoChatInputs] Tweak Name"
+  },
+  "ChatTweaks@DisableChatAutoscroll / AllowAutoscrollLabel": {
+    "message": "始终允许自动滚动：",
+    "description": "[DisableChatAutoscroll] Smart AutoScroll - Always allow autoscrolling in:"
   },
   "ChatTweaks@DisableChatAutoscroll / Description": {
     "message": "在滚动时尝试防止在收到新的聊天消息时自动滚动。",
@@ -99,6 +119,10 @@
     "message": "智能聊天信息滚动",
     "description": "[DisableChatAutoscroll] Tweak Name"
   },
+  "ChatTweaks@DisableChatAutoscroll / TabLabel": {
+    "message": "Tab {0}",
+    "description": "[DisableChatAutoscroll] Smart AutoScroll - Tab {0}"
+  },
   "ChatTweaks@DisableChatMovement / Description": {
     "message": "阻止聊天窗口的移动。",
     "description": "[DisableChatMovement] Tweak Description"
@@ -107,12 +131,52 @@
     "message": "禁用聊天窗口移动",
     "description": "[DisableChatMovement] Tweak Name"
   },
+  "ChatTweaks@DisableChatResize / Description": {
+    "message": "禁止更改聊天框大小",
+    "description": "[DisableChatResize] Tweak Description"
+  },
+  "ChatTweaks@DisableChatResize / Name": {
+    "message": "禁止更改聊天框大小",
+    "description": "[DisableChatResize] Tweak Name"
+  },
+  "ChatTweaks@EchoPartyFinder / Description": {
+    "message": "将组队查找描述输出至聊天，以在组队时进行聊天",
+    "description": "[EchoPartyFinder] Tweak Description"
+  },
+  "ChatTweaks@EchoPartyFinder / Name": {
+    "message": "Echo 频道输出组队查找器",
+    "description": "[EchoPartyFinder] Tweak Name"
+  },
+  "ChatTweaks@EchoStorySelection / Description": {
+    "message": "当在任务中给出多个选择时，将选中的选项输出至聊天。",
+    "description": "[EchoStorySelection] Tweak Description"
+  },
+  "ChatTweaks@EchoStorySelection / Name": {
+    "message": "Echo 频道输出剧情选择",
+    "description": "[EchoStorySelection] Tweak Name"
+  },
+  "ChatTweaks@HideChat / Description": {
+    "message": "提供隐藏聊天的命令。(/chatvis show|hide|teggle)",
+    "description": "[HideChat] Tweak Description"
+  },
+  "ChatTweaks@HideChat / Name": {
+    "message": "隐藏聊天",
+    "description": "[HideChat] Tweak Name"
+  },
+  "ChatTweaks@HideChatAuto / Description": {
+    "message": "除了输入时，自动隐藏聊天。",
+    "description": "[HideChatAuto] Tweak Description"
+  },
+  "ChatTweaks@HideChatAuto / Name": {
+    "message": "自动隐藏聊天",
+    "description": "[HideChatAuto] Tweak Name"
+  },
   "ChatTweaks@HideChatPanelButtons / Description": {
-    "message": "隐藏从主窗口拆分的聊天日志名称和关闭面板按钮。",
+    "message": "隐藏已从主窗口拆分的聊天频道名称和关闭按钮。",
     "description": "[HideChatPanelButtons] Tweak Description"
   },
   "ChatTweaks@HideChatPanelButtons / Name": {
-    "message": "隐藏聊天栏面板按钮",
+    "message": "隐藏聊天面板按钮",
     "description": "[HideChatPanelButtons] Tweak Name"
   },
   "ChatTweaks@ImprovedFontSizes / Description": {
@@ -120,27 +184,39 @@
     "description": "[ImprovedFontSizes] Tweak Description"
   },
   "ChatTweaks@ImprovedFontSizes / Name": {
-    "message": "更好的字体大小",
+    "message": "改善字体大小",
     "description": "[ImprovedFontSizes] Tweak Name"
   },
   "ChatTweaks@RenameChatTabs / Description": {
-    "message": "允许重命名聊天窗口中的普通选项卡名称和战斗选项卡名称。",
+    "message": "允许重命名聊天窗口中的普通选项卡名称和战斗选项卡名称",
     "description": "[RenameChatTabs] Tweak Description"
   },
   "ChatTweaks@RenameChatTabs / Name": {
     "message": "重命名聊天选项卡",
     "description": "[RenameChatTabs] Tweak Name"
   },
+  "ChatTweaks@RenameChatTabs / TabLabel": {
+    "message": "Tab {0}",
+    "description": "[RenameChatTabs] Rename Chat Tabs - Tab {0}"
+  },
   "ChatTweaks@ReplyChannelSwitch / Description": {
-    "message": "输入 /r 会固定当前聊天频道为悄悄话。",
+    "message": "输入 /r 会固定当前聊天频道为悄悄话",
     "description": "[ReplyChannelSwitch] Tweak Description"
   },
   "ChatTweaks@ReplyChannelSwitch / Name": {
     "message": "聊天回复选项",
     "description": "[ReplyChannelSwitch] Tweak Name"
   },
+  "ChatTweaks@StickyChat / Description": {
+    "message": "将临时对话的频道设置为当前频道，\n例如：“/p hello!”将切换聊天频道至组队频道",
+    "description": "[StickyChat] Tweak Description"
+  },
+  "ChatTweaks@StickyChat / Name": {
+    "message": "置顶聊天",
+    "description": "[StickyChat] Tweak Name"
+  },
   "ChrDirCommand / Description": {
-    "message": "添加命令以显示或打开本地角色文件夹。",
+    "message": "添加命令以显示或打开本地角色文件夹",
     "description": "[ChrDirCommand] Tweak Description"
   },
   "ChrDirCommand / Name": {
@@ -148,7 +224,7 @@
     "description": "[ChrDirCommand] Tweak Name"
   },
   "CombatMovementControl / Description": {
-    "message": "设置战斗移动操作类型标准和传统，关联进入/脱离战斗或武器拔出/收回。",
+    "message": "进入/脱离战斗或拔出/收回武器，关联战斗移动操作类型标准和传统。",
     "description": "[CombatMovementControl] Tweak Description"
   },
   "CombatMovementControl / Name": {
@@ -156,15 +232,51 @@
     "description": "[CombatMovementControl] Tweak Name"
   },
   "CommandAlias / Description": {
-    "message": "创建聊天栏命令的别称以方便输入。",
+    "message": "创建聊天栏命令的别称以方便输入",
     "description": "[CommandAlias] Tweak Description"
+  },
+  "CommandAlias / EmptyInputError": {
+    "message": "输入不可为空",
+    "description": "[CommandAlias] Command Alias - Input must not be empty."
+  },
+  "CommandAlias / EmptyOutputError": {
+    "message": "输出不可为空",
+    "description": "[CommandAlias] Command Alias - Output must not be empty."
+  },
+  "CommandAlias / Enabled": {
+    "message": "已启用",
+    "description": "[CommandAlias] Command Alias - Enabled"
+  },
+  "CommandAlias / Input Command": {
+    "message": "输入命令",
+    "description": "[CommandAlias] Command Alias - Input Command"
+  },
+  "CommandAlias / Instruction": {
+    "message": "添加命令同义词, 不要输入起始的'/'",
+    "description": "[CommandAlias] Command Alias - Add list of command alias. Do not start command with the '/'\nThese aliases, by design, do not work with macros."
+  },
+  "CommandAlias / MacroHelp": {
+    "message": "不在宏中支持是为了防止你在上传角色数据时将同义词一并上传\\n请在宏中使用原始命令",
+    "description": "[CommandAlias] Macro Help Tooltip"
   },
   "CommandAlias / Name": {
     "message": "自定义同义命令",
     "description": "[CommandAlias] Tweak Name"
   },
+  "CommandAlias / New Label": {
+    "message": "新:",
+    "description": "[CommandAlias] Command Alias - New:"
+  },
+  "CommandAlias / Output Command": {
+    "message": "输出命令",
+    "description": "[CommandAlias] Command Alias - Output Command"
+  },
+  "CommandAlias / ProtectedCommandError": {
+    "message": "'/{0}' 是一个被保护的命令",
+    "description": "[CommandAlias] Command Alias - '/{0}' is a protected command."
+  },
   "ContentsFinderConfirmClassSwitch / Description": {
-    "message": "在准备确认窗口单击“上一个”职业图标以职业切换。",
+    "message": "在准备确认窗口单击“上一个”职业图标来切换职业。",
     "description": "[ContentsFinderConfirmClassSwitch] Tweak Description"
   },
   "ContentsFinderConfirmClassSwitch / Name": {
@@ -172,23 +284,83 @@
     "description": "[ContentsFinderConfirmClassSwitch] Tweak Name"
   },
   "DataCentreOnTitleScreen / Description": {
-    "message": "在标题画面上显示当前大区。",
+    "message": "在标题画面上显示当前数据中心",
     "description": "[DataCentreOnTitleScreen] Tweak Description"
   },
   "DataCentreOnTitleScreen / Name": {
-    "message": "标题画面的大区",
+    "message": "标题画面的数据中心",
     "description": "[DataCentreOnTitleScreen] Tweak Name"
   },
+  "DisableClickTargeting / AddButton": {
+    "message": "添加",
+    "description": "[DisableClickTargeting] Disable Click Targeting - Add"
+  },
+  "DisableClickTargeting / CombatHeader": {
+    "message": "仅在\n战斗中",
+    "description": "[DisableClickTargeting] Disable Click Targeting - Only in\nCombat"
+  },
+  "DisableClickTargeting / DefaultNameText": {
+    "message": "默认 (未匹配的名称)",
+    "description": "[DisableClickTargeting] Disable Click Targeting - Default (Unmatched Names)"
+  },
   "DisableClickTargeting / Description": {
-    "message": "可以禁用鼠标点击选中目标的功能。",
+    "message": "可以禁用鼠标点击选中目标的功能",
     "description": "[DisableClickTargeting] Tweak Description"
+  },
+  "DisableClickTargeting / EverythingDisabled": {
+    "message": "都不开的话你为啥要开着这个功能不关...",
+    "description": "[DisableClickTargeting] Disable Click Targeting - It is doing nothing if everything is disabled..."
+  },
+  "DisableClickTargeting / LeftHeader": {
+    "message": "禁用\n左移",
+    "description": "[DisableClickTargeting] Disable Click Targeting - Disable\nLeft"
   },
   "DisableClickTargeting / Name": {
     "message": "禁用目标选中",
     "description": "[DisableClickTargeting] Tweak Name"
   },
+  "DisableClickTargeting / NameFiltering": {
+    "message": "启用姓名过滤",
+    "description": "[DisableClickTargeting] Disable Click Targeting - Enable Name Filtering"
+  },
+  "DisableClickTargeting / NameFiltersHelp": {
+    "message": "每个宠物选项 ",
+    "description": "[DisableClickTargeting] Disable Click Targeting - Per actor options for "
+  },
+  "DisableClickTargeting / NameFiltersLabel": {
+    "message": "名称过滤器：",
+    "description": "[DisableClickTargeting] Disable Click Targeting - Name Filters:"
+  },
+  "DisableClickTargeting / NameHeader": {
+    "message": "\n名字",
+    "description": "[DisableClickTargeting] Disable Click Targeting - \nName"
+  },
+  "DisableClickTargeting / NamePlaceholder": {
+    "message": "名称",
+    "description": "[DisableClickTargeting] Disable Click Targeting - Name"
+  },
+  "DisableClickTargeting / RemoveTooltip": {
+    "message": "删除 {0}",
+    "description": "[DisableClickTargeting] Disable Click Targeting - Remove {0}"
+  },
+  "DisableClickTargeting / RightHeader": {
+    "message": "禁用\n右侧",
+    "description": "[DisableClickTargeting] Disable Click Targeting - Disable\nRight"
+  },
+  "DisableClickTargeting / SimpleCombatOnly": {
+    "message": "仅在战斗中禁用",
+    "description": "[DisableClickTargeting] Disable Click Targeting - Only disable in combat"
+  },
+  "DisableClickTargeting / SimpleDisableLeftClick": {
+    "message": "禁用左键选中",
+    "description": "[DisableClickTargeting] Disable Click Targeting - Disable Left Click Targeting"
+  },
+  "DisableClickTargeting / SimpleDisableRightClick": {
+    "message": "禁用右键选中",
+    "description": "[DisableClickTargeting] Disable Click Targeting - Disable Right Click Targeting"
+  },
   "DisableMountVolumeChange / Description": {
-    "message": "原地不动时坐骑音乐不会变低。",
+    "message": "原地不动时坐骑音乐不会变低",
     "description": "[DisableMountVolumeChange] Tweak Description"
   },
   "DisableMountVolumeChange / Name": {
@@ -204,7 +376,7 @@
     "description": "[DisableMouseCameraControl] Tweak Name"
   },
   "DisableTitleScreenMovie / Description": {
-    "message": "禁用在主界面闲置过久时会播放的开场动画。",
+    "message": "禁用在主界面闲置过久时会播放的开场动画",
     "description": "[DisableTitleScreenMovie] Tweak Description"
   },
   "DisableTitleScreenMovie / Name": {
@@ -220,28 +392,48 @@
     "description": "[EmoteLogSubcommand] Tweak Name"
   },
   "EstateListCommand / Description": {
-    "message": "添加一个指令来打开你的某个好友的房屋列表。/estatelist",
+    "message": "添加一个指令来打开你的某个好友的房屋列表。(/estatelist)",
     "description": "[EstateListCommand] Tweak Description"
   },
   "EstateListCommand / Name": {
     "message": "房屋传送指令",
     "description": "[EstateListCommand] Tweak Name"
   },
+  "ExtendedMacroIcon / Description": {
+    "message": "允许在宏内使用“/macroicon # id”时使用特定的图标 ID。",
+    "description": "[ExtendedMacroIcon] Tweak Description"
+  },
+  "ExtendedMacroIcon / Name": {
+    "message": "扩展宏图标",
+    "description": "[ExtendedMacroIcon] Tweak Name"
+  },
   "FixedShadowDistance / Description": {
-    "message": "设定影子距离的值以防止其在飞行中变化。",
+    "message": "设定影子距离的值以防止其在飞行中变化",
     "description": "[FixedShadowDistance] Tweak Description"
   },
   "FixedShadowDistance / Name": {
     "message": "固定影子距离",
     "description": "[FixedShadowDistance] Tweak Name"
   },
+  "FixedShadowDistance / Shadow Distance": {
+    "message": "影子距离",
+    "description": "[FixedShadowDistance] Fixed Shadow Distance - Shadow Distance"
+  },
   "FixTarget / Description": {
-    "message": "允许使用'/target'命令选中玩家角色或NPC。",
+    "message": "允许使用'/target'命令选中玩家角色或NPC",
     "description": "[FixTarget] Tweak Description"
   },
   "FixTarget / Name": {
     "message": "修复'/target'命令",
     "description": "[FixTarget] Tweak Name"
+  },
+  "General Options / Auto Open Changelog": {
+    "message": "自动打开新修改日志",
+    "description": "General Options / Auto Open Changelog - Open New Changelogs Automatically"
+  },
+  "General Options / Disable Changelog Notice": {
+    "message": "禁用更新日志通知",
+    "description": "General Options / Disable Changelog Notice - Disable Changelog Notifications"
   },
   "General Options / Formatting Culture": {
     "message": "格式化文化",
@@ -256,7 +448,7 @@
     "description": "General Options / Language - Language"
   },
   "General Options / Show Experimental Tweaks": {
-    "message": "显示实验性的调整。",
+    "message": "显示实验性的调整",
     "description": "General Options / Show Experimental Tweaks - Show Experimental Tweaks."
   },
   "General Options / Show Tweak Descriptions": {
@@ -275,8 +467,12 @@
     "message": "常规调整",
     "description": "General Tweaks Tab Header"
   },
+  "Hide Tweak": {
+    "message": "隐藏调整",
+    "description": "Hide Tweak - Hide Tweak"
+  },
   "HideHotbarLock / Description": {
-    "message": "隐藏热键栏锁定按钮，并提供按住SHIFT可见的选项。",
+    "message": "隐藏快捷栏锁定按钮，按住SHIFT时可见。",
     "description": "[HideHotbarLock] Tweak Description"
   },
   "HideHotbarLock / Name": {
@@ -291,16 +487,52 @@
     "message": "不活动后隐藏光标",
     "description": "[HideMouseAfterInactivity] Tweak Name"
   },
-  "IslandQuickCollectAndResume / Description": {
-    "message": "按住所选按键以从耕种小员和放牧小员收获物资。",
-    "description": "[IslandQuickCollectAndResume] Tweak Description"
+  "HighResScreenshots / Description": {
+    "message": "允许更高分辨率的屏幕截图，隐藏Dalamud & Game UI，并从屏幕截图中移除版权信息。",
+    "description": "[HighResScreenshots] Tweak Description"
   },
-  "IslandQuickCollectAndResume / Name": {
-    "message": "无人岛魔法人偶快速收获",
-    "description": "[IslandQuickCollectAndResume] Tweak Name"
+  "HighResScreenshots / Name": {
+    "message": "屏幕截图改进",
+    "description": "[HighResScreenshots] Tweak Name"
+  },
+  "HouseLightCommand / Description": {
+    "message": "添加一个控制您所有房屋灯光的命令。",
+    "description": "[HouseLightCommand] Tweak Description"
+  },
+  "HouseLightCommand / Name": {
+    "message": "房屋灯光命令",
+    "description": "[HouseLightCommand] Tweak Name"
+  },
+  "JokeTweaks / Name": {
+    "message": "娱乐修改",
+    "description": "[JokeTweaks] Tweak Name"
+  },
+  "JokeTweaks@Fools2023 / Description": {
+    "message": "重新启用2023愚人节特效",
+    "description": "[Fools2023] Tweak Description"
+  },
+  "JokeTweaks@Fools2023 / Name": {
+    "message": "2023愚人节",
+    "description": "[Fools2023] Tweak Name"
+  },
+  "KeepOpen / Description": {
+    "message": "防止某些窗口在特定情况下隐藏。",
+    "description": "[KeepOpen] Tweak Description"
+  },
+  "KeepOpen / Name": {
+    "message": "保持窗口打开",
+    "description": "[KeepOpen] Tweak Name"
+  },
+  "KeyInterrupt / Description": {
+    "message": "屏蔽Alt-Tab 以及其他键来让您保持在游戏中。",
+    "description": "[KeyInterrupt] Tweak Description"
+  },
+  "KeyInterrupt / Name": {
+    "message": "键盘游戏模式",
+    "description": "[KeyInterrupt] Tweak Name"
   },
   "LegacyCameraLock / Description": {
-    "message": "传统模式下禁止镜头自动摆动。",
+    "message": "传统模式下禁止镜头自动摆动",
     "description": "[LegacyCameraLock] Tweak Description"
   },
   "LegacyCameraLock / Name": {
@@ -308,7 +540,7 @@
     "description": "[LegacyCameraLock] Tweak Name"
   },
   "LongVeil / Description": {
-    "message": "显示婚礼头纱的加长版本。",
+    "message": "显示婚礼头纱的加长版本",
     "description": "[LongVeil] Tweak Description"
   },
   "LongVeil / Name": {
@@ -316,15 +548,23 @@
     "description": "[LongVeil] Tweak Name"
   },
   "MainCommandCommand / Description": {
-    "message": "在宏和聊天频道中，使用 '/maincommand [name]' 来启动任意的快捷指令。",
+    "message": "在宏和聊天频道中，使用 '/maincommand [name]' 来启动任意的快捷指令",
     "description": "[MainCommandCommand] Tweak Description"
   },
   "MainCommandCommand / Name": {
     "message": "快捷指令命令",
     "description": "[MainCommandCommand] Tweak Name"
   },
+  "MinionAway / Description": {
+    "message": "添加一个命令来收回您当前的宠物。/minionaway",
+    "description": "[MinionAway] Tweak Description"
+  },
+  "MinionAway / Name": {
+    "message": "收回宠物命令",
+    "description": "[MinionAway] Tweak Name"
+  },
   "MoreGearSets / Description": {
-    "message": "增加可储存的职业套装数量到100。",
+    "message": "增加可储存的职业套装数量到100",
     "description": "[MoreGearSets] Tweak Description"
   },
   "MoreGearSets / Name": {
@@ -332,7 +572,7 @@
     "description": "[MoreGearSets] Tweak Name"
   },
   "NoSellList / Description": {
-    "message": "允许你自定义一个物品列表来禁止卖给商人。",
+    "message": "允许你自定义一个物品列表，防止物品出售给NPC。",
     "description": "[NoSellList] Tweak Description"
   },
   "NoSellList / Name": {
@@ -352,11 +592,11 @@
     "description": "[QuickSellItems] Tweak Description"
   },
   "QuickSellItems / Name": {
-    "message": "快速售卖",
+    "message": "快速出售",
     "description": "[QuickSellItems] Tweak Name"
   },
   "RecommendEquipCommand / Description": {
-    "message": "添加/equiprecommended自动穿上当前职业最强装备。",
+    "message": "添加 /equiprecommended 命令，以穿上当前职业最强推荐装备。",
     "description": "[RecommendEquipCommand] Tweak Description"
   },
   "RecommendEquipCommand / Name": {
@@ -388,23 +628,39 @@
     "description": "[SanctuarySprintReplacer] Tweak Name"
   },
   "ScreenshotFileName / Description": {
-    "message": "自定义截图文件格式。",
+    "message": "自定义截图文件名格式。",
     "description": "[ScreenshotFileName] Tweak Description"
   },
   "ScreenshotFileName / Name": {
     "message": "截图重命名",
     "description": "[ScreenshotFileName] Tweak Name"
   },
+  "SetOptionCommand / alias": {
+    "message": "简写",
+    "description": "[SetOptionCommand] Set Option Command - alias"
+  },
+  "SetOptionCommand / Available Options": {
+    "message": "可选选项",
+    "description": "[SetOptionCommand] Set Option Command - Available Options"
+  },
   "SetOptionCommand / Description": {
-    "message": "添加数个聊天栏指令以快速修改游戏设置。",
+    "message": "添加数个聊天栏指令以快速修改游戏设置",
     "description": "[SetOptionCommand] Tweak Description"
   },
   "SetOptionCommand / Name": {
     "message": "聊天框快捷指令",
     "description": "[SetOptionCommand] Tweak Name"
   },
+  "SetOptionCommand / option": {
+    "message": "选项",
+    "description": "[SetOptionCommand] Set Option Command - option"
+  },
+  "SetOptionCommand / values": {
+    "message": "值",
+    "description": "[SetOptionCommand] Set Option Command - values"
+  },
   "SmartStrafe / Description": {
-    "message": "智能切换平移或旋转的键盘控制方式。\n（仅限传统模式）",
+    "message": "智能切换平移或旋转的键盘控制方式\n（仅限传统模式）",
     "description": "[SmartStrafe] Tweak Description"
   },
   "SmartStrafe / Name": {
@@ -412,7 +668,7 @@
     "description": "[SmartStrafe] Tweak Name"
   },
   "SyncCrafterBars / Description": {
-    "message": "同步能工巧匠热键栏中的技能。",
+    "message": "同步能工巧匠热键栏中的技能",
     "description": "[SyncCrafterBars] Tweak Description"
   },
   "SyncCrafterBars / Name": {
@@ -420,12 +676,20 @@
     "description": "[SyncCrafterBars] Tweak Name"
   },
   "SyncGathererBars / Description": {
-    "message": "同步采矿工与园艺工的热键栏中的技能。",
+    "message": "同步采矿工与园艺工的热键栏中的技能",
     "description": "[SyncGathererBars] Tweak Description"
   },
   "SyncGathererBars / Name": {
     "message": "同步大地使者技能栏",
     "description": "[SyncGathererBars] Tweak Name"
+  },
+  "SystemConfigInGroupPose / Description": {
+    "message": "允许在 gpose 中使用 /systemconfig 命令。",
+    "description": "[SystemConfigInGroupPose] Tweak Description"
+  },
+  "SystemConfigInGroupPose / Name": {
+    "message": "在 GPose 中使用系统设置",
+    "description": "[SystemConfigInGroupPose] Tweak Name"
   },
   "TooltipTweaks / Name": {
     "message": "提示优化",
@@ -440,31 +704,99 @@
     "description": "[AdditionalItemInfo] Tweak Name"
   },
   "TooltipTweaks@BlueActionInfo / Description": {
-    "message": "在青魔技能面板上添加伤害类型、攻击属性和序号。",
+    "message": "在青魔技能面板上添加伤害类型、攻击属性和等级。",
     "description": "[BlueActionInfo] Tweak Description"
   },
   "TooltipTweaks@BlueActionInfo / Name": {
     "message": "改进青魔技能提示",
     "description": "[BlueActionInfo] Tweak Name"
   },
+  "TooltipTweaks@CopyHotkey / Browser Only": {
+    "message": "使用浏览器",
+    "description": "[CopyHotkey] Item Hotkeys - Browser Only"
+  },
+  "TooltipTweaks@CopyHotkey / Cancel": {
+    "message": "取消",
+    "description": "[CopyHotkey] Item Hotkeys - Cancel"
+  },
+  "TooltipTweaks@CopyHotkey / Confirm": {
+    "message": "确认",
+    "description": "[CopyHotkey] Item Hotkeys - Confirm"
+  },
+  "TooltipTweaks@CopyHotkey / Copy Item Name": {
+    "message": "复制物品名",
+    "description": "[CopyHotkey] Item Hotkeys - Copy Item Name"
+  },
+  "TooltipTweaks@CopyHotkey / Description": {
+    "message": "当显示物品详情时可以使用快捷键进行一系列操作",
+    "description": "[CopyHotkey] Tweak Description"
+  },
+  "TooltipTweaks@CopyHotkey / Name": {
+    "message": "物品快捷键",
+    "description": "[CopyHotkey] Tweak Name"
+  },
+  "TooltipTweaks@CopyHotkey / NoHelpText": {
+    "message": "不在工具提示上显示快捷键帮助",
+    "description": "[CopyHotkey] Item Hotkeys - Don't show hotkey help on Tooltip"
+  },
+  "TooltipTweaks@CopyHotkey / Set Keybind": {
+    "message": "设置快捷键",
+    "description": "[CopyHotkey] Item Hotkeys - Set Keybind"
+  },
+  "TooltipTweaks@CopyHotkey / View on Eriones (JP)": {
+    "message": "在 Eriones (JP) 上查看",
+    "description": "[CopyHotkey] Item Hotkeys - View on Eriones (JP)"
+  },
+  "TooltipTweaks@CopyHotkey / View on Gamer Escape": {
+    "message": "在Gamer Escape上查看",
+    "description": "[CopyHotkey] Item Hotkeys - View on Gamer Escape"
+  },
+  "TooltipTweaks@CopyHotkey / View on Garland Tools": {
+    "message": "在Garland Tools上查看",
+    "description": "[CopyHotkey] Item Hotkeys - View on Garland Tools"
+  },
+  "TooltipTweaks@CopyHotkey / View on Teamcraft": {
+    "message": "在 Teamcraft 上查看",
+    "description": "[CopyHotkey] Item Hotkeys - View on Teamcraft"
+  },
+  "TooltipTweaks@CraftingActionInfo / Description": {
+    "message": "将制作技能的计算效率添加到工具提示中。",
+    "description": "[CraftingActionInfo] Tweak Description"
+  },
+  "TooltipTweaks@CraftingActionInfo / Name": {
+    "message": "改进制作技能提示",
+    "description": "[CraftingActionInfo] Tweak Name"
+  },
+  "TooltipTweaks@DesynthesisSkill / Colour Value": {
+    "message": "颜色值",
+    "description": "[DesynthesisSkill] Show Desynthesis Skill - Colour Value"
+  },
   "TooltipTweaks@DesynthesisSkill / Description": {
     "message": "浏览可分解物品时显示当前分解等级。",
     "description": "[DesynthesisSkill] Tweak Description"
+  },
+  "TooltipTweaks@DesynthesisSkill / Desynthesis Delta": {
+    "message": "分解差值",
+    "description": "[DesynthesisSkill] Show Desynthesis Skill - Desynthesis Delta"
   },
   "TooltipTweaks@DesynthesisSkill / Name": {
     "message": "显示分解技能",
     "description": "[DesynthesisSkill] Tweak Name"
   },
   "TooltipTweaks@FoodStats / Description": {
-    "message": "基于角色当前属性 计算食物/药品属性增加量的期望值。",
+    "message": "基于角色当前属性 计算食物/药品属性增加量的期望值",
     "description": "[FoodStats] Tweak Description"
+  },
+  "TooltipTweaks@FoodStats / Highlight Active": {
+    "message": "高亮显示",
+    "description": "[FoodStats] Show expected food and potion stats - Highlight Active"
   },
   "TooltipTweaks@FoodStats / Name": {
     "message": "显示食物/药品期望值",
     "description": "[FoodStats] Tweak Name"
   },
   "TooltipTweaks@HideTooltipsInCombat / Description": {
-    "message": "允许在战斗中隐藏动作且/或物品弹出帮助。",
+    "message": "允许在战斗中隐藏动作和/或项目工具提示。",
     "description": "[HideTooltipsInCombat] Tweak Description"
   },
   "TooltipTweaks@HideTooltipsInCombat / Name": {
@@ -472,12 +804,16 @@
     "description": "[HideTooltipsInCombat] Tweak Name"
   },
   "TooltipTweaks@ItemHotkeys / Description": {
-    "message": "当显示物品详情时可以使用快捷键进行一系列操作。",
+    "message": "当显示物品详情时可以使用快捷键进行一系列操作",
     "description": "[ItemHotkeys] Tweak Description"
   },
   "TooltipTweaks@ItemHotkeys / Name": {
     "message": "物品快捷键",
     "description": "[ItemHotkeys] Tweak Name"
+  },
+  "TooltipTweaks@MateriaStats / Colour Value": {
+    "message": "颜色值",
+    "description": "[MateriaStats] Materia Stats - Colour Value"
   },
   "TooltipTweaks@MateriaStats / Description": {
     "message": "展示属性时，显示物品上已镶嵌的魔晶石。",
@@ -486,6 +822,18 @@
   "TooltipTweaks@MateriaStats / Name": {
     "message": "魔晶石状态",
     "description": "[MateriaStats] Tweak Name"
+  },
+  "TooltipTweaks@MateriaStats / Show Delta": {
+    "message": "显示属性差值",
+    "description": "[MateriaStats] Materia Stats - Show Delta"
+  },
+  "TooltipTweaks@MateriaStats / Show Total": {
+    "message": "显示总计",
+    "description": "[MateriaStats] Materia Stats - Show Total"
+  },
+  "TooltipTweaks@MateriaStats / Simplified Combined Display": {
+    "message": "简化的合并显示",
+    "description": "[MateriaStats] Materia Stats - Simplified Combined Display"
   },
   "TooltipTweaks@PaintingPreview / Description": {
     "message": "在风景画物品提示上添加风景画预览。",
@@ -503,6 +851,10 @@
     "message": "精确耐久值",
     "description": "[PrecisionDurability] Tweak Name"
   },
+  "TooltipTweaks@PrecisionDurability / Trailing Zeros": {
+    "message": "尾随零",
+    "description": "[PrecisionDurability] Precise Durability - Trailing Zeros"
+  },
   "TooltipTweaks@PrecisionSpiritbond / Description": {
     "message": "显示精炼度的准确百分比（带小数）。",
     "description": "[PrecisionSpiritbond] Tweak Description"
@@ -511,13 +863,33 @@
     "message": "精确精炼值",
     "description": "[PrecisionSpiritbond] Tweak Name"
   },
+  "TooltipTweaks@PrecisionSpiritbond / Trailing Zeros": {
+    "message": "尾随零",
+    "description": "[PrecisionSpiritbond] Precise Spiritbond - Trailing Zeros"
+  },
   "TooltipTweaks@ShowItemID / Description": {
-    "message": "显示物品及动作的对应ID。",
+    "message": "显示物品及动作的对应ID",
     "description": "[ShowItemID] Tweak Description"
   },
   "TooltipTweaks@ShowItemID / Name": {
     "message": "显示 ID",
     "description": "[ShowItemID] Tweak Name"
+  },
+  "TooltipTweaks@ShowItemID / Show Both HEX and Decimal": {
+    "message": "同时显示十六进制和十进制",
+    "description": "[ShowItemID] [Config] Show Both HEX and Decimal"
+  },
+  "TooltipTweaks@ShowItemID / Use Hexadecimal ID": {
+    "message": "使用十六进制ID",
+    "description": "[ShowItemID] [Config] Use Hexadecimal ID"
+  },
+  "TooltipTweaks@SimplifiedClassJobDisplay / Description": {
+    "message": "当职业解锁时，隐藏装备提示栏的等级。",
+    "description": "[SimplifiedClassJobDisplay] Tweak Description"
+  },
+  "TooltipTweaks@SimplifiedClassJobDisplay / Name": {
+    "message": "简化装备职业显示",
+    "description": "[SimplifiedClassJobDisplay] Tweak Name"
   },
   "TooltipTweaks@TrackFadedRolls / Description": {
     "message": "在陈旧的乐谱中添加已获得标志。",
@@ -527,8 +899,24 @@
     "message": "追踪陈旧的乐谱",
     "description": "[TrackFadedRolls] Tweak Name"
   },
+  "TooltipTweaks@TrackGachaItems / Description": {
+    "message": "在抽卡道具仍有未获取的物品时，添加可收藏的标记到物品信息，例如幻卡卡包。",
+    "description": "[TrackGachaItems] Tweak Description"
+  },
+  "TooltipTweaks@TrackGachaItems / Name": {
+    "message": "追踪抽卡道具",
+    "description": "[TrackGachaItems] Tweak Name"
+  },
+  "TreasureHuntTargets / Description": {
+    "message": "禁止选中其他玩家的挖宝怪物。",
+    "description": "[TreasureHuntTargets] Tweak Description"
+  },
+  "TreasureHuntTargets / Name": {
+    "message": "禁止选中其他玩家的挖宝怪物",
+    "description": "[TreasureHuntTargets] Tweak Name"
+  },
   "TryOnCorrectItem / Description": {
-    "message": "在投影模板，显示正确的物品。",
+    "message": "在投影模板，显示正确的物品",
     "description": "[TryOnCorrectItem] Tweak Description"
   },
   "TryOnCorrectItem / Name": {
@@ -540,19 +928,23 @@
     "description": "[UiAdjustments] Tweak Name"
   },
   "UiAdjustments@AccurateVentureTimes / Description": {
-    "message": "在雇员列表上显示探险完成倒计时。",
+    "message": "在雇员列表上显示探险完成倒计时",
     "description": "[AccurateVentureTimes] Tweak Description"
   },
   "UiAdjustments@AccurateVentureTimes / Name": {
     "message": "精确雇员探险时间",
     "description": "[AccurateVentureTimes] Tweak Name"
   },
+  "UiAdjustments@AccurateVentureTimes / Simple Display": {
+    "message": "简单显示",
+    "description": "[AccurateVentureTimes] [Config] Simple Display"
+  },
   "UiAdjustments@ActionPressMirroring / Description": {
-    "message": "当你使用它时，将在所有具有相同能力技的热键栏上显示按下的动画。",
+    "message": "当你使用技能，将在所有相同的图标上显示按下的动画。",
     "description": "[ActionPressMirroring] Tweak Description"
   },
   "UiAdjustments@ActionPressMirroring / Name": {
-    "message": "技能栏重复技能按键效果",
+    "message": "技能栏多重技能按键效果",
     "description": "[ActionPressMirroring] Tweak Name"
   },
   "UiAdjustments@AlwaysYes / Description": {
@@ -571,29 +963,129 @@
     "message": "战斗对话调整",
     "description": "[BattleTalkAdjustments] Tweak Name"
   },
+  "UiAdjustments@BattleTalkAdjustments / PositionPreviewText": {
+    "message": "新的战斗对话框位置",
+    "description": "[BattleTalkAdjustments] Battle Talk Adjustments - NEW BATTLE TALK DIALOGUE BOX POSITION"
+  },
+  "UiAdjustments@BattleTalkAdjustments / Scale": {
+    "message": "缩放",
+    "description": "[BattleTalkAdjustments] Battle Talk Adjustments - Scale"
+  },
+  "UiAdjustments@BattleTalkAdjustments / X Offset": {
+    "message": "X 轴偏移量",
+    "description": "[BattleTalkAdjustments] Battle Talk Adjustments - X Offset"
+  },
+  "UiAdjustments@BattleTalkAdjustments / Y Offset": {
+    "message": "Y 轴偏移量",
+    "description": "[BattleTalkAdjustments] Battle Talk Adjustments - Y Offset"
+  },
+  "UiAdjustments@CastBarAdjustments / Align Ability Name": {
+    "message": "技能名称对齐",
+    "description": "[CastBarAdjustments] Cast Bar Adjustments - Align Ability Name"
+  },
+  "UiAdjustments@CastBarAdjustments / Align Countdown Text": {
+    "message": "剩余时间对齐",
+    "description": "[CastBarAdjustments] Cast Bar Adjustments - Align Countdown Text"
+  },
   "UiAdjustments@CastBarAdjustments / Description": {
-    "message": "隐藏或移动咏唱栏的特定部分。",
+    "message": "隐藏或移动咏唱栏的特定部分",
     "description": "[CastBarAdjustments] Tweak Description"
+  },
+  "UiAdjustments@CastBarAdjustments / Hide Ability Name": {
+    "message": "隐藏技能名称",
+    "description": "[CastBarAdjustments] Cast Bar Adjustments - Hide Ability Name"
+  },
+  "UiAdjustments@CastBarAdjustments / Hide Casting": {
+    "message": "隐藏'发动中'文字",
+    "description": "[CastBarAdjustments] Cast Bar Adjustments - Hide 'Casting' Text"
+  },
+  "UiAdjustments@CastBarAdjustments / Hide Countdown Text": {
+    "message": "隐藏剩余时间",
+    "description": "[CastBarAdjustments] Cast Bar Adjustments - Hide Countdown Text"
+  },
+  "UiAdjustments@CastBarAdjustments / Hide Icon": {
+    "message": "隐藏图标",
+    "description": "[CastBarAdjustments] Cast Bar Adjustments - Hide Icon"
+  },
+  "UiAdjustments@CastBarAdjustments / Hide Interrupted Text": {
+    "message": "隐藏'打断成功'文字",
+    "description": "[CastBarAdjustments] Cast Bar Adjustments - Hide Interrupted Text"
   },
   "UiAdjustments@CastBarAdjustments / Name": {
     "message": "咏唱栏修改",
     "description": "[CastBarAdjustments] Tweak Name"
   },
+  "UiAdjustments@CastBarAdjustments / Offset": {
+    "message": "偏移值",
+    "description": "[CastBarAdjustments] Cast Bar Adjustments - Offset"
+  },
+  "UiAdjustments@CastBarAdjustments / Show SlideCast Marker": {
+    "message": "显示滑步点",
+    "description": "[CastBarAdjustments] Cast Bar Adjustments - Show SlideCast Marker"
+  },
+  "UiAdjustments@CastBarAdjustments / SlideCast Marker Colour": {
+    "message": "滑步点颜色",
+    "description": "[CastBarAdjustments] Cast Bar Adjustments - SlideCast Marker Colour"
+  },
+  "UiAdjustments@CastBarAdjustments / SlideCast Offset Time": {
+    "message": "滑步偏移时间",
+    "description": "[CastBarAdjustments] Cast Bar Adjustments - SlideCast Offset Time"
+  },
+  "UiAdjustments@CastBarAdjustments / SlideCast Ready Colour": {
+    "message": "滑步就绪颜色",
+    "description": "[CastBarAdjustments] Cast Bar Adjustments - SlideCast Ready Colour"
+  },
   "UiAdjustments@ChangeMapAreaColors / Description": {
-    "message": "允许玩家改变地图的区域颜色，像任务目标和危命任务。",
+    "message": "允许玩家改变地图的区域颜色，例如任务目标和危命任务。",
     "description": "[ChangeMapAreaColors] Tweak Description"
   },
   "UiAdjustments@ChangeMapAreaColors / Name": {
     "message": "改变地图区域颜色",
     "description": "[ChangeMapAreaColors] Tweak Name"
   },
+  "UiAdjustments@ColoredDutyRoulette / Description": {
+    "message": "高亮副本名以区分完成状态",
+    "description": "[ColoredDutyRoulette] Tweak Description"
+  },
+  "UiAdjustments@ColoredDutyRoulette / Name": {
+    "message": "高亮副本名",
+    "description": "[ColoredDutyRoulette] Tweak Name"
+  },
+  "UiAdjustments@ComboTimer / Always Visible": {
+    "message": "始终可见",
+    "description": "[ComboTimer] [Config] Always Visible"
+  },
   "UiAdjustments@ComboTimer / Description": {
-    "message": "显示当前连击结束时间。",
+    "message": "显示当前连击结束时间",
     "description": "[ComboTimer] Tweak Description"
+  },
+  "UiAdjustments@ComboTimer / Font Size": {
+    "message": "字体尺寸",
+    "description": "[ComboTimer] [Config] Font Size"
+  },
+  "UiAdjustments@ComboTimer / Hide 'COMBO' Text": {
+    "message": "隐藏'COMBO'文本",
+    "description": "[ComboTimer] [Config] Hide 'COMBO' Text"
   },
   "UiAdjustments@ComboTimer / Name": {
     "message": "连击倒计时",
     "description": "[ComboTimer] Tweak Name"
+  },
+  "UiAdjustments@ComboTimer / Text Color": {
+    "message": "文本颜色",
+    "description": "[ComboTimer] [Config] Text Color"
+  },
+  "UiAdjustments@ComboTimer / Text Outline Color": {
+    "message": "文本轮廓颜色",
+    "description": "[ComboTimer] [Config] Text Outline Color"
+  },
+  "UiAdjustments@ComboTimer / X Position Offset": {
+    "message": "X坐标偏移",
+    "description": "[ComboTimer] [Config] X Position Offset"
+  },
+  "UiAdjustments@ComboTimer / Y Position Offset": {
+    "message": "Y坐标偏移",
+    "description": "[ComboTimer] [Config] Y Position Offset"
   },
   "UiAdjustments@ControlHintMirroring / Description": {
     "message": "拖放一个重复存在的技能到热键栏时，提示该技能已绑定的热键。",
@@ -603,48 +1095,172 @@
     "message": "技能栏的重复热键提示",
     "description": "[ControlHintMirroring] Tweak Name"
   },
+  "UiAdjustments@CustomFreeCompanyTags / AddButton": {
+    "message": "添加",
+    "description": "[CustomFreeCompanyTags] Custom Free Company Tags - Add"
+  },
+  "UiAdjustments@CustomFreeCompanyTags / ColourHelpLink": {
+    "message": "单击此处查看支持的颜色和发光的列表",
+    "description": "[CustomFreeCompanyTags] Custom Free Company Tags - Click here for a list of supported colours and glows."
+  },
   "UiAdjustments@CustomFreeCompanyTags / Description": {
     "message": "允许隐藏或自定部队和放浪神加护。",
     "description": "[CustomFreeCompanyTags] Tweak Description"
+  },
+  "UiAdjustments@CustomFreeCompanyTags / DuplicateNameError": {
+    "message": "此名称已被使用。",
+    "description": "[CustomFreeCompanyTags] Custom Free Company Tags - This name is already added."
+  },
+  "UiAdjustments@CustomFreeCompanyTags / FC Tag": {
+    "message": "部队标签",
+    "description": "[CustomFreeCompanyTags] Custom Free Company Tags - FC Tag"
+  },
+  "UiAdjustments@CustomFreeCompanyTags / FCAlreadyAddedError": {
+    "message": "部队已经在列表中。",
+    "description": "[CustomFreeCompanyTags] Custom Free Company Tags - FC is already on list."
   },
   "UiAdjustments@CustomFreeCompanyTags / Name": {
     "message": "自定义部队标签",
     "description": "[CustomFreeCompanyTags] Tweak Name"
   },
+  "UiAdjustments@CustomFreeCompanyTags / NoFCNote": {
+    "message": "输入名称以添加部队到列表",
+    "description": "[CustomFreeCompanyTags] Custom Free Company Tags - Enter name to add FC to list."
+  },
+  "UiAdjustments@CustomFreeCompanyTags / Replace": {
+    "message": "替换",
+    "description": "[CustomFreeCompanyTags] Custom Free Company Tags - Replace"
+  },
+  "UiAdjustments@CustomFreeCompanyTags / Replacement": {
+    "message": "替换",
+    "description": "[CustomFreeCompanyTags] Custom Free Company Tags - Replacement"
+  },
   "UiAdjustments@CustomTimeFormat / Description": {
-    "message": "修改游戏中时钟的时间显示格式，使用C#的时间显示格式。",
+    "message": "修改游戏中时钟的时间显示格式，使用C#的时间显示格式",
     "description": "[CustomTimeFormat] Tweak Description"
+  },
+  "UiAdjustments@CustomTimeFormat / Eorzea Time": {
+    "message": "艾欧泽亚时间",
+    "description": "[CustomTimeFormat] Custom Time Formats - Eorzea Time"
+  },
+  "UiAdjustments@CustomTimeFormat / Local Time": {
+    "message": "本地时间",
+    "description": "[CustomTimeFormat] Custom Time Formats - Local Time"
   },
   "UiAdjustments@CustomTimeFormat / Name": {
     "message": "自定义时间格式",
     "description": "[CustomTimeFormat] Tweak Name"
   },
+  "UiAdjustments@CustomTimeFormat / Server Time": {
+    "message": "服务器时间",
+    "description": "[CustomTimeFormat] Custom Time Formats - Server Time"
+  },
+  "UiAdjustments@DutyListBackground / Name": {
+    "message": "任务列表背景",
+    "description": "[BlacklistedTweak] Tweak Name"
+  },
   "UiAdjustments@ExamineItemLevel / Description": {
     "message": "检查其他玩家时计算他们的装等\n红色值表示玩家穿戴的物品可以根据其等级进行同步，并显示最高级别。",
     "description": "[ExamineItemLevel] Tweak Description"
+  },
+  "UiAdjustments@ExamineItemLevel / ItemLevelIcon": {
+    "message": "显示物品等级图标",
+    "description": "[ExamineItemLevel] Item Level in Examine - Show Item Level Icon"
   },
   "UiAdjustments@ExamineItemLevel / Name": {
     "message": "检查物品等级",
     "description": "[ExamineItemLevel] Tweak Name"
   },
+  "UiAdjustments@ExpandedCurrencyDisplay / Description": {
+    "message": "允许您显示更多货币。",
+    "description": "[ExpandedCurrencyDisplay] Tweak Description"
+  },
+  "UiAdjustments@ExpandedCurrencyDisplay / Name": {
+    "message": "拓展货币显示",
+    "description": "[ExpandedCurrencyDisplay] Tweak Name"
+  },
+  "UiAdjustments@ExpPercentage / Decimals": {
+    "message": "小数",
+    "description": "[ExpPercentage] [Config] Decimals"
+  },
   "UiAdjustments@ExpPercentage / Description": {
-    "message": "计算当前经验值，并以百分比形式显示在经验值旁边。",
+    "message": "计算当前经验值，并以百分比形式显示在经验值旁边",
     "description": "[ExpPercentage] Tweak Description"
   },
   "UiAdjustments@ExpPercentage / Name": {
     "message": "显示经验值百分比",
     "description": "[ExpPercentage] Tweak Name"
   },
+  "UiAdjustments@ExpPercentage / Only show percentage": {
+    "message": "只显示百分比",
+    "description": "[ExpPercentage] [Config] Only show percentage"
+  },
+  "UiAdjustments@ExtendedDesynthesisWindow / BlockClickOnGearset": {
+    "message": "禁止点击套装内装备",
+    "description": "[ExtendedDesynthesisWindow] Extended Desynthesis Window - Block clicking on gearset items."
+  },
   "UiAdjustments@ExtendedDesynthesisWindow / Description": {
-    "message": "在分解窗口显示你的当前分解等级及物品的推荐分解等级\\n显示装备是否在套装中，可禁止点击套装内装备以防误操作。",
+    "message": "在分解窗口显示你的当前分解等级及物品的推荐分解等级\\n显示装备是否在套装中，可禁止点击套装内装备以防误操作",
     "description": "[ExtendedDesynthesisWindow] Tweak Description"
+  },
+  "UiAdjustments@ExtendedDesynthesisWindow / DesynthesisDelta": {
+    "message": "显示分解变化值",
+    "description": "[ExtendedDesynthesisWindow] Extended Desynthesis Window - Show desynthesis delta"
+  },
+  "UiAdjustments@ExtendedDesynthesisWindow / ExcludeGearSet": {
+    "message": "职业套装中的物品",
+    "description": "[ExtendedDesynthesisWindow] Extended Desynthesis Window - Items in gear sets."
+  },
+  "UiAdjustments@ExtendedDesynthesisWindow / ExcludeHeader": {
+    "message": "排除“所有物品”分类",
+    "description": "[ExtendedDesynthesisWindow] Extended Desynthesis Window - Exlude from the 'All Items' category:"
+  },
+  "UiAdjustments@ExtendedDesynthesisWindow / ExcludeNoSkill": {
+    "message": "装等不同步的物品",
+    "description": "[ExtendedDesynthesisWindow] Extended Desynthesis Window - Items that give no desynthesis levels."
+  },
+  "UiAdjustments@ExtendedDesynthesisWindow / LimitNote": {
+    "message": "一次只能显示140个物品，更多物品将会被隐藏。",
+    "description": "[ExtendedDesynthesisWindow] Extended Desynthesis Window - Note: Only 140 items can be displayed at once, anything more will be cut off."
   },
   "UiAdjustments@ExtendedDesynthesisWindow / Name": {
     "message": "分解窗口增强",
     "description": "[ExtendedDesynthesisWindow] Tweak Name"
   },
+  "UiAdjustments@ExtendedDesynthesisWindow / ShowAll": {
+    "message": "增加选项来展示所有物品",
+    "description": "[ExtendedDesynthesisWindow] Extended Desynthesis Window - Add option to show all items"
+  },
+  "UiAdjustments@ExtendedDesynthesisWindow / YellowForSkillGain": {
+    "message": "黄色高亮显示预期可获得的分解经验值",
+    "description": "[ExtendedDesynthesisWindow] Extended Desynthesis Window - Highlight potential skill gains (Yellow)"
+  },
+  "UiAdjustments@ExtraEstateTeleportation / Description": {
+    "message": "将遗产传送选项添加到更多位置。",
+    "description": "[ExtraEstateTeleportation] Tweak Description"
+  },
+  "UiAdjustments@ExtraEstateTeleportation / Name": {
+    "message": "额外传送",
+    "description": "[ExtraEstateTeleportation] Tweak Name"
+  },
+  "UiAdjustments@ExtraEstateTeleportation / PartyList": {
+    "message": "队伍列表",
+    "description": "[ExtraEstateTeleportation] Extra Estate Teleportation - Party List"
+  },
+  "UiAdjustments@ExtraEstateTeleportation / PartyMemberList": {
+    "message": "小队成员列表 (个人信息)",
+    "description": "[ExtraEstateTeleportation] Extra Estate Teleportation - Party Member List (Social window)"
+  },
+  "UiAdjustments@FadeUnavailableActions / Description": {
+    "message": "在无法使用技能时，透明化而非变暗。",
+    "description": "[FadeUnavailableActions] Tweak Description"
+  },
+  "UiAdjustments@FadeUnavailableActions / Name": {
+    "message": "淡化不可用的技能",
+    "description": "[FadeUnavailableActions] Tweak Name"
+  },
   "UiAdjustments@GearPositions / Description": {
-    "message": "在角色和调查窗口中重新调整装备位置，以减少总体布局。",
+    "message": "在角色和调查窗口中重新调整装备位置，以减少总体布局",
     "description": "[GearPositions] Tweak Description"
   },
   "UiAdjustments@GearPositions / Name": {
@@ -655,12 +1271,20 @@
     "message": "完全隐藏登录时/区域切换的“接近完成的成就”通知。",
     "description": "[HideAchievementsNotifications] Tweak Description"
   },
+  "UiAdjustments@HideAchievementsNotifications / HideLogIn": {
+    "message": "隐藏登录通知",
+    "description": "[HideAchievementsNotifications] Hide Achievements Nearing Completion Notifications - Hide the login notification."
+  },
+  "UiAdjustments@HideAchievementsNotifications / HideZoneIn": {
+    "message": "隐藏区域通知",
+    "description": "[HideAchievementsNotifications] Hide Achievements Nearing Completion Notifications - Hide the zone-in notification."
+  },
   "UiAdjustments@HideAchievementsNotifications / Name": {
     "message": "隐藏即将完成的成就通知",
     "description": "[HideAchievementsNotifications] Tweak Name"
   },
   "UiAdjustments@HideExperienceBar / Description": {
-    "message": "达到最大等级后，隐藏经验栏。",
+    "message": "达到最大等级后，隐藏经验栏",
     "description": "[HideExperienceBar] Tweak Description"
   },
   "UiAdjustments@HideExperienceBar / Name": {
@@ -668,12 +1292,60 @@
     "description": "[HideExperienceBar] Tweak Name"
   },
   "UiAdjustments@HideJobGauge / Description": {
-    "message": "允许在非“战斗”和“任务”中，隐藏职业职业量谱。",
+    "message": "允许在非“战斗”和“任务”中，隐藏职业职业量谱",
     "description": "[HideJobGauge] Tweak Description"
   },
   "UiAdjustments@HideJobGauge / Name": {
     "message": "隐藏职业量谱",
     "description": "[HideJobGauge] Tweak Name"
+  },
+  "UiAdjustments@HideJobGauge / Show In Combat": {
+    "message": "任务中显示",
+    "description": "[HideJobGauge] [Config] Show In Combat"
+  },
+  "UiAdjustments@HideJobGauge / Show In Duty": {
+    "message": "战斗中显示",
+    "description": "[HideJobGauge] [Config] Show In Duty"
+  },
+  "UiAdjustments@HideQualityWhenNoHQ / Description": {
+    "message": "在物品无法HQ或收藏品时，隐藏制作过程中的品质条。",
+    "description": "[HideQualityWhenNoHQ] Tweak Description"
+  },
+  "UiAdjustments@HideQualityWhenNoHQ / Name": {
+    "message": "在制造非HQ物品时隐藏品质栏。",
+    "description": "[HideQualityWhenNoHQ] Tweak Name"
+  },
+  "UiAdjustments@HideTargetCircle / Description": {
+    "message": "允许在战斗和副本外，隐藏职业量谱。",
+    "description": "[HideTargetCircle] Tweak Description"
+  },
+  "UiAdjustments@HideTargetCircle / Name": {
+    "message": "隐藏职业量谱",
+    "description": "[HideTargetCircle] Tweak Name"
+  },
+  "UiAdjustments@HideUnwantedBanner / Description": {
+    "message": "隐藏信息横幅，例如“任务完成”或“接受任务”",
+    "description": "[HideUnwantedBanner] Tweak Description"
+  },
+  "UiAdjustments@HideUnwantedBanner / Name": {
+    "message": "隐藏不想要的横幅",
+    "description": "[HideUnwantedBanner] Tweak Name"
+  },
+  "UiAdjustments@ImprovedDutyFinderSettings / Description": {
+    "message": "将查找器设置变成按钮。",
+    "description": "[ImprovedDutyFinderSettings] Tweak Description"
+  },
+  "UiAdjustments@ImprovedDutyFinderSettings / Name": {
+    "message": "改进的组队查找设置",
+    "description": "[ImprovedDutyFinderSettings] Tweak Name"
+  },
+  "UiAdjustments@ImprovedInterruptableCastbars / Description": {
+    "message": "在可打断的咏唱栏旁显示一个图标",
+    "description": "[ImprovedInterruptableCastbars] Tweak Description"
+  },
+  "UiAdjustments@ImprovedInterruptableCastbars / Name": {
+    "message": "更好的可打断咏唱栏",
+    "description": "[ImprovedInterruptableCastbars] Tweak Name"
   },
   "UiAdjustments@ImprovedWorldVisit / Description": {
     "message": "清理跨界传送菜单并按顺序于列表中显示当前位置。",
@@ -684,7 +1356,7 @@
     "description": "[ImprovedWorldVisit] Tweak Name"
   },
   "UiAdjustments@InventoryGil / Description": {
-    "message": "像雇员物品栏一样在物品栏（背包）窗口中显示您当前的金币。",
+    "message": "像雇员物品栏一样在物品栏（背包）窗口中显示您当前的金币",
     "description": "[InventoryGil] Tweak Description"
   },
   "UiAdjustments@InventoryGil / Name": {
@@ -695,28 +1367,124 @@
     "message": "放大快捷栏上的冷却倒计时。",
     "description": "[LargeCooldownCounter] Tweak Description"
   },
+  "UiAdjustments@LargeCooldownCounter / Edge Colour": {
+    "message": "边缘色",
+    "description": "[LargeCooldownCounter] Large Cooldown Counter - Edge Colour"
+  },
+  "UiAdjustments@LargeCooldownCounter / Font": {
+    "message": "字体",
+    "description": "[LargeCooldownCounter] Large Cooldown Counter - Font"
+  },
+  "UiAdjustments@LargeCooldownCounter / Font Size Adjust": {
+    "message": "字体大小调整",
+    "description": "[LargeCooldownCounter] Large Cooldown Counter - Font Size Adjust"
+  },
   "UiAdjustments@LargeCooldownCounter / Name": {
     "message": "大号冷却倒计时",
     "description": "[LargeCooldownCounter] Tweak Name"
+  },
+  "UiAdjustments@LargeCooldownCounter / Out Of Range Colour": {
+    "message": "超出攻击范围的文字颜色",
+    "description": "[LargeCooldownCounter] Large Cooldown Counter - Out Of Range Colour"
+  },
+  "UiAdjustments@LargeCooldownCounter / Out Of Range Edge Colour": {
+    "message": "超出攻击范围的边缘色",
+    "description": "[LargeCooldownCounter] Large Cooldown Counter - Out Of Range Edge Colour"
+  },
+  "UiAdjustments@LargeCooldownCounter / Simple Mode": {
+    "message": "简单模式",
+    "description": "[LargeCooldownCounter] Large Cooldown Counter - Simple Mode"
+  },
+  "UiAdjustments@LargeCooldownCounter / SimpleModeDescription": {
+    "message": "恢复到旧版本的冷却检查。\n修复XIVCombo的问题。\n在超出范围时有一些问题。\n无法启用简单模式下的改变文本颜色。",
+    "description": "[LargeCooldownCounter] Large Cooldown Counter - Reverts to old cooldown checking.\nFixes issues with XIVCombo.\nHas some issues when out of range.\nCannot change colour of text with Simple Mode enabled."
+  },
+  "UiAdjustments@LargeCooldownCounter / Text Colour": {
+    "message": "文字颜色",
+    "description": "[LargeCooldownCounter] Large Cooldown Counter - Text Colour"
+  },
+  "UiAdjustments@LimitBreakAdjustments / Description": {
+    "message": "简化自定义极限技栏",
+    "description": "[LimitBreakAdjustments] Tweak Description"
+  },
+  "UiAdjustments@LimitBreakAdjustments / Name": {
+    "message": "极限技调整",
+    "description": "[LimitBreakAdjustments] Tweak Name"
   },
   "UiAdjustments@LimitTargetStatusEffects / Description": {
     "message": "设置目标状态效果的显示数量上限。",
     "description": "[LimitTargetStatusEffects] Tweak Description"
   },
+  "UiAdjustments@LimitTargetStatusEffects / LimitOnlyInCombat": {
+    "message": "仅限战斗中##LimitOnlyInCombat",
+    "description": "[LimitTargetStatusEffects] Limit Target Status Effects - Only limit in combat##LimitOnlyInCombat"
+  },
   "UiAdjustments@LimitTargetStatusEffects / Name": {
     "message": "限制目标状态效果",
     "description": "[LimitTargetStatusEffects] Tweak Name"
   },
+  "UiAdjustments@LimitTargetStatusEffects / NbStatusEffects": {
+    "message": "显示的状态效果数量 ##nbnbStatusEffects",
+    "description": "[LimitTargetStatusEffects] Limit Target Status Effects - Number of status effects displayed##nbStatusEffectsDisplayed"
+  },
+  "UiAdjustments@LockWindowPosition / Description": {
+    "message": "允许锁定大部分界面窗口的位置",
+    "description": "[LockWindowPosition] Tweak Description"
+  },
+  "UiAdjustments@LockWindowPosition / HelpMessage": {
+    "message": "您可以从快捷菜单锁定或解锁窗口(右键单击窗口)",
+    "description": "[LockWindowPosition] Lock Window Positions - You can lock or unlock windows from their context menu (right click the window)."
+  },
+  "UiAdjustments@LockWindowPosition / Lock Window Position": {
+    "message": "锁定当前窗口位置",
+    "description": "[LockWindowPosition] Lock Window Positions - Lock Window Position"
+  },
+  "UiAdjustments@LockWindowPosition / Name": {
+    "message": "锁定窗口位置",
+    "description": "[LockWindowPosition] Tweak Name"
+  },
+  "UiAdjustments@LockWindowPosition / Unlock": {
+    "message": "解锁",
+    "description": "[LockWindowPosition] Lock Window Positions - Unlock"
+  },
+  "UiAdjustments@LockWindowPosition / Unlock Window Position": {
+    "message": "解锁当前窗口位置",
+    "description": "[LockWindowPosition] Lock Window Positions - Unlock Window Position"
+  },
+  "UiAdjustments@LootWindowDuplicateUniqueItemIndicator / Description": {
+    "message": "在战利品窗口显示无法获取，或已经获取的物品。",
+    "description": "[LootWindowDuplicateUniqueItemIndicator] Tweak Description"
+  },
+  "UiAdjustments@LootWindowDuplicateUniqueItemIndicator / Name": {
+    "message": "改进战利品窗口",
+    "description": "[LootWindowDuplicateUniqueItemIndicator] Tweak Name"
+  },
   "UiAdjustments@MarketEnhancements / Description": {
     "message": "市场交易板相关的UI设置，例如含税价格、与NPC售价的差价等。",
     "description": "[MarketEnhancements] Tweak Description"
+  },
+  "UiAdjustments@MarketEnhancements / Highlight items that can be purchased from an NPC for cheaper. (Red)": {
+    "message": "高亮显示可以更低价从NPC购买的物品。 (红色)",
+    "description": "[MarketEnhancements] [Config] Highlight items that can be purchased from an NPC for cheaper. (Red)"
+  },
+  "UiAdjustments@MarketEnhancements / Highlight items that can be sold to NPC for more. (Green)": {
+    "message": "突出显示可以更高价卖给NPC 的物品。 (绿色)",
+    "description": "[MarketEnhancements] [Config] Highlight items that can be sold to NPC for more. (Green)"
+  },
+  "UiAdjustments@MarketEnhancements / Include tax in single price.": {
+    "message": "显示含税单价。",
+    "description": "[MarketEnhancements] [Config] Include tax in single price."
+  },
+  "UiAdjustments@MarketEnhancements / Include tax in total price.": {
+    "message": "显示含税总价。",
+    "description": "[MarketEnhancements] [Config] Include tax in total price."
   },
   "UiAdjustments@MarketEnhancements / Name": {
     "message": "市场相关设置",
     "description": "[MarketEnhancements] Tweak Name"
   },
   "UiAdjustments@MinimapAdjustments / Description": {
-    "message": "隐藏和修改小地图元素。",
+    "message": "隐藏和修改小地图元素",
     "description": "[MinimapAdjustments] Tweak Description"
   },
   "UiAdjustments@MinimapAdjustments / Name": {
@@ -724,7 +1492,7 @@
     "description": "[MinimapAdjustments] Tweak Name"
   },
   "UiAdjustments@NamePlateIconSpacing / Description": {
-    "message": "增加名牌上的状态图标和名称之间的距离。",
+    "message": "增加名牌上的状态图标和角色名称之间的距离。",
     "description": "[NamePlateIconSpacing] Tweak Description"
   },
   "UiAdjustments@NamePlateIconSpacing / Name": {
@@ -732,7 +1500,7 @@
     "description": "[NamePlateIconSpacing] Tweak Name"
   },
   "UiAdjustments@NotificationToastAdjustments / Description": {
-    "message": "允许移动或隐藏在不同时间出现在屏幕中间的通知。",
+    "message": "允许移动或隐藏在不同时间出现在屏幕中间的通知",
     "description": "[NotificationToastAdjustments] Tweak Description"
   },
   "UiAdjustments@NotificationToastAdjustments / Name": {
@@ -747,29 +1515,69 @@
     "message": "旧版姓名牌优化",
     "description": "[OldNameplatesTweak] Tweak Name"
   },
+  "UiAdjustments@ParameterBarAdjustments / AutoHideMp": {
+    "message": "对于不使用魔力的职业，隐藏魔力栏",
+    "description": "[ParameterBarAdjustments] Parameter Bar Adjustments - Hide MP Bar on jobs that don't use MP"
+  },
+  "UiAdjustments@ParameterBarAdjustments / CP Bar Color": {
+    "message": "制作力栏颜色",
+    "description": "[ParameterBarAdjustments] Parameter Bar Adjustments - CP Bar Color"
+  },
   "UiAdjustments@ParameterBarAdjustments / Description": {
-    "message": "隐藏或移动特殊的状态栏 (体力，魔力)。",
+    "message": "隐藏或移动特殊的状态栏 (体力，魔力)",
     "description": "[ParameterBarAdjustments] Tweak Description"
+  },
+  "UiAdjustments@ParameterBarAdjustments / GP Bar Color": {
+    "message": "采集力栏颜色",
+    "description": "[ParameterBarAdjustments] Parameter Bar Adjustments - GP Bar Color"
+  },
+  "UiAdjustments@ParameterBarAdjustments / Hide 'HP' Text": {
+    "message": "隐藏“体力”文本",
+    "description": "[ParameterBarAdjustments] Parameter Bar Adjustments - Hide 'HP' Text"
+  },
+  "UiAdjustments@ParameterBarAdjustments / Hide 'MP' Text": {
+    "message": "隐藏“魔力”文本",
+    "description": "[ParameterBarAdjustments] Parameter Bar Adjustments - Hide 'MP' Text"
+  },
+  "UiAdjustments@ParameterBarAdjustments / Hide HP Bar": {
+    "message": "隐藏体力值",
+    "description": "[ParameterBarAdjustments] Parameter Bar Adjustments - Hide HP Bar"
+  },
+  "UiAdjustments@ParameterBarAdjustments / Hide HP Value": {
+    "message": "隐藏体力值",
+    "description": "[ParameterBarAdjustments] Parameter Bar Adjustments - Hide HP Value"
+  },
+  "UiAdjustments@ParameterBarAdjustments / Hide MP Bar": {
+    "message": "隐藏魔力栏",
+    "description": "[ParameterBarAdjustments] Parameter Bar Adjustments - Hide MP Bar"
+  },
+  "UiAdjustments@ParameterBarAdjustments / Hide MP Value": {
+    "message": "隐藏魔力值",
+    "description": "[ParameterBarAdjustments] Parameter Bar Adjustments - Hide MP Value"
+  },
+  "UiAdjustments@ParameterBarAdjustments / Hide Target Cycling": {
+    "message": "隐藏分类选择",
+    "description": "[ParameterBarAdjustments] Parameter Bar Adjustments - Hide Target Cycling"
+  },
+  "UiAdjustments@ParameterBarAdjustments / HP Bar Color": {
+    "message": "体力栏颜色",
+    "description": "[ParameterBarAdjustments] Parameter Bar Adjustments - HP Bar Color"
+  },
+  "UiAdjustments@ParameterBarAdjustments / MP Bar Color": {
+    "message": "魔力栏颜色",
+    "description": "[ParameterBarAdjustments] Parameter Bar Adjustments - MP Bar Color"
   },
   "UiAdjustments@ParameterBarAdjustments / Name": {
     "message": "状态栏调整",
     "description": "[ParameterBarAdjustments] Tweak Name"
   },
   "UiAdjustments@PartyListStatusTimers / Description": {
-    "message": "对小队列表的状态栏，添加倒计时。",
+    "message": "对小队列表的状态栏，添加倒计时",
     "description": "[PartyListStatusTimers] Tweak Description"
   },
   "UiAdjustments@PartyListStatusTimers / Name": {
     "message": "小队列表状态计时器",
     "description": "[PartyListStatusTimers] Tweak Name"
-  },
-  "UiAdjustments@PartyUiAdjustments / Description": {
-    "message": "队伍列表相关内容修改",
-    "description": "[PartyUiAdjustments] Tweak Description"
-  },
-  "UiAdjustments@PartyUiAdjustments / Name": {
-    "message": "队伍列表修改",
-    "description": "[PartyUiAdjustments] Tweak Name"
   },
   "UiAdjustments@RecolorOwnStatusTimers / Description": {
     "message": "允许更改个人状态计时颜色。",
@@ -804,15 +1612,23 @@
     "description": "[RemoveCommunityFinder] Tweak Name"
   },
   "UiAdjustments@RemoveQuestMarkerLimit / Description": {
-    "message": "允许地图和小地图显示超过5个已接任务的标记。",
+    "message": "允许地图和小地图显示超过5个已接任务的标记",
     "description": "[RemoveQuestMarkerLimit] Tweak Description"
   },
   "UiAdjustments@RemoveQuestMarkerLimit / Name": {
     "message": "移除任务标记限制",
     "description": "[RemoveQuestMarkerLimit] Tweak Name"
   },
+  "UiAdjustments@ResizeExperienceBar / Description": {
+    "message": "更改经验条的水平尺寸，但不影响文本尺寸。",
+    "description": "[ResizeExperienceBar] Tweak Description"
+  },
+  "UiAdjustments@ResizeExperienceBar / Name": {
+    "message": "更改经验条尺寸",
+    "description": "[ResizeExperienceBar] Tweak Name"
+  },
   "UiAdjustments@SellMaxTripleTriadCards / Description": {
-    "message": "在卖出幻卡时，一次性出售当前幻卡的全部持有部分。",
+    "message": "在卖出幻卡时，一次性出售当前幻卡的全部持有部分",
     "description": "[SellMaxTripleTriadCards] Tweak Description"
   },
   "UiAdjustments@SellMaxTripleTriadCards / Name": {
@@ -836,15 +1652,43 @@
     "description": "[ShowShieldOnHPBar] Tweak Name"
   },
   "UiAdjustments@SmartNameplates / Description": {
-    "message": "提供在战斗中隐藏特定目标姓名板的选项。",
+    "message": "提供在战斗中隐藏特定目标姓名板的选项",
     "description": "[SmartNameplates] Tweak Description"
+  },
+  "UiAdjustments@SmartNameplates / Ignore Alliance Members": {
+    "message": "团队成员",
+    "description": "[SmartNameplates] Smart Nameplates - Ignore Alliance Members"
+  },
+  "UiAdjustments@SmartNameplates / Ignore Dead Players": {
+    "message": "已死亡角色",
+    "description": "[SmartNameplates] Smart Nameplates - Ignore Dead Players"
+  },
+  "UiAdjustments@SmartNameplates / Ignore Friends": {
+    "message": "好友",
+    "description": "[SmartNameplates] Smart Nameplates - Ignore Friends"
+  },
+  "UiAdjustments@SmartNameplates / Ignore Party Members": {
+    "message": "队友",
+    "description": "[SmartNameplates] Smart Nameplates - Ignore Party Members"
+  },
+  "UiAdjustments@SmartNameplates / Ignore Targeted Players": {
+    "message": "目标角色",
+    "description": "[SmartNameplates] Smart Nameplates - Ignore Targeted Players"
+  },
+  "UiAdjustments@SmartNameplates / IgnorePlayersNote": {
+    "message": "不隐藏以下目标的的HP条:",
+    "description": "[SmartNameplates] Smart Nameplates - The following options will disable the tweak for certain players."
   },
   "UiAdjustments@SmartNameplates / Name": {
     "message": "智能隐藏姓名板",
     "description": "[SmartNameplates] Tweak Name"
   },
+  "UiAdjustments@SmartNameplates / Show HP": {
+    "message": "显示 HP",
+    "description": "[SmartNameplates] Smart Nameplates - Show HP"
+  },
   "UiAdjustments@StopCraftingButton / Description": {
-    "message": "修改制作笔记中的开始制作作业按钮以切换工作或从制作位置站起来，允许您在不关闭制作笔记的情况下停止制作。",
+    "message": "修改制作笔记中的开始制作作业按钮以切换职业或从制作位置站起来，允许您在不关闭制作笔记的情况下停止制作。",
     "description": "[StopCraftingButton] Tweak Description"
   },
   "UiAdjustments@StopCraftingButton / Name": {
@@ -858,6 +1702,14 @@
   "UiAdjustments@SubmarineDestinationLetters / Name": {
     "message": "带字母的潜水艇目的地",
     "description": "[SubmarineDestinationLetters] Tweak Name"
+  },
+  "UiAdjustments@TargetCastbarCountdown / Description": {
+    "message": "显示目标技能咏唱的剩余时间。",
+    "description": "[TargetCastbarCountdown] Tweak Description"
+  },
+  "UiAdjustments@TargetCastbarCountdown / Name": {
+    "message": "目标目标咏唱倒计时",
+    "description": "[TargetCastbarCountdown] Tweak Name"
   },
   "UiAdjustments@TargetHP / Description": {
     "message": "显示目标的精确（或者近似）HP值。",
@@ -882,5 +1734,9 @@
   "UiAdjustments@TimeUntilGpMax / Name": {
     "message": "GP回复计时",
     "description": "[TimeUntilGpMax] Tweak Name"
+  },
+  "Unhide Tweak": {
+    "message": "取消隐藏微调",
+    "description": "Unhide Tweak - Unhide Tweak"
   }
 }
