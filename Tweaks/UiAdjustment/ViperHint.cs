@@ -47,6 +47,8 @@ public unsafe class ViperHint : UiAdjustments.SubTweak
             return;
         }
 
+        if (player is null) return;
+
         if (LeftBladeImage->IsVisible())
         {
             UpdateColor(LeftBladeImage);
