@@ -110,7 +110,7 @@ namespace SimpleTweaksPlugin {
             try {
                 // Update Tweak Blacklist
                 var httpClient = Common.HttpClient;
-                var response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, "https://raw.githubusercontent.com/ottercorp/SimpleTweaksPlugin/cn/tweakBlacklist.txt"));
+                var response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, "https://s3.ffxiv.wang/xlassets/pluginfiles/tweakBlacklist.txt"));
                 if (response.StatusCode != HttpStatusCode.OK) return;
                 var asStringTask = response.Content.ReadAsStringAsync();
                 asStringTask.Wait();
