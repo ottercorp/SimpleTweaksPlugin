@@ -114,7 +114,7 @@ public class ChatNameColours : ChatTweaks.SubTweak {
                     .Where(dc => dc.Region == regionId)
                     .Select(dc => new Region.DataCentre {
                         Name = dc.Name.ExtractText(), 
-                        Worlds = Service.Data.Excel.GetSheet<World>().Where(w => w.DataCenter.Row == dc.RowId && w.RowId is > 1000 and not 1200
+                        Worlds = Service.Data.Excel.GetSheet<World>().Where(w => w.DataCenter.RowId == dc.RowId && w.RowId is > 1000 and not 1200
                         ).Select(w => w.Name.ExtractText()).ToList()
                 }).Where(dc => dc.Worlds.Count > 0).ToList()
             };
