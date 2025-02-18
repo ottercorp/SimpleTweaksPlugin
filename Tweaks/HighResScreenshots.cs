@@ -20,6 +20,7 @@ namespace SimpleTweaksPlugin.Tweaks;
 [TweakName("Screenshot Improvements")]
 [TweakDescription("Allows taking higher resolution screenshots, Hiding Dalamud & Game UIs and removing the copyright notice from screenshots.")]
 [TweakAuthor("NotNite")]
+[Changelog("1.10.6.0", "Fixed 'Remove Copyright Text' option.")]
 public unsafe class HighResScreenshots : Tweak {
     private nint copyrightShaderAddress;
 
@@ -36,9 +37,9 @@ public unsafe class HighResScreenshots : Tweak {
         
         public bool UseReShade;
         public VirtualKey ReShadeMainKey = VirtualKey.SNAPSHOT;
-        public bool ReShadeCtrl = false;
-        public bool ReShadeShift = false;
-        public bool ReShadeAlt = false;
+        public bool ReShadeCtrl;
+        public bool ReShadeShift;
+        public bool ReShadeAlt;
     }
 
     public Configs Config { get; private set; }
@@ -50,7 +51,7 @@ public unsafe class HighResScreenshots : Tweak {
     private delegate byte ReShadeKeyTest(byte* a1, uint a2, byte a3, byte a4, byte a5, byte a6);
     private HookWrapper<ReShadeKeyTest> reShadeKeyTestHook;
 
-    private bool updatingReShadeKeybind = false;
+    private bool updatingReShadeKeybind;
     
     protected void DrawConfig(ref bool hasChanged) {
         ImGui.TextWrapped(
@@ -125,19 +126,15 @@ public unsafe class HighResScreenshots : Tweak {
             
             ImGui.Text($"Current Keybind: {string.Join(" + ", keybindText)}");
             if (updatingReShadeKeybind) {
-                var keyDown = Service.KeyState.GetValidVirtualKeys().FirstOrDefault(k => k is not (VirtualKey.CONTROL or VirtualKey.SHIFT or VirtualKey.MENU) && Service.KeyState[k], VirtualKey.NO_KEY);
-                if (keyDown != VirtualKey.NO_KEY) {
+                if (ImGui.Button("Cancel Keybind Change")) {
                     updatingReShadeKeybind = false;
-                    Config.ReShadeMainKey = keyDown;
-                    Config.ReShadeAlt = ImGui.GetIO().KeyAlt;
-                    Config.ReShadeShift = ImGui.GetIO().KeyShift;
-                    Config.ReShadeCtrl = ImGui.GetIO().KeyCtrl;
-                } else {
-                    ImGui.TextColored(ImGuiColors.DalamudOrange, "Take a screenshot with ReShade to update the keybind.");
+                    Service.NativeKeyState.OnKeystroke -= OnKeystroke;
                 }
             } else {
                 if (ImGui.Button("Update Keybind")) {
                     updatingReShadeKeybind = true;
+                    Service.NativeKeyState.OnKeystroke += OnKeystroke;
+                    
                 }
             }
             
@@ -146,6 +143,22 @@ public unsafe class HighResScreenshots : Tweak {
         }
     }
 
+    private void OnKeystroke(VirtualKey key, bool down, ref NativeKeyState.KeyHandleType handleType) {
+        if (!updatingReShadeKeybind) {
+            Service.NativeKeyState.OnKeystroke -= OnKeystroke;
+            return;
+        }
+
+        if (key is VirtualKey.MENU or VirtualKey.CONTROL or VirtualKey.SHIFT or VirtualKey.LMENU or VirtualKey.RMENU or VirtualKey.LCONTROL or VirtualKey.RCONTROL or VirtualKey.RSHIFT or VirtualKey.LSHIFT) return;
+        
+        Config.ReShadeMainKey = key;
+        Config.ReShadeAlt = NativeKeyState.IsKeyDown(VirtualKey.MENU);
+        Config.ReShadeShift = NativeKeyState.IsKeyDown(VirtualKey.SHIFT);
+        Config.ReShadeCtrl = NativeKeyState.IsKeyDown(VirtualKey.CONTROL);
+        updatingReShadeKeybind = false;
+
+    }
+    
     protected override void Setup() {
         AddChangelogNewTweak("1.8.2.0");
         AddChangelog("1.8.3.0", "Added option to hide dalamud UI for screenshot.");
@@ -159,7 +172,7 @@ public unsafe class HighResScreenshots : Tweak {
     protected override void Enable() {
         Config = LoadConfig<Configs>() ?? new Configs();
 
-        if (!Service.SigScanner.TryScanText("48 8B 57 ?? 45 33 C9 48 8B 06 45 33 C0 48 8B CE 48 8B 52 ?? FF 50 ?? 48 8B 06 4C 8D 4C 24", out copyrightShaderAddress)) {
+        if (!Service.SigScanner.TryScanText("48 8B 56 30 45 33 C9", out copyrightShaderAddress)) {
             copyrightShaderAddress = 0;
         }
 
@@ -177,7 +190,7 @@ public unsafe class HighResScreenshots : Tweak {
 
     const int ScreenshotButton = 546;
     public bool originalUiVisibility;
-    byte[] originalCopyrightBytes = null;
+    byte[] originalCopyrightBytes;
     // IsInputIDClicked is called from Client::UI::UIInputModule.CheckScreenshotState, which is polled
     // We change the res when the button is pressed and tell it to take a screenshot the next time it is polled
     private byte IsInputIDClickedDetour(nint a1, int a2) {
@@ -292,6 +305,7 @@ public unsafe class HighResScreenshots : Tweak {
     }
 
     protected override void Disable() {
+        Service.NativeKeyState.OnKeystroke -= OnKeystroke;
         UIDebug.FreeExclusiveDraw();
         SaveConfig(Config);
         isInputIDClickedHook?.Disable();

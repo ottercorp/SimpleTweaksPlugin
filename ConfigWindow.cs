@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Interface.Internal;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
@@ -83,6 +82,7 @@ public class ConfigWindow : SimpleWindow {
                 return;
         }
 
+        textures.RemoveAll(t => t == null);
         if (textures.Count == 0) return;
 
         var width = textures.Max(s => s.Size.X);
@@ -150,39 +150,6 @@ public class ConfigWindow : SimpleWindow {
             ImGui.Separator();
 
             ImGui.Dummy(new Vector2(20) * ImGuiHelpers.GlobalScale);
-
-            if (ImGui.Button("Open Changelog")) {
-                SimpleTweaksPlugin.Plugin.ChangelogWindow.IsOpen = true;
-            }
-
-            return;
-        }
-
-        if (!SimpleTweaksPlugin.Plugin.PluginConfig.DismissedUpdateNotice) {
-            ImGui.SetWindowFontScale(1.25f);
-            ImGui.Text("Simple Tweaks Dawntrail Update");
-            ImGui.SetWindowFontScale(1f);
-            ImGui.Separator();
-
-            ImGui.TextWrapped("" + 
-                              "Simple Tweaks has been updated to support Dawntrail, but not all tweaks are ready. " + 
-                              "Please DO NOT post issues on the github telling me that a tweak has not been updated. I know. " + 
-                              "If you want a tweak to be considered for priority, please make a comment on the Simple Tweaks " + 
-                              "thread on the Dalamud discord. I will get the other tweaks updated in time.\n\n" + 
-                              "Thank you for your patience.");
-
-            ImGui.Dummy(new Vector2(20) * ImGuiHelpers.GlobalScale);
-
-            using (ImRaii.PushColor(ImGuiCol.Button, new Vector4(0.2f, 0.7f, 0.3f, 0.8f)))
-            using (ImRaii.PushColor(ImGuiCol.ButtonActive, new Vector4(0.2f, 0.7f, 0.3f, 1f)))
-            using (ImRaii.PushColor(ImGuiCol.ButtonHovered, new Vector4(0.2f, 0.7f, 0.3f, 0.9f))) {
-                if (ImGui.Button("Continue", new Vector2(ImGui.GetContentRegionAvail().X, 40 * ImGuiHelpers.GlobalScale))) {
-                    SimpleTweaksPlugin.Plugin.PluginConfig.DismissedUpdateNotice = true;
-                }
-            }
-
-            ImGui.Spacing();
-            ImGui.Separator();
 
             if (ImGui.Button("Open Changelog")) {
                 SimpleTweaksPlugin.Plugin.ChangelogWindow.IsOpen = true;

@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Linq;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Enums;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -15,10 +15,11 @@ namespace SimpleTweaksPlugin.Tweaks.Tooltips;
 [TweakName("Improved Crafting Action Tooltips")]
 [TweakDescription("Adds calculated efficiency of crafting actions to tooltips.")]
 [TweakAutoConfig]
+[Changelog("1.10.5.0", "Fixed results preview not resetting.")]
 public unsafe class CraftingActionInfo : TooltipTweaks.SubTweak {
     public class Configs : TweakConfig {
         [TweakConfigOption("Show Results Preview")]
-        public bool ShowResultsPreview = false;
+        public bool ShowResultsPreview;
     }
 
     public Configs Config { get; private set; }
@@ -32,16 +33,14 @@ public unsafe class CraftingActionInfo : TooltipTweaks.SubTweak {
     }
 
     protected override void Enable() {
-        Config = LoadConfig<Configs>() ?? new Configs();
-        progressString ??= Service.Data.Excel.GetSheet<Addon>()?.GetRow(213)?.Text?.RawString ?? "Progress";
-        qualityString ??= Service.Data.Excel.GetSheet<Addon>()?.GetRow(216)?.Text?.RawString ?? "Quality";
+        progressString ??= Service.Data.Excel.GetSheet<Addon>().GetRow(213).Text.ExtractText();
+        qualityString ??= Service.Data.Excel.GetSheet<Addon>().GetRow(216).Text.ExtractText();
         
         identifier = PluginInterface.AddChatLinkHandler((uint) LinkHandlerId.CraftingActionInfoIdentifier, (_, _) => { });
 
         if (Config.ShowResultsPreview) {
             Common.FrameworkUpdate += FrameworkUpdate;
         }
-        base.Enable();
     }
 
     protected override void ConfigChanged() {
@@ -52,10 +51,8 @@ public unsafe class CraftingActionInfo : TooltipTweaks.SubTweak {
     }
 
     protected override void Disable() {
-        SaveConfig(Config);
         Common.FrameworkUpdate -= FrameworkUpdate;
         PluginInterface.RemoveChatLinkHandler((uint) LinkHandlerId.CraftingActionInfoIdentifier);
-        base.Disable();
     }
 
     private void SetGhost(AtkTextNode* textNode, AtkTextNode* maxTextNode, AtkComponentNode* gauge, uint addValue) {
@@ -207,9 +204,10 @@ public unsafe class CraftingActionInfo : TooltipTweaks.SubTweak {
         progressGaugeNode = progressGaugeNode->AtkResNode.GetAsAtkComponentNode();
         qualityGaugeNode = qualityGaugeNode->AtkResNode.GetAsAtkComponentNode();
         if (progressGaugeNode == null || qualityGaugeNode == null) return;
-        
-        if (Service.GameGui.HoveredAction.ActionID != 0) {
-            var result = GetActionResult(Service.GameGui.HoveredAction.ActionID);
+
+        var hoveredActionId = Common.GetUnitBase("ActionDetail", out var actionDetail) && actionDetail->IsVisible ? AgentActionDetail.Instance()->ActionId : 0;
+        if (hoveredActionId != 0) {
+            var result = GetActionResult(hoveredActionId);
             SetGhost(progressText, progressMaxText, progressGaugeNode, result.progress);
             SetGhost(qualityText, qualityMaxText, qualityGaugeNode, result.quality);
         } else {

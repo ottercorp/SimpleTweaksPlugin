@@ -79,6 +79,7 @@ public class Changelog : Window {
             .Sub("You can also set a permanent decoration to be used all year round.");
         Add("1.10.0.0", "Support for Dawntrail");
         Add("1.10.0.1", "Updated more tweaks for Dawntrail");
+        Add("1.10.5.0", "Fixed tweak preview images not loading correctly");
     }
 
 #if DEBUG
@@ -128,7 +129,7 @@ public class Changelog : Window {
     
     public Version CurrentVersion { get; }
 
-    public static bool HasNewChangelog { get; private set; } = false;
+    public static bool HasNewChangelog { get; private set; }
 
     public Changelog() : base("###simpleTweaksChangelog") {
         CurrentVersion = Assembly.GetExecutingAssembly().GetName().Version;

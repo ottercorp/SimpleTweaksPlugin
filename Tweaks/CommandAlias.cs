@@ -31,7 +31,7 @@ public class CommandAlias : Tweak {
         public bool Enabled = true;
         public string Input = string.Empty;
         public string Output = string.Empty;
-        public bool Resend = false;
+        public bool Resend;
         [NonSerialized] public bool Delete;
         [NonSerialized] public int UniqueId;
 
@@ -165,6 +165,11 @@ public class CommandAlias : Tweak {
                         if (!a.IsValid()) return false;
                         return splitString[0] == $"/{a.Input}";
                     });
+
+                    if (alias == null && Plugin.GetTweak<Chat.CaseInsensitiveCommands>().Enabled) {
+                        alias = TweakConfig.AliasList.FirstOrDefault(a => a.Enabled && a.IsValid() && splitString[0].Equals($"/{a.Input}", StringComparison.InvariantCultureIgnoreCase));
+                    }
+
                     if (alias != null) {
                         var commandExtra = inputString[(alias.Input.Length + 1)..];
                         if (commandExtra.StartsWith(' ')) commandExtra = commandExtra[1..];

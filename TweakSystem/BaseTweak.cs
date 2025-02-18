@@ -11,8 +11,6 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using InteropGenerator.Runtime;
 using Newtonsoft.Json;
@@ -83,8 +81,8 @@ public abstract class BaseTweak {
     public IEnumerable<string> Tags => TweakTagsAttribute?.Tags ?? [];
     internal bool ForceOpenConfig { private get; set; }
 
-    public TweakProvider TweakProvider { get; private set; } = null;
-    public SubTweakManager TweakManager { get; private set; } = null;
+    public TweakProvider TweakProvider { get; private set; }
+    public SubTweakManager TweakManager { get; private set; }
 
     public virtual bool CanLoad => true;
 
@@ -118,10 +116,10 @@ public abstract class BaseTweak {
                 try {
                     var image = Service.TextureProvider.GetFromFile(Path.Join(PluginInterface.AssemblyLocation.DirectoryName, "TweakPreviews", $"{Key}.png"));
                     var previewImage = image.GetWrapOrDefault();
-                    if (previewImage == null) {
-                        hasPreviewImage = false;
-                    } else {
+                    if (previewImage != null) {
                         ImGui.Image(previewImage.ImGuiHandle, new Vector2(previewImage.Width, previewImage.Height));
+                    } else {
+                        ImGui.Text("Image Loading...");
                     }
                 } catch {
                     hasPreviewImage = false;
@@ -380,6 +378,10 @@ public abstract class BaseTweak {
                             if (ImGui.Selectable($"{enumValue.GetDescription()}", v.Equals(enumValue))) {
                                 f.SetValue(configObj, enumValue);
                             }
+
+                            if (ImGui.IsItemHovered() && enumValue.TryGetTooltip(out var tooltip)) {
+                                ImGui.SetTooltip(tooltip);
+                            }
                         }
 
                         ImGui.EndCombo();
@@ -551,7 +553,7 @@ public abstract class BaseTweak {
     
     protected virtual void Setup() { }
 
-    private bool signatureHelperInitialized = false;
+    private bool signatureHelperInitialized;
 
     private void AutoLoadConfig() {
         SimpleLog.Verbose($"[{Key}] AutoLoading Config");
@@ -710,9 +712,8 @@ public abstract class BaseTweak {
             AutoSaveConfig();
         }
 
-        AfterDisable();
-
         Enabled = false;
+        AfterDisable();
     }
 
     protected virtual void Disable() { }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Numerics;
-using Dalamud.Interface.Utility.Raii;
 using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -265,7 +264,7 @@ public unsafe class ArrayDataBrowser : DebugHelper {
 
                         for (var i = 0; i < array->AtkArrayData.Size; i++) {
                             ImGui.TableNextColumn();
-                            ImGui.Text($"{i.ToString().PadLeft(array->AtkArrayData.Size.ToString().Length, '0')}");
+                            DebugManager.ClickToCopyText($"{i.ToString().PadLeft(array->AtkArrayData.Size.ToString().Length, '0')}", $"{(ulong) &array->StringArray[i]:X}");
                             ImGui.TableNextColumn();
 
                             var strPtr = array->StringArray[i];

@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
+using Dalamud.Interface.Colors;
+using Dalamud.Interface.Utility.Raii;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using ImGuiNET;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Enums;
 
 namespace SimpleTweaksPlugin.Utility; 
@@ -81,8 +84,8 @@ public static class ImGuiExt {
         return changed;
     }
 
-    private static List<UIColor> uniqueSortedUiForeground = null;
-    private static List<UIColor> uniqueSortedUiGlow = null;
+    private static List<UIColor> uniqueSortedUiForeground;
+    private static List<UIColor> uniqueSortedUiGlow;
 
     private static void BuildUiColorLists() {
         uniqueSortedUiForeground = new List<UIColor>();
@@ -140,20 +143,13 @@ public static class ImGuiExt {
         var glowOnly = mode == ColorPickerMode.GlowOnly;
 
         var colorSheet = Service.Data.Excel.GetSheet<UIColor>();
-        if (colorSheet == null) {
-            var i = (int)colourKey;
-            if (ImGui.InputInt(label, ref i)) {
-                if (i >= ushort.MinValue && i <= ushort.MaxValue) {
-                    colourKey = (ushort)i;
-                    return true;
-                }
+
+        if (!colorSheet.TryGetRow(colourKey, out var currentColor)) {
+            if (!colorSheet.TryGetRow(0, out currentColor)) {
+                return false;
             }
-            return false;
         }
 
-        var currentColor = colorSheet.GetRow(colourKey);
-        if (currentColor == null) currentColor = colorSheet.GetRow(0)!;
-        if (currentColor == null) return false;
         var id = ImGui.GetID(label);
 
         ImGui.SetNextItemWidth(24 * ImGui.GetIO().FontGlobalScale);
@@ -240,4 +236,37 @@ public static class ImGuiExt {
         }
     }
 
+    public static bool ModifierFlagEditor(ref ModifierFlag tweakConfigPanModifier, bool allowNone = false) {
+        var e = false;
+        using (ImRaii.Group()) {
+            var btnSize = new Vector2(ImGui.GetTextLineHeightWithSpacing() * 2, ImGui.GetTextLineHeightWithSpacing()) + ImGui.GetStyle().FramePadding * 2;
+            using (ImRaii.PushColor(ImGuiCol.Button, Vector4.Zero)) {
+                using (ImRaii.PushColor(ImGuiCol.Text, tweakConfigPanModifier.HasFlag(ModifierFlag.Shift) ? ImGuiColors.HealerGreen : ImGuiColors.DPSRed)) {
+                    if (ImGui.Button($"SHIFT", btnSize)) {
+                        tweakConfigPanModifier ^= ModifierFlag.Shift;
+                        if (!allowNone && tweakConfigPanModifier == 0) tweakConfigPanModifier = ModifierFlag.Shift;
+                        e = true;
+                    }
+                }
+                ImGui.SameLine();
+                using (ImRaii.PushColor(ImGuiCol.Text, tweakConfigPanModifier.HasFlag(ModifierFlag.Ctrl) ? ImGuiColors.HealerGreen : ImGuiColors.DPSRed)) {
+                    if (ImGui.Button("CTRL", btnSize)) {
+                        tweakConfigPanModifier ^= ModifierFlag.Ctrl;
+                        if (!allowNone && tweakConfigPanModifier == 0) tweakConfigPanModifier = ModifierFlag.Ctrl;
+                        e = true;
+                    }
+                }
+                ImGui.SameLine();
+                using (ImRaii.PushColor(ImGuiCol.Text, tweakConfigPanModifier.HasFlag(ModifierFlag.Alt) ? ImGuiColors.HealerGreen : ImGuiColors.DPSRed)) {
+                    if (ImGui.Button("ALT", btnSize)) {
+                        tweakConfigPanModifier ^= ModifierFlag.Alt;
+                        if (!allowNone && tweakConfigPanModifier == 0) tweakConfigPanModifier = ModifierFlag.Alt;
+                        e = true;
+                    }
+                }
+            }
+        }
+
+        return e;
+    }
 }

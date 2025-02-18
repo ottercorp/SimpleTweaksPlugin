@@ -6,12 +6,11 @@ using System.Reflection;
 using System.Text;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
-using Lumina.Excel;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Events;
-using SimpleTweaksPlugin.Sheets;
 using SimpleTweaksPlugin.Tweaks.Tooltips.Hotkeys;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -20,6 +19,7 @@ namespace SimpleTweaksPlugin.Tweaks.Tooltips;
 
 [TweakName("Item Hotkeys")]
 [TweakDescription("Adds hotkeys for various actions when the item detail window is visible.")]
+[TweakAutoConfig]
 public unsafe class ItemHotkeys : TooltipTweaks.SubTweak {
     public class Configs : TweakConfig {
         public bool HideHotkeysOnTooltip;
@@ -33,14 +33,14 @@ public unsafe class ItemHotkeys : TooltipTweaks.SubTweak {
     public override void OnGenerateItemTooltip(NumberArrayData* numberArrayData, StringArrayData* stringArrayData) {
         if (Config.HideHotkeysOnTooltip) return;
 
-        var itemId = Service.GameGui.HoveredItem;
+        var itemId = AgentItemDetail.Instance()->ItemId;
 
-        ExcelRow item;
+        object? item;
 
         if (itemId >= 2000000) {
-            item = Service.Data.Excel.GetSheet<EventItem>()?.GetRow((uint)Service.GameGui.HoveredItem);
+            item = Service.Data.Excel.GetSheet<EventItem>().GetRowOrDefault(itemId);
         } else {
-            item = Service.Data.Excel.GetSheet<ExtendedItem>()?.GetRow((uint)(Service.GameGui.HoveredItem % 500000));
+            item = Service.Data.Excel.GetSheet<Item>().GetRow(itemId % 500000);
         }
 
         if (item == null) return;
@@ -48,7 +48,7 @@ public unsafe class ItemHotkeys : TooltipTweaks.SubTweak {
         var seStr = GetTooltipString(stringArrayData, TooltipTweaks.ItemTooltipField.ControlsDisplay);
         if (seStr == null) return;
         if (seStr.TextValue.Contains('\n')) return;
-        var split = seStr.TextValue.Split(new[] { weirdTabChar }, StringSplitOptions.None);
+        var split = seStr.TextValue.Split([weirdTabChar], StringSplitOptions.None);
         if (split.Length > 0) {
             seStr.Payloads.Clear();
             seStr.Payloads.Add(new TextPayload(string.Join("\n", split)));
@@ -66,7 +66,7 @@ public unsafe class ItemHotkeys : TooltipTweaks.SubTweak {
                 if (!hk.AcceptsNormalItem) continue;
             }
 
-            if (itemId >= 2000000 ? hk.DoShow(item as EventItem) : hk.DoShow(item as ExtendedItem)) {
+            if (itemId >= 2000000 ? hk.DoShow(item as EventItem?) : hk.DoShow(item as Item?)) {
                 seStr.Payloads.Add(new TextPayload($"\n{string.Join("+", hk.Hotkey.Select(k => k.GetKeyName()))}  {hk.HintText}"));
                 v++;
             }
@@ -83,10 +83,6 @@ public unsafe class ItemHotkeys : TooltipTweaks.SubTweak {
 
     public Configs Config { get; private set; }
 
-    private string settingKey;
-    private string focused;
-    private readonly List<VirtualKey> newKeys = new();
-
     public void DrawHotkeyConfig(ItemHotkey hotkey) {
         ImGui.PushID(hotkey.Key);
         while (ImGui.GetColumnIndex() != 0) ImGui.NextColumn();
@@ -102,68 +98,9 @@ public unsafe class ItemHotkeys : TooltipTweaks.SubTweak {
         }
 
         ImGui.NextColumn();
-        var strKeybind = string.Join("+", hotkey.Hotkey.Select(k => k.GetKeyName()));
 
-        ImGui.SetNextItemWidth(100);
-
-        if (settingKey == hotkey.Key) {
-            if (ImGui.GetIO().KeyAlt && !newKeys.Contains(VirtualKey.MENU)) newKeys.Add(VirtualKey.MENU);
-            if (ImGui.GetIO().KeyShift && !newKeys.Contains(VirtualKey.SHIFT)) newKeys.Add(VirtualKey.SHIFT);
-            if (ImGui.GetIO().KeyCtrl && !newKeys.Contains(VirtualKey.CONTROL)) newKeys.Add(VirtualKey.CONTROL);
-
-            for (var k = 0; k < ImGui.GetIO().KeysDown.Count && k < 160; k++) {
-                if (ImGui.GetIO().KeysDown[k]) {
-                    if (!newKeys.Contains((VirtualKey)k)) {
-                        if ((VirtualKey)k == VirtualKey.ESCAPE) {
-                            settingKey = null;
-                            newKeys.Clear();
-                            focused = null;
-                            break;
-                        }
-
-                        newKeys.Add((VirtualKey)k);
-                    }
-                }
-            }
-
-            newKeys.Sort();
-            strKeybind = string.Join("+", newKeys.Select(k => k.GetKeyName()));
-        }
-
-        if (settingKey == hotkey.Key) {
-            ImGui.PushStyleColor(ImGuiCol.Border, 0xFF00A5FF);
-            ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 2);
-        }
-
-        ImGui.InputText($"###{GetType().Name}hotkeyDisplay{hotkey.Key}", ref strKeybind, 100, ImGuiInputTextFlags.ReadOnly);
-        var active = ImGui.IsItemActive();
-        if (settingKey == hotkey.Key) {
-            ImGui.PopStyleColor(1);
-            ImGui.PopStyleVar();
-
-            if (focused != hotkey.Key) {
-                ImGui.SetKeyboardFocusHere(-1);
-                focused = hotkey.Key;
-            } else {
-                ImGui.SameLine();
-                if (ImGui.Button(newKeys.Count > 0 ? LocString("Confirm") + $"##{hotkey.Key}" : LocString("Cancel") + $"##{hotkey.Key}")) {
-                    settingKey = null;
-                    if (newKeys.Count > 0) hotkey.Hotkey = newKeys.ToArray();
-                    newKeys.Clear();
-                } else {
-                    if (!active) {
-                        focused = null;
-                        settingKey = null;
-                        if (newKeys.Count > 0) hotkey.Hotkey = newKeys.ToArray();
-                        newKeys.Clear();
-                    }
-                }
-            }
-        } else {
-            ImGui.SameLine();
-            if (ImGui.Button(LocString("Set Keybind") + $"###setHotkeyButton{hotkey.Key}")) {
-                settingKey = hotkey.Key;
-            }
+        if (HotkeyHelper.DrawHotkeyConfigEditor($"###{GetType().Name}hotkeyDisplay{hotkey.Key}", hotkey.Hotkey, out var newKeys)) {
+            hotkey.Hotkey = newKeys;
         }
 
         ImGui.SameLine();
@@ -225,49 +162,33 @@ public unsafe class ItemHotkeys : TooltipTweaks.SubTweak {
         nineGrid->AtkResNode.SetHeight(textHeight);
     }
 
-    private bool CheckHotkeyState(VirtualKey[] keys) {
-        foreach (var vk in Service.KeyState.GetValidVirtualKeys()) {
-            if (keys.Contains(vk)) {
-                if (!Service.KeyState[vk]) return false;
-            } else {
-                if (Service.KeyState[vk]) return false;
-            }
-        }
-
-        return true;
-    }
-
     private void OnFrameworkUpdate() {
         try {
             if (Service.GameGui.HoveredItem == 0) return;
 
             var id = Service.GameGui.HoveredItem;
 
-            ExcelRow item;
+            object item;
             if (id >= 2000000) {
-                item = Service.Data.Excel.GetSheet<EventItem>()?.GetRow((uint)id);
+                item = Service.Data.Excel.GetSheet<EventItem>().GetRowOrDefault((uint)id);
             } else {
-                item = Service.Data.Excel.GetSheet<ExtendedItem>()?.GetRow((uint)(id % 500000));
+                item = Service.Data.Excel.GetSheet<Item>().GetRowOrDefault((uint)(id % 500000));
             }
 
             if (item == null) return;
 
             foreach (var h in Hotkeys) {
                 if (!h.Enabled) continue;
-                if (!(id >= 2000000 ? h.DoShow(item as EventItem) : h.DoShow(item as ExtendedItem))) continue;
-                if (CheckHotkeyState(h.Hotkey)) {
-                    if (id >= 2000000) {
-                        h.OnTriggered(item as EventItem);
-                    } else {
-                        h.OnTriggered(item as ExtendedItem);
-                    }
-
-                    foreach (var k in h.Hotkey) {
-                        Service.KeyState[(int)k] = false;
-                    }
-
-                    break;
+                if (!(id >= 2000000 ? h.DoShow(item as EventItem?) : h.DoShow(item as Item?))) continue;
+                
+                if (!HotkeyHelper.CheckHotkeyState(h.Hotkey)) continue;
+                if (id >= 2000000) {
+                    h.OnTriggered(item as EventItem?);
+                } else {
+                    h.OnTriggered(item as Item?);
                 }
+
+                break;
             }
         } catch (Exception ex) {
             SimpleLog.Error(ex);

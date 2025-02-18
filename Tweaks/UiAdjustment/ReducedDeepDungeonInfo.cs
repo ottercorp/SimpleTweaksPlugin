@@ -4,7 +4,7 @@ using System.Linq;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 
@@ -134,7 +134,7 @@ public unsafe class ReducedDeepDungeonInfo : UiAdjustments.SubTweak {
         payloads.Add(new TextPayload("/"));
         payloads.AddRange(GetAetherpoolPayloads(armorAetherpoolSeStr));
 
-        textNode->SetText(new SeString(payloads).Encode());
+        textNode->SetText(new SeString(payloads).EncodeWithNullTerminator());
     }
 
     private static void SetDeepdungeonWindow(AtkComponentNode* windowNode, ushort? width, ushort? height)

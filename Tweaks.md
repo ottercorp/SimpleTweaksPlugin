@@ -16,6 +16,11 @@
   Automatically locks action bars when certain conditions are met.
 
 
+- **Auto Refresh Material List**
+
+  Automatically refreshes the raw material list and recipe tree windows.
+
+
 - **Bait Command**
 
   Adds /bait to switch fishing baits.
@@ -51,9 +56,19 @@
   Allows setting a custom amount to deposit or withdraw when using the 'Retrieve Quantity' and 'Entrust Quantity' options.
 
 
+- **Customize Group Pose Camera Control**
+
+  Allows you to customize the camera control in group pose
+
+
 - **Data Centre on Title Screen**
 
   Shows the current Data Centre on the Title Screen
+
+
+- **Disable Camera Culling**
+
+  Disable the hiding of characters when the camera gets too close.
 
 
 - **Disable Click Targeting**
@@ -69,6 +84,11 @@
 - **Disable Mouse Camera Control**
 
   Disables all control of the camera using the mouse.
+
+
+- **Disable Novice Network Auto-Switch**
+
+  Disables automatically selecting novice network when logging in or transferring to another server.
 
 
 - **Disable Title Screen Movie**
@@ -101,6 +121,11 @@
   Adds a 'text' subcommand for emotes when emotelog is disabled.  /yes text
 
 
+- **Ensure tooltips remain on screen**
+
+  Prevents tooltips from extending below the bottom of the screen. Useful when using tweaks that make the tooltips longer.
+
+
 - **Equip items from Hotbars**
 
   Enables the ability to equip items assigned to hotbars.
@@ -114,6 +139,11 @@
 - **Equip Recommended Command**
 
   Adds a command to equip recommended gear.
+
+
+- **Estate Access Command**
+
+  Adds a command to open the estate access configuration for the current estate.
 
 
 - **Estate List Command**
@@ -193,7 +223,7 @@
 
 - **Leave Duty Command**
 
-  Adds a command to leave the currenty duty. /leaveduty
+  Adds a command to leave the current duty.
 
 
 - **Leveling Dungeon Command**
@@ -271,6 +301,11 @@
   Allows taking higher resolution screenshots, Hiding Dalamud & Game UIs and removing the copyright notice from screenshots.
 
 
+- **Searchable Friend List**
+
+  Adds a search bar to the friend list.
+
+
 - **Set Option Command**
 
   Adds commands to change various settings.
@@ -288,6 +323,11 @@
   (Legacy type movement only)
 
 
+- **Special Character Input**
+
+  Adds a window for adding special characters to text inputs.
+
+
 - **Sync Crafter Bars**
 
   Keeps DoH job bars in sync
@@ -301,6 +341,11 @@
 - **SystemConfig in Group Pose**
 
   Allows the use of the /systemconfig command while in gpose.
+
+
+- **Talk Adjustments**
+
+  Allows further customisation to the Talk addon.
 
 
 - **Try On Correct Item**
@@ -321,6 +366,11 @@
 ### Chat Tweaks
 
 ---
+
+- **Case Insensitive Text Commands**
+
+  Allows text commands to be entered without caring about case.
+
 
 - **Chat Name Colours**
 
@@ -350,6 +400,11 @@
 - **Disable Chat Movement**
 
   Prevents movement of the chat window.
+
+
+- **Display EXP Gain Percentage of Level**
+
+  Adds the percentage of your next level to exp gains in chat.
 
 
 - **Echo Party Finder**
@@ -447,6 +502,11 @@
   Adds hotkeys for various actions when the item detail window is visible.
 
 
+- **Logos Tooltips**
+
+  Adds which kind of Logos Mnenes you can obtain from a Logogram in its tooltip.
+
+
 - **Materia Stats**
 
   Includes an item's attached materia when displaying the stats.
@@ -465,6 +525,11 @@
 - **Preview Unlockable Items**
 
   Show a preview image for mounts, minions and hairstyles.
+
+
+- **Show Collectable Rewards**
+
+  Shows rewards when viewing a collectable delivery item.
 
 
 - **Show Desynthesis Skill**
@@ -509,6 +574,11 @@
 - **Track Gacha Items**
 
   Adds the collectable checkmark to gacha items, such as Triple Triad card packs, when all potential items have been obtained.
+
+
+- **Track Outfits**
+
+  Shows whether or not you've made an outfit out of the hovered item.
 
 
 ### UI Tweaks
@@ -640,6 +710,13 @@
 - **Fast Item Search**
 
   Enable superfast searches for the market board & crafting log.
+
+
+- **Grow Buff List Vertically**
+
+  Allows you to change the buff/debuff vertical justification, enabling the list to grow from bottom to top.
+
+  ![Grow Buff List Vertically Preview](TweakPreviews/UiAdjustments@BuffListVerticalGrowth.png)
 
 
 - **Hide Achievements Nearing Completion Notifications**

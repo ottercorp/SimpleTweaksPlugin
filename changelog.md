@@ -1,5 +1,87 @@
 # Changelog
 
+## 1.10.8.0
+***New Tweaks***
+- **`Display EXP Gain Percentage of Level`** - Adds the percentage of your next level to exp gains in chat. *(zajrik)*
+
+- **`Grow Buff List Vertically`** - Allows you to change the buff/debuff vertical justification, enabling the list to grow from bottom to top. *(LINKAD0)*
+
+- **`Talk Adjustments`** - Allows further customisation to the Talk addon. *(croizat)*
+
+- **`Track Outfits`** - Shows whether or not you've made an outfit out of the hovered item. *(croizat)*
+
+
+***Tweak Changes***
+- **`Improved Blue Mage Action Tooltips`** - Fixed tweak incorrectly applying to some pseudo-actions.
+
+- **`Scenario Progression Display`** - Once again fixed logic.
+
+
+## 1.10.7.0
+***New Tweaks***
+- **`Disable Camera Culling`** - Disable the hiding of characters when the camera gets too close.
+
+- **`Searchable Friend List`** - Adds a search bar to the friend list.
+
+
+## 1.10.6.0
+***New Tweaks***
+- **`Disable Novice Network Auto-Switch`** - Disables automatically selecting novice network when logging in or transferring to another server.
+
+- **`Ensure tooltips remain on screen`** - Prevents tooltips from extending below the bottom of the screen. Useful when using tweaks that make the tooltips longer.
+
+- **`Logos Tooltips`** - Adds which kind of Logos Mnenes you can obtain from a Logogram in its tooltip. *(Khayle)*
+
+- **`Special Character Input`** - Adds a window for adding special characters to text inputs.
+
+
+***Tweak Changes***
+- **`Item Level in Examine`** - Tweak now uses item level provided by the game, improving accuracy.
+
+- **`Screenshot Improvements`** - Fixed 'Remove Copyright Text' option.
+
+- **`Show Desynthesis Skill`** - Fixed tweak not working on french clients.
+
+
+## 1.10.5.1
+***Tweak Changes***
+- **`Timer on Duty Waiting`** - Fixed display on all clients...
+
+
+## 1.10.5.0
+***General Changes***
+- Fixed tweak preview images not loading correctly
+
+***New Tweaks***
+- **`Estate Access Command`** - Adds a command to open the estate access configuration for the current estate.
+
+
+***Tweak Changes***
+- **`House Lights Command`** - Fixed tweak not working.
+
+- **`Improved Chat Font Sizes`** - Fixed tweak not working.
+
+- **`Improved Crafting Action Tooltips`** - Fixed results preview not resetting.
+
+- **`Screenshot File Name`** - Added option to use milliseconds in name template.
+
+- **`Timer on Duty Waiting`** - Fixed display of text in french clients.
+
+
+## 1.10.4.0
+***New Tweaks***
+- **`Case Insensitive Text Commands`** - Allows text commands to be entered without caring about case. *(KazWolfe)*
+
+- **`Customize Group Pose Camera Control`** - Allows you to customize the camera control in group pose
+
+
+## 1.10.3.2
+***Tweak Changes***
+- **`Show ID`**
+  - Added option to show original action ID alongside resolved.
+  - Fixed ID being cut off on items with long category names, like BLM weapons.
+
+
 ## 1.10.3.0
 ***New Tweaks***
 - **`Auto Focus Market Board Item Search`** - Automatically focus the item search when opening the market board. *(croizat)*
