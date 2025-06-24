@@ -6,6 +6,8 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
 using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
+using FFXIVClientStructs.FFXIV.Client.System.Photo;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
@@ -116,7 +118,7 @@ public unsafe class HighResScreenshots : Tweak {
             ImGui.Indent();
             ImGui.Indent();
 
-            ImGui.TextWrapped("Take a screenshot using your FFXIV screenshot keybind.\nReShade will be used to take the screenshot instead.");
+            ImGui.TextWrapped("Match your Current Keybind below to your ReShade screenshot keybind.\nWhile this option is enabled and configured, use your regular FFXIV screenshot key to take high-resolution screenshots.");
             ImGui.Spacing();
             var keybindText = new List<string>();
             if (Config.ReShadeCtrl) keybindText.Add("CTRL");
@@ -175,7 +177,7 @@ public unsafe class HighResScreenshots : Tweak {
         if (!Service.SigScanner.TryScanText("48 8B 56 30 45 33 C9", out copyrightShaderAddress)) {
             copyrightShaderAddress = 0;
         }
-
+        
         isInputIDClickedHook ??=
             Common.Hook<IsInputIDClickedDelegate>("E9 ?? ?? ?? ?? 83 7F ?? ?? 0F 8F ?? ?? ?? ?? BA ?? ?? ?? ?? 48 8B CB", IsInputIDClickedDetour);
         isInputIDClickedHook?.Enable();
@@ -188,7 +190,7 @@ public unsafe class HighResScreenshots : Tweak {
     private uint oldHeight;
     private bool isRunning;
 
-    const int ScreenshotButton = 546;
+    const int ScreenshotButton = 551;
     public bool originalUiVisibility;
     byte[] originalCopyrightBytes;
     // IsInputIDClicked is called from Client::UI::UIInputModule.CheckScreenshotState, which is polled

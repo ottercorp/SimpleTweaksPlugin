@@ -41,6 +41,11 @@
   Allow clicking on classes to switch to gearsets.
 
 
+- **Clickable Alarm Icon**
+
+  Allows clicking the alarm icon in the server bar to open the alarm window.
+
+
 - **Combat Movement Type Control**
 
   Set movement type between Standard and Legacy when in/out of combat or when weapon is drawn/sheathed.
@@ -261,6 +266,11 @@
   Open the loot rolling window when new items are added to be rolled on.
 
 
+- **Phantom Job Command**
+
+  Adds a command to switch phantom jobs within Occult Crescent
+
+
 - **Quick Sell Items at Vendors**
 
   Hold a modifier key to sell items from your inventory in one click.
@@ -323,9 +333,21 @@
   (Legacy type movement only)
 
 
+- **Sort World Visit List**
+
+  Removes the randomization from the data center visit world list.
+
+  ![Sort World Visit List Preview](TweakPreviews/SortWorldList.png)
+
+
 - **Special Character Input**
 
   Adds a window for adding special characters to text inputs.
+
+
+- **Squadron Chemistry Available Icon**
+
+  Show an icon over squadron members who have a new chemistry available.
 
 
 - **Sync Crafter Bars**
@@ -602,7 +624,7 @@
 
 - **Adjust Large Cooldown Counter**
 
-  Make adjustmenmts to the cooldown counter when using the large option.
+  Make adjustments to the cooldown counter when using the large option.
 
 
 - **Always Yes**
@@ -784,6 +806,8 @@
 - **Limit Break Adjustments**
 
   Simple customization of the limit break bars.
+
+  ![Limit Break Adjustments Preview](TweakPreviews/UiAdjustments@LimitBreakAdjustments.png)
 
 
 - **Lock Window Positions**

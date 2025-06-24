@@ -1,5 +1,63 @@
 # Changelog
 
+## 1.10.10.0
+***New Tweaks***
+- **`Phantom Job Command`** - Adds a command to switch phantom jobs within Occult Crescent
+
+
+***Tweak Changes***
+- **`Display EXP Gain Percentage of Level`**
+  - Added support for Occult Crescent's phantom jobs.
+  - Added support for earning experience on jobs other than current job.
+
+
+## 1.10.9.4
+***New Tweaks***
+- **`Squadron Chemistry Available Icon`** - Show an icon over squadron members who have a new chemistry available.
+
+
+***Tweak Changes***
+- **`Label Submarine Destinations with Letters`** - Rewritten to fix issues, re-enabled tweak.
+
+
+## 1.10.9.3
+***Tweak Changes***
+- **`Hide Unwanted Banners`**
+  - Added banners for Stellar Missions *(MidoriKami)*
+  - Added ability to add other banners after being seen
+  - Added image previews for banners
+
+
+## 1.10.9.1
+***New Tweaks***
+- **`Clickable Alarm Icon`** - Allows clicking the alarm icon in the server bar to open the alarm window.
+
+
+***Tweak Changes***
+- **`Limit Break Adjustments`** - Fixed limit break text appearing when it isn't supposed to
+
+
+## 1.10.9.0
+***Tweak Changes***
+- **`Add Number Separators`** - Fixed flytext number separator not working.
+
+- **`Limit Break Adjustments`** - Added preview for when not in a party
+
+
+## 1.10.8.4
+***New Tweaks***
+- **`Sort World Visit List`** - Removes the randomization from the data center visit world list.
+
+
+***Tweak Changes***
+- **`House Lights Command`** - Added ability to toggle SSAO with 'ssao-on' and 'ssao-off' parameters
+
+
+## 1.10.8.1
+***Tweak Changes***
+- **`Expanded Currency Display`** - Added option to Grand Company seals to display current grand company.
+
+
 ## 1.10.8.0
 ***New Tweaks***
 - **`Display EXP Gain Percentage of Level`** - Adds the percentage of your next level to exp gains in chat. *(zajrik)*

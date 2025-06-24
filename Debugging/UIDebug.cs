@@ -477,7 +477,7 @@ public unsafe class UIDebug : DebugHelper {
                                 case ValueType.ManagedString:
                                 case ValueType.String8:
                                 case ValueType.String: {
-                                    if (atkValue->String == null) {
+                                    if (atkValue->String.Value == null) {
                                         ImGui.TextDisabled("null");
                                     } else {
                                         var str = MemoryHelper.ReadSeStringNullTerminated(new nint(atkValue->String));
@@ -718,7 +718,7 @@ public unsafe class UIDebug : DebugHelper {
                         ImGui.PopStyleColor();
                         var seStringBytes = new byte[textNode->NodeText.BufUsed];
                         for (var i = 0L; i < textNode->NodeText.BufUsed; i++) {
-                            seStringBytes[i] = textNode->NodeText.StringPtr[i];
+                            seStringBytes[i] = textNode->NodeText.StringPtr.Value[0];
                         }
 
                         var seString = SeString.Parse(seStringBytes);
@@ -1145,9 +1145,9 @@ public unsafe class UIDebug : DebugHelper {
                     ImGui.Text($"InputBase Text2: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->AtkComponentInputBase.UnkText2.StringPtr))}");
                     ImGui.Text($"Text1: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->UnkText01.StringPtr))}");
                     ImGui.Text($"Text2: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->UnkText02.StringPtr))}");
-                    ImGui.Text($"Text3: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->UnkText03.StringPtr))}");
-                    ImGui.Text($"Text4: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->UnkText04.StringPtr))}");
-                    ImGui.Text($"Text5: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->UnkText05.StringPtr))}");
+                    ImGui.Text($"Text3: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->AvailableLines.StringPtr))}");
+                    ImGui.Text($"Text4: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->HighlightedAutoTranslateOptionColorPrefix.StringPtr))}");
+                    ImGui.Text($"Text5: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->HighlightedAutoTranslateOptionColorSuffix.StringPtr))}");
                     break;
                 case ComponentType.List:
                 case ComponentType.TreeList:
