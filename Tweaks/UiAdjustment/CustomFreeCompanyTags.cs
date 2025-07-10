@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Numerics;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Gui.NamePlate;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
@@ -10,9 +6,14 @@ using Dalamud.Game.Text.SeStringHandling.Payloads;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using ImGuiNET;
 using Lumina.Excel.Sheets;
-using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.ExtraPayloads;
+using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Numerics;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 
@@ -25,6 +26,7 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
         public TagCustomization DefaultCustomization = new();
         public TagCustomization WandererCustomization = new() { Enabled = false, Replacement = "<crossworldicon><homeworld>" };
         public TagCustomization TravellerCustomization = new() { Enabled = false, Replacement = "<crossworldicon><homeworld>" };
+        public bool HideTagsInDuty = false;
     }
 
     public class TagCustomization {
@@ -43,6 +45,7 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
         AddChangelog("1.8.9.0", "Added an icon viewer for supported icons.");
         AddChangelog("1.8.9.1", "Fix some issues with glow colours.");
         AddChangelog("1.8.9.2", "Fixed icon-only tags not displaying.");
+        AddChangelog("1.8.9.3", "Added hide tags in duty");
     }
 
     protected override void Enable() {
@@ -55,6 +58,10 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
 
             var battleChara = (BattleChara*)h.PlayerCharacter.Address;
             try {
+                if (Config.HideTagsInDuty && Service.Condition[ConditionFlag.BoundByDuty56]) {
+                    h.RemoveFreeCompanyTag();
+                    return;
+                }
                 var customization = Config.DefaultCustomization;
                 string companyTag = string.Empty;
                 if (battleChara->Character.HomeWorld != battleChara->Character.CurrentWorld) {
@@ -323,6 +330,7 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
     private string newFcName = string.Empty;
 
     protected void DrawConfig() {
+        ImGui.Checkbox("Hide tags in duty", ref Config.HideTagsInDuty);
         if (ImGui.BeginTable("fcList#noFreeCompanyOnNamePlate", 4)) {
             ImGui.TableSetupColumn("", ImGuiTableColumnFlags.WidthFixed, 28 * ImGui.GetIO().FontGlobalScale);
             ImGui.TableSetupColumn(LocString("Replace"), ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoClip, 50 * ImGui.GetIO().FontGlobalScale);
