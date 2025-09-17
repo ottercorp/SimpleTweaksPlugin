@@ -10,7 +10,7 @@ using System.Text;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.TweakSystem;
 
 namespace SimpleTweaksPlugin;
@@ -80,6 +80,8 @@ public class Changelog : Window {
         Add("1.10.0.0", "Support for Dawntrail");
         Add("1.10.0.1", "Updated more tweaks for Dawntrail");
         Add("1.10.5.0", "Fixed tweak preview images not loading correctly");
+        Add("1.10.11.0", "Fixed translation loading.");
+        Add("1.10.11.5", "Disabled error messages in chat when using a tweak command in a macro after using '/macroerror off'.");
     }
 
 #if DEBUG
@@ -129,8 +131,16 @@ public class Changelog : Window {
     
     public Version CurrentVersion { get; }
 
-    public static bool HasNewChangelog { get; private set; }
+#if TEST
+    public static bool HasNewChangelog {
+        get => false;
+        set { }
+    }
 
+#else
+     public static bool HasNewChangelog { get; private set; }
+    #endif
+    
     public Changelog() : base("###simpleTweaksChangelog") {
         CurrentVersion = Assembly.GetExecutingAssembly().GetName().Version;
         WindowName = $"Simple Tweaks Changelog ({CurrentVersion})###simpleTweaksChangelog";

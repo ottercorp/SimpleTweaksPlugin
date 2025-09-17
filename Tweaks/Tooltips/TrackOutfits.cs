@@ -19,6 +19,7 @@ public unsafe class TrackOutfits : TooltipTweaks.SubTweak
     [TweakHook(typeof(UIState), nameof(UIState.IsItemActionUnlocked), nameof(IsItemActionUnlockedDetour))]
     private HookWrapper<UIState.Delegates.IsItemActionUnlocked> isItemActionUnlockedHookWrapper;
 
+    [LinkHandler(LinkHandlerId.TrackOutfitsIdentifier)]
     private DalamudLinkPayload identifier;
     private uint[] OwnedOutfits
     {
@@ -29,9 +30,6 @@ public unsafe class TrackOutfits : TooltipTweaks.SubTweak
             return agent->GlamourDresserItemIds.ToArray().Where(x => x != 0 && Service.Data.GetExcelSheet<MirageStoreSetItem>().HasRow(x)).ToArray();
         }
     }
-
-    protected override void Enable() => identifier = PluginInterface.AddChatLinkHandler((uint)LinkHandlerId.TrackOutfitsIdentifier, (_, _) => { });
-    protected override void Disable() => PluginInterface.RemoveChatLinkHandler((uint)LinkHandlerId.TrackOutfitsIdentifier);
 
     private long IsItemActionUnlockedDetour(UIState* uiState, void* item)
     {
@@ -51,7 +49,7 @@ public unsafe class TrackOutfits : TooltipTweaks.SubTweak
         {
             var description = GetTooltipString(stringArrayData, TooltipTweaks.ItemTooltipField.ItemDescription);
 
-            if (description.Payloads.Any(payload => payload is DalamudLinkPayload { CommandId: (uint)LinkHandlerId.TrackOutfitsIdentifier }))
+            if (description.Payloads.Any(payload => payload is DalamudLinkPayload dlp && dlp.CommandId == identifier.CommandId))
                 return; // Don't append when it already exists.
 
             description.Payloads.Add(identifier);

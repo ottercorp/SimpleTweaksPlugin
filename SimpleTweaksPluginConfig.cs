@@ -1,5 +1,5 @@
 ﻿using Dalamud.Configuration;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -65,6 +65,8 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
 
     public string CustomCulture = string.Empty;
     public string Language;
+    public DateTime LanguageListUpdate = DateTime.MinValue;
+    public Dictionary<string, DateTime> LanguageUpdates = new();
 
     public string LastSeenChangelog = string.Empty;
     public bool AutoOpenChangelog;
@@ -105,7 +107,9 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
     }
     
     public void Save() {
+        #if !TEST
         Service.PluginInterface.SavePluginConfig(this);
+        #endif
     }
     
     [NonSerialized] private string searchInput = string.Empty;
@@ -596,15 +600,13 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                                 }
 #endif
 
-                                var locDir = Service.PluginInterface.GetPluginLocDirectory();
-
-                                var locFiles = Directory.GetDirectories(locDir);
-
-                                foreach (var f in locFiles) {
-                                    var dir = new DirectoryInfo(f);
-                                    if (ImGui.Selectable($"{dir.Name}##LanguageSelection", Language == dir.Name)) {
-                                        Language = dir.Name;
-                                        plugin.SetupLocalization();
+                                foreach (var lang in LanguageUpdates.Keys) {
+                                    if (ImGui.Selectable($"{lang}##LanguageSelection", Language == lang)) {
+                                        Language = lang;
+                                        Loc.UpdateTranslations(ImGui.GetIO().KeyShift, () => {
+                                            plugin.SetupLocalization();
+                                        });
+                                        
                                         Save();
                                     }
                                 }
@@ -615,7 +617,15 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                             ImGui.SameLine();
 
                             if (ImGui.SmallButton("Update Translations")) {
-                                Loc.UpdateTranslations();
+#if DEBUG
+                                if (ImGui.GetIO().KeyAlt) {
+                                    LanguageUpdates.Clear();
+                                } else {
+#endif
+                                Loc.UpdateTranslations(ImGui.GetIO().KeyShift);
+#if DEBUG           
+                                }
+#endif
                             }
 
 #if DEBUG

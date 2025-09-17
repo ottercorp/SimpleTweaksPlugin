@@ -8,10 +8,14 @@ namespace SimpleTweaksPlugin.Tweaks;
 [TweakName("Auto Lock Action Bars")]
 [TweakDescription("Automatically locks action bars when certain conditions are met.")]
 [TweakAutoConfig]
+[Changelog("1.10.11.0", "Added option to automatically unlock after combat ends.", Author = "SitiSchu")]
 public unsafe class AutoLockHotbar : Tweak {
     public class Configs : TweakConfig {
         [TweakConfigOption("Lock at beginning of combat.")]
         public bool CombatStart = true;
+
+        [TweakConfigOption("Unlock when combat ends.")]
+        public bool CombatEnd = false;
 
         [TweakConfigOption("Lock when changing zone.")]
         public bool ZoneChange = true;
@@ -26,8 +30,11 @@ public unsafe class AutoLockHotbar : Tweak {
         Service.Condition.ConditionChange += OnConditionChange;
     }
 
-    private void OnConditionChange(ConditionFlag flag, bool value) {
-        if (Config.CombatStart && flag == ConditionFlag.InCombat && value) SetLock(true);
+    private void OnConditionChange(ConditionFlag flag, bool value)
+    {
+        if (flag != ConditionFlag.InCombat) return;
+        if (Config.CombatStart && value) SetLock(true);
+        if (Config.CombatEnd && !value) SetLock(false);
     }
 
     [TerritoryChanged]

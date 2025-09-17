@@ -11,7 +11,9 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
+using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
 using InteropGenerator.Runtime;
 using Newtonsoft.Json;
 using SimpleTweaksPlugin.Events;
@@ -117,7 +119,7 @@ public abstract class BaseTweak {
                     var image = Service.TextureProvider.GetFromFile(Path.Join(PluginInterface.AssemblyLocation.DirectoryName, "TweakPreviews", $"{Key}.png"));
                     var previewImage = image.GetWrapOrDefault();
                     if (previewImage != null) {
-                        ImGui.Image(previewImage.ImGuiHandle, new Vector2(previewImage.Width, previewImage.Height));
+                        ImGui.Image(previewImage.Handle, new Vector2(previewImage.Width, previewImage.Height));
                     } else {
                         ImGui.Text("Image Loading...");
                     }
@@ -178,6 +180,9 @@ public abstract class BaseTweak {
 
     private object LoadConfig(Type T, string key) {
         if (!T.IsSubclassOf(typeof(TweakConfig))) throw new Exception($"{T} is not a TweakConfig class.");
+#if TEST
+        return null;
+#else
         try {
             var configDirectory = PluginInterface.GetPluginConfigDirectory();
             var configFile = Path.Combine(configDirectory, key + ".json");
@@ -189,6 +194,9 @@ public abstract class BaseTweak {
             SimpleLog.Error(ex);
             return null;
         }
+#endif
+        
+        
     }
 
     protected void SaveConfig<T>(T config) where T : TweakConfig {
@@ -204,7 +212,10 @@ public abstract class BaseTweak {
                 SimpleLog.Verbose($"    [{Name} Config] {l}");
             }
 #endif
+            
+            #if !TEST
             File.WriteAllText(configFile, jsonString);
+            #endif  
         } catch (Exception ex) {
             SimpleLog.Error($"Failed to write config for tweak: {this.Name}");
             SimpleLog.Error(ex);
@@ -228,7 +239,9 @@ public abstract class BaseTweak {
                 SimpleLog.Verbose($"    [{Name} Config] {l}");
             }
 #endif
+#if !TEST
             File.WriteAllText(configFile, jsonString);
+#endif
         } catch (Exception ex) {
             SimpleLog.Error($"Failed to write config for tweak: {this.Name}");
             SimpleLog.Error(ex);
@@ -251,6 +264,11 @@ public abstract class BaseTweak {
 
     public bool DrawConfigUI(ref bool hasChanged) {
         var shouldForceOpenConfig = ForceOpenConfig;
+        #if DEBUG
+        if (ImGui.GetIO().KeyShift && ImGui.GetIO().KeyAlt && ImGui.GetIO().KeyCtrl) {
+            shouldForceOpenConfig = true;
+        }
+        #endif
         ForceOpenConfig = false;
         var configTreeOpen = false;
         if ((this is CommandTweak || UseAutoConfig || DrawConfigTree != null) && (Enabled || this is CommandTweak)) {
@@ -605,27 +623,49 @@ public abstract class BaseTweak {
                 SimpleLog.Verbose($"Setup Tweak Hook: [{Name}] {field.Name} for {attribute.AddressType.Name}.{attribute.AddressName}");
 
                 if (!(field.FieldType.IsGenericType && field.FieldType.GetGenericTypeDefinition() == typeof(HookWrapper<>))) {
+#if TEST
+                    throw new Exception($"Tweak Hook for named address not supported on {field.FieldType}");
+#else
                     SimpleLog.Error($"Tweak Hook for named address not supported on {field.FieldType}");
+#endif
+                    
                     continue;
                 }
 
                 var addressesType = attribute.AddressType.GetNestedType("Addresses");
                 if (addressesType == null) {
+#if TEST
+                    throw new Exception($"Failed to find {attribute.AddressType}.Addresses");
+#else
                     SimpleLog.Error($"Failed to find {attribute.AddressType}.Addresses");
+#endif
+                    
                     continue;
                 }
 
                 var addressField = addressesType.GetField(attribute.AddressName);
 
                 if (addressField == null) {
+                    
+#if TEST
+                    throw new Exception($"Failed to find {attribute.AddressType.Name}.Addresses.{attribute.AddressName}");
+#else
                     SimpleLog.Error($"Failed to find {attribute.AddressType.Name}.Addresses.{attribute.AddressName}");
+#endif
+                    
+                    
                     continue;
                 }
 
                 var addressObj = addressField.GetValue(null);
 
                 if (addressObj is not Address address) {
+#if TEST
+                    throw new Exception($"{attribute.AddressType.Name}.Addresses.{attribute.AddressName} is not an Address?");
+#else
                     SimpleLog.Error($"{attribute.AddressType.Name}.Addresses.{attribute.AddressName} is not an Address?");
+#endif
+                    
                     continue;
                 }
 
@@ -661,16 +701,26 @@ public abstract class BaseTweak {
 
                 var createMethod = hookType.GetMethod("FromAddress", BindingFlags.Static | BindingFlags.NonPublic);
                 if (createMethod == null) {
+                    
+#if TEST
+                    throw new Exception($"{GetType().Name}: could not find Hook<{hookDelegateType.Name}>.FromAddress");
+#else
                     SimpleTweaksPlugin.Plugin.Error(new Exception($"{GetType().Name}: could not find Hook<{hookDelegateType.Name}>.FromAddress"));
                     continue;
+#endif
                 }
 
                 var hook = createMethod.Invoke(null, [address.Value, detour, false]);
 
                 var wrapperCtor = field.FieldType.GetConstructor([hookType]);
                 if (wrapperCtor == null) {
+                    
+#if TEST
+                    throw new Exception($"{GetType().Name}: could not find could not find HookWrapper<{hookDelegateType.Name}> constructor");
+#else
                     SimpleTweaksPlugin.Plugin.Error(new Exception($"{GetType().Name}: could not find could not find HookWrapper<{hookDelegateType.Name}> constructor"));
                     continue;
+#endif
                 }
 
                 var wrapper = wrapperCtor.Invoke([hook]);
@@ -684,6 +734,34 @@ public abstract class BaseTweak {
                 h.Enable();
             } else {
                 SimpleLog.Warning($"Skipped enabling Tweak Hook [{Name}] {field.Name} - Hook not created");
+            }
+        }
+
+
+        foreach (var (field, attr) in this.GetFieldsWithAttribute<LinkHandlerAttribute>()) {
+            if (field.FieldType != typeof(DalamudLinkPayload)) {
+                Plugin.Error(this, new Exception($"Invalid LinkHandler '{field.Name}' must be DalamudLinkPayload."));
+                continue;
+            }
+            DalamudLinkPayload handler = null;
+            if (string.IsNullOrEmpty(attr.MethodName)) {
+                handler = Service.Chat.AddChatLinkHandler((uint) attr.Id, (i, s) => { });
+            } else {
+                var method = this.GetType().GetMethod(attr.MethodName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                var methodParams = method.GetParameters();
+
+                handler = methodParams.Length switch {
+                    0 => Service.Chat.AddChatLinkHandler((uint)attr.Id, (i, s) => { method.Invoke(this, []); }),
+                    1 when methodParams[0].ParameterType == typeof(SeString) => Service.Chat.AddChatLinkHandler((uint)attr.Id, (i, s) => { method.Invoke(this, [s]); }),
+                    2 when methodParams[0].ParameterType == typeof(uint) && methodParams[1].ParameterType == typeof(SeString) => Service.Chat.AddChatLinkHandler((uint)attr.Id, (i, s) => { method.Invoke(this, [i, s]); }),
+                    _ => handler
+                };
+            }
+           
+            if (handler == null) {
+                Plugin.Error(this, new Exception($"Invalid LinkHandler '{field.Name}'."));
+            } else {
+                field.SetValue(this, handler);
             }
         }
         
@@ -704,6 +782,13 @@ public abstract class BaseTweak {
             SimpleLog.Verbose($"Disable Tweak Hook: [{Name}] {field.Name}");
             if (field.GetValue(this) is IHookWrapper h) {
                 h.Disable();
+            }
+        }
+
+        foreach (var (field, attr) in this.GetFieldsWithAttribute<LinkHandlerAttribute>()) {
+            if (field.FieldType != typeof(DalamudLinkPayload)) continue;
+            if (field.GetValue(this) is DalamudLinkPayload v) {
+                Service.Chat.RemoveChatLinkHandler(v.CommandId);
             }
         }
 
@@ -837,4 +922,8 @@ public abstract class BaseTweak {
     }
 
     #endregion
+
+    public virtual void Test() {
+        
+    }
 }

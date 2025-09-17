@@ -6,7 +6,8 @@ using System.Numerics;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
+using SimpleTweaksPlugin.Utility;
 
 namespace SimpleTweaksPlugin;
 
@@ -62,8 +63,8 @@ public class ConfigWindow : SimpleWindow {
                 if (hat != null) {
                     var dl2 = IsFocused ? ImGui.GetForegroundDrawList() : ImGui.GetBackgroundDrawList();
                     var hatPos = ImGui.GetWindowPos() - hat.Size * new Vector2(0.35f, 0.35f);
-                    dl.AddImage(hat.ImGuiHandle, hatPos, hatPos + hat.Size, Vector2.Zero, Vector2.One, 0xAAFFFFFF);
-                    dl2.AddImage(hat.ImGuiHandle, hatPos, hatPos + hat.Size, Vector2.Zero, Vector2.One, 0xAAFFFFFF);
+                    dl.AddImage(hat.Handle, hatPos, hatPos + hat.Size, Vector2.Zero, Vector2.One, 0xAAFFFFFF);
+                    dl2.AddImage(hat.Handle, hatPos, hatPos + hat.Size, Vector2.Zero, Vector2.One, 0xAAFFFFFF);
                 }
 
                 break;
@@ -93,25 +94,27 @@ public class ConfigWindow : SimpleWindow {
 
         for (var i = 0; i < Math.Ceiling((ImGui.GetWindowSize() / 2).X) + 1; i++) {
             var texture = textures[i % textures.Count];
-            if (texture == null || texture.ImGuiHandle == IntPtr.Zero) continue;
+            if (texture == null || texture.Handle == IntPtr.Zero) continue;
             if (i != 0) {
                 var p1 = p - (size * Vector2.UnitX) * i;
-                dl.AddImage(texture.ImGuiHandle, p1, p1 + size, Vector2.Zero, Vector2.One, 0x40FFFFFF);
+                dl.AddImage(texture.Handle, p1, p1 + size, Vector2.Zero, Vector2.One, 0x40FFFFFF);
 
                 var p2 = p + (size * Vector2.UnitX) * i;
-                dl.AddImage(texture.ImGuiHandle, p2, p2 + size, Vector2.Zero, Vector2.One, 0x40FFFFFF);
+                dl.AddImage(texture.Handle, p2, p2 + size, Vector2.Zero, Vector2.One, 0x40FFFFFF);
             } else {
-                dl.AddImage(texture.ImGuiHandle, p, p + size, Vector2.Zero, Vector2.One, 0x40FFFFFF);
+                dl.AddImage(texture.Handle, p, p + size, Vector2.Zero, Vector2.One, 0x40FFFFFF);
             }
         }
     }
 
     public override void Draw() {
         base.Draw();
+        #if !TEST
         FestiveDecorations();
-
+        #endif
         var config = SimpleTweaksPlugin.Plugin.PluginConfig;
 
+#if !TEST
         if (config.AnalyticsOptOut == false && config.MetricsIdentifier?.Length != 64) {
             ImGui.SetWindowFontScale(1.25f);
             ImGui.Text("Simple Tweaks Statistics Collection");
@@ -157,8 +160,23 @@ public class ConfigWindow : SimpleWindow {
 
             return;
         }
-
+        
         SimpleTweaksPlugin.Plugin.PluginConfig.DrawConfigUI();
+        
+#else
+        if (ImGui.BeginTabBar("testBar")) {
+            if (ImGui.BeginTabItem("Test Runner")) {
+                TestUtil.Draw();
+                ImGui.EndTabItem();
+            }
+            if (ImGui.BeginTabItem("Config")) {
+                SimpleTweaksPlugin.Plugin.PluginConfig.DrawConfigUI();
+                ImGui.EndTabItem();
+            }
+            ImGui.EndTabBar();
+        }
+        
+#endif
     }
 
     public override void OnClose() {

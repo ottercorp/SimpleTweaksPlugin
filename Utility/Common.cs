@@ -9,18 +9,23 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.IoC;
 using Dalamud.Networking.Http;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.Attributes;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using FFXIVClientStructs.FFXIV.Client.UI.Shell;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
+using KamiToolKit;
 using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Debugging;
+using SimpleTweaksPlugin.Enums;
 using Action = System.Action;
 using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
@@ -36,6 +41,7 @@ public unsafe class Common {
     public static uint ClientStructsVersion => CsVersion.Value;
     private static readonly Lazy<uint> CsVersion = new(() => (uint?)typeof(FFXIVClientStructs.ThisAssembly).Assembly.GetName().Version?.Build ?? 0U);
 
+    public static NativeController NativeController { get; private set; }
     public static event Action FrameworkUpdate;
 
     public static void InvokeFrameworkUpdate() {
@@ -55,11 +61,13 @@ public unsafe class Common {
     public static void* ThrowawayOut { get; private set; } = (void*)Marshal.AllocHGlobal(1024);
 
     public static void Setup() {
-        LastCommandAddress = Service.SigScanner.GetStaticAddressFromSig("4C 8D 05 ?? ?? ?? ?? 41 B1 01 49 8B D4 E8 ?? ?? ?? ?? 83 EB 06");
+        LastCommandAddress = Service.SigScanner.GetStaticAddressFromSig("4C 8D 05 ?? ?? ?? ?? 49 8B D4 48 8B C8 E8 ?? ?? ?? ?? 83 EB 06");
         LastCommand = (Utf8String*)(LastCommandAddress);
 
         updateCursorHook = Hook<AtkModuleUpdateCursor>("48 89 74 24 ?? 48 89 7C 24 ?? 41 56 48 83 EC 20 4C 8B F1 E8 ?? ?? ?? ?? 49 8B CE", UpdateCursorDetour);
         updateCursorHook?.Enable();
+
+        NativeController = new NativeController(Service.PluginInterface);
     }
 
     public static UIModule* UIModule => Framework.Instance()->GetUIModule();
@@ -70,7 +78,7 @@ public unsafe class Common {
     }
 
     public static AtkUnitBase* GetUnitBase(string name, int index = 1) {
-        return (AtkUnitBase*)Service.GameGui.GetAddonByName(name, index);
+        return (AtkUnitBase*)Service.GameGui.GetAddonByName(name, index).Address;
     }
 
     public static T* GetUnitBase<T>(string name = null, int index = 1) where T : unmanaged {
@@ -83,7 +91,7 @@ public unsafe class Common {
 
         if (string.IsNullOrEmpty(name)) return null;
 
-        return (T*)Service.GameGui.GetAddonByName(name, index);
+        return (T*)Service.GameGui.GetAddonByName(name, index).Address;
     }
 
     public static bool GetUnitBase<T>(out T* unitBase, string name = null, int index = 1) where T : unmanaged {
@@ -97,7 +105,7 @@ public unsafe class Common {
 
         if (string.IsNullOrEmpty(name)) return false;
 
-        unitBase = (T*)Service.GameGui.GetAddonByName(name, index);
+        unitBase = (T*)Service.GameGui.GetAddonByName(name, index).Address;
         return unitBase != null;
     }
 
@@ -324,6 +332,18 @@ public unsafe class Common {
         return sibNode != null ? GetNodeByIDChain(sibNode, ids) : null;
     }
 
+    public static bool AnyFocused(params AtkUnitBase*[] unitBase) {
+        var focusedList = &RaptureAtkUnitManager.Instance()->FocusedUnitsList;
+        foreach (var f in focusedList->Entries) {
+            if (f.Value == null) continue;
+            foreach (var u in unitBase) {
+                if (u == f.Value) return true;
+            }
+        }
+
+        return false;
+    }
+    
     public static void Shutdown() {
         if (ThrowawayOut != null) {
             Marshal.FreeHGlobal(new IntPtr(ThrowawayOut));
@@ -333,6 +353,7 @@ public unsafe class Common {
         updateCursorHook?.Disable();
         updateCursorHook?.Dispose();
         httpClient?.Dispose();
+        NativeController.Dispose();
     }
 
     public const int UnitListCount = 18;
