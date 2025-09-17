@@ -43,7 +43,7 @@ public unsafe class PartyUIAdjustments : UiAdjustments.SubTweak
     [AddonPostSetup(["_PartyList"])]
     private void PostSetup()
     {
-        _partyListUi = (AddonPartyList*)Service.GameGui.GetAddonByName("_PartyList");
+        _partyListUi = (AddonPartyList*)Service.GameGui.GetAddonByName("_PartyList").Address;
         Shifted = false;
         SimpleLog.Debug($"PartyListUI = {(nint)_partyListUi:X}");
     }

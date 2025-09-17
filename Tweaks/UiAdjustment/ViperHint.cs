@@ -26,7 +26,7 @@ public unsafe class ViperHint : UiAdjustments.SubTweak
     [AddonPostSetup(["JobHudRDB0"])]
     private void PostSetup()
     {
-        jobHud = (AddonJobHudRDB0*)Service.GameGui.GetAddonByName("JobHudRDB0");
+        jobHud = (AddonJobHudRDB0*)Service.GameGui.GetAddonByName("JobHudRDB0").Address;
         if (jobHud == null) return;
         LeftBlade = jobHud->GaugeStandard.ViperBlades->LeftBlade;
         RightBlade = jobHud->GaugeStandard.ViperBlades->RightBlade;
