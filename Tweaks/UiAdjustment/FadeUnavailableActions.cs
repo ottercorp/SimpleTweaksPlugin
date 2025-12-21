@@ -27,7 +27,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 public unsafe class FadeUnavailableActions : UiAdjustments.SubTweak {
     private delegate void UpdateHotBarSlotDelegate(AddonActionBarBase* addon, ActionBarSlot* uiData, NumberArrayData* numberArray, StringArrayData* stringArray, int numberArrayIndex, int stringArrayIndex);
     
-    [TweakHook, Signature("E8 ?? ?? ?? ?? 49 81 C7 ?? ?? ?? ?? 83 C7 11", DetourName = nameof(OnHotBarSlotUpdate))]
+    [TweakHook, Signature("E8 ?? ?? ?? ?? 48 81 C6 ?? ?? ?? ?? 83 C7 11", DetourName = nameof(OnHotBarSlotUpdate))]
     private readonly HookWrapper<UpdateHotBarSlotDelegate>? onHotBarSlotUpdateHook;
 
     private readonly Dictionary<uint, Action?> actionCache = [];
@@ -103,7 +103,7 @@ public unsafe class FadeUnavailableActions : UiAdjustments.SubTweak {
     }
 
     private void ProcessHotBarSlot(ActionBarSlot* hotBarSlotData, NumberArrayData* numberArray, int numberArrayIndex) {
-        if (Service.ClientState.LocalPlayer is { IsCasting: true } ) return;
+        if (Service.Objects.LocalPlayer is { IsCasting: true } ) return;
 
         var numberArrayData = (NumberArrayStruct*) (&numberArray->IntArray[numberArrayIndex]);
 
@@ -120,7 +120,7 @@ public unsafe class FadeUnavailableActions : UiAdjustments.SubTweak {
                 return;
             }
             var actionLevel = action.Value.ClassJobLevel;
-            var playerLevel = Service.ClientState.LocalPlayer?.Level ?? 0;
+            var playerLevel = Service.Objects.LocalPlayer?.Level ?? 0;
 
             switch (action) {
                 case { IsRoleAction: false } when actionLevel > playerLevel:

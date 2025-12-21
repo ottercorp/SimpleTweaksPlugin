@@ -4,7 +4,7 @@ using System.Numerics;
 using System.Reflection;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Interface.Utility;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.Events;
 
 namespace SimpleTweaksPlugin.Debugging;
@@ -13,17 +13,17 @@ public unsafe class EventsDebugging : DebugHelper {
     public override string Name => "Events";
 
     private Dictionary<AddonEvent, Dictionary<string, List<EventController.EventSubscriber>>>? addonEventDict;
-    private List<EventController.EventSubscriber> frameworkSubscribers;
-    private List<EventController.EventSubscriber> territoryChangedSubscribers;
+    private List<EventController.EventSubscriber>? frameworkSubscribers;
+    private List<EventController.EventSubscriber>? territoryChangedSubscribers;
 
     private bool viewingFramework;
     private bool viewingTerritoryChanged;
     private AddonEvent selectedType;
 
     public override void Draw() {
-        addonEventDict ??= (Dictionary<AddonEvent, Dictionary<string, List<EventController.EventSubscriber>>>)typeof(EventController).GetProperty("AddonEventSubscribers", BindingFlags.Static | BindingFlags.NonPublic)?.GetValue(null);
-        frameworkSubscribers ??= (List<EventController.EventSubscriber>)typeof(EventController).GetProperty("FrameworkUpdateSubscribers", BindingFlags.Static | BindingFlags.NonPublic)?.GetValue(null);
-        territoryChangedSubscribers ??= (List<EventController.EventSubscriber>)typeof(EventController).GetProperty("TerritoryChangedSubscribers", BindingFlags.Static | BindingFlags.NonPublic)?.GetValue(null);
+        addonEventDict ??= (Dictionary<AddonEvent, Dictionary<string, List<EventController.EventSubscriber>>>?)typeof(EventController).GetProperty("AddonEventSubscribers", BindingFlags.Static | BindingFlags.NonPublic)?.GetValue(null);
+        frameworkSubscribers ??= (List<EventController.EventSubscriber>?)typeof(EventController).GetProperty("FrameworkUpdateSubscribers", BindingFlags.Static | BindingFlags.NonPublic)?.GetValue(null);
+        territoryChangedSubscribers ??= (List<EventController.EventSubscriber>?)typeof(EventController).GetProperty("TerritoryChangedSubscribers", BindingFlags.Static | BindingFlags.NonPublic)?.GetValue(null);
 
         if (addonEventDict == null || frameworkSubscribers == null || territoryChangedSubscribers == null) return;
 
@@ -68,7 +68,7 @@ public unsafe class EventsDebugging : DebugHelper {
 
                 ShowEventList(territoryChangedSubscribers, true);
             } else {
-                if (addonEventDict.TryGetValue(selectedType, out var selectedTypeDict)) {
+                if (addonEventDict != null && addonEventDict.TryGetValue(selectedType, out var selectedTypeDict)) {
                     var h = true;
                     foreach (var (addonName, list) in selectedTypeDict) {
                         ImGui.SetWindowFontScale(1.25f);

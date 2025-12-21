@@ -114,8 +114,7 @@ public unsafe class ComboTimer : UiAdjustments.SubTweak {
                 newTextNode->LineSpacing = 24;
                 newTextNode->AlignmentFontType = 0x14;
                 newTextNode->FontSize = 12;
-                newTextNode->TextFlags = (byte)(TextFlags.Edge);
-                newTextNode->TextFlags2 = 0;
+                newTextNode->TextFlags = TextFlags.Edge;
 
                 newTextNode->AtkResNode.NodeId = CustomNodes.ComboTimer;
 
@@ -163,13 +162,13 @@ public unsafe class ComboTimer : UiAdjustments.SubTweak {
             comboActions.Add(combo->Action, Service.Data.Excel.GetSheet<Action>().OrderBy(a => a.ClassJobLevel).FirstOrNull(a => a.ActionCombo.RowId == combo->Action)?.ClassJobLevel ?? 255);
         }
 
-        var comboAvailable = Service.ClientState?.LocalPlayer != null && combo->Timer > 0 && combo->Action != 0 && comboActions.ContainsKey(combo->Action) && comboActions[combo->Action] <= Service.ClientState.LocalPlayer.Level;
+        var comboAvailable = Service.Objects.LocalPlayer != null && combo->Timer > 0 && combo->Action != 0 && comboActions.ContainsKey(combo->Action) && comboActions[combo->Action] <= Service.Objects.LocalPlayer.Level;
 
         if (Config.AlwaysVisible || comboAvailable) {
             textNode->AtkResNode.ToggleVisibility(true);
             UiHelper.SetPosition(textNode, -45 + Config.OffsetX, 15 + Config.OffsetY);
             textNode->AlignmentFontType = 0x14;
-            textNode->TextFlags |= (byte)TextFlags.MultiLine;
+            textNode->TextFlags |= TextFlags.MultiLine;
 
             textNode->EdgeColor.R = (byte)(Config.EdgeColor.X * 0xFF);
             textNode->EdgeColor.G = (byte)(Config.EdgeColor.Y * 0xFF);

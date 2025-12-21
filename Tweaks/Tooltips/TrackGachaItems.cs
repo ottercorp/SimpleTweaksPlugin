@@ -51,14 +51,11 @@ public unsafe class TrackGachaItems : TooltipTweaks.SubTweak {
         ],
     };
 
-    private DalamudLinkPayload? identifier;
+    [LinkHandler(LinkHandlerId.TrackGachaItemsIdentifier)]
+    private DalamudLinkPayload identifier;
 
     [TweakHook(typeof(UIState), nameof(UIState.IsItemActionUnlocked), nameof(IsItemActionUnlockedDetour))]
     private HookWrapper<UIState.Delegates.IsItemActionUnlocked>? isItemActionUnlockedHookWrapper;
-
-    protected override void Enable() {
-        identifier = PluginInterface.AddChatLinkHandler((uint)LinkHandlerId.TrackGachaItemsIdentifier, (_, _) => { });
-    }
 
     private bool IsGachaFullyObtained(uint[] gachaList, out int obtainedCount) {
         obtainedCount = 0;
@@ -70,7 +67,7 @@ public unsafe class TrackGachaItems : TooltipTweaks.SubTweak {
             var obtained = false;
             var action = gachaResultItem.Value.ItemAction;
             if (!action.IsValid || action.RowId == 0) continue;
-            switch (action.Value.Type) {
+            switch (action.Value.Action.RowId) {
                 case 1322:
                     // Mount
                     obtained = UIState.Instance()->PlayerState.IsMountUnlocked(action.Value.Data[0]);
@@ -84,7 +81,7 @@ public unsafe class TrackGachaItems : TooltipTweaks.SubTweak {
                     obtained = UIState.Instance()->IsTripleTriadCardUnlocked((ushort)gachaResultItem.Value.AdditionalData.RowId);
                     break;
                 default:
-                    Plugin.Error(this, new Exception($"Unhandled Item Action Type: {action.Value.Type}"), true);
+                    Plugin.Error(this, new Exception($"Unhandled Item Action Type: {action.Value.Action.RowId}"), true);
                     break;
             }
 
@@ -102,8 +99,8 @@ public unsafe class TrackGachaItems : TooltipTweaks.SubTweak {
         if (!Gachas.TryGetValue(Item.ItemId, out var gachaList)) return;
         var fullyObtained = IsGachaFullyObtained(gachaList, out var obtainedCount);
         var description = GetTooltipString(stringArrayData, TooltipTweaks.ItemTooltipField.ItemDescription);
-
-        if (description.Payloads.Any(payload => payload is DalamudLinkPayload { CommandId: (uint)LinkHandlerId.TrackGachaItemsIdentifier })) return; // Don't append when it already exists.
+        if (description == null) return;
+        if (description.Payloads.Any(payload => payload is DalamudLinkPayload dlp && dlp.CommandId == identifier.CommandId)) return; // Don't append when it already exists.
 
         description.Payloads.Add(identifier);
         description.Payloads.Add(RawPayload.LinkTerminator);
@@ -134,9 +131,5 @@ public unsafe class TrackGachaItems : TooltipTweaks.SubTweak {
         }
 
         return isItemActionUnlockedHookWrapper!.Original(uiState, item);
-    }
-
-    protected override void Disable() {
-        PluginInterface.RemoveChatLinkHandler((uint)LinkHandlerId.TrackGachaItemsIdentifier);
     }
 }

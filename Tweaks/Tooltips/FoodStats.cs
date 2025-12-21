@@ -6,7 +6,7 @@ using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
@@ -104,7 +104,7 @@ public unsafe class FoodStats : TooltipTweaks.SubTweak {
     }
 
     public override void OnGenerateItemTooltip(NumberArrayData* numberArrayData, StringArrayData* stringArrayData) {
-        if (Service.ClientState.LocalPlayer == null) return;
+        if (Service.Objects.LocalPlayer == null) return;
         var id = AgentItemDetail.Instance()->ItemId;
         if (id >= 2000000) return;
         var hq = id >= 500000;
@@ -115,13 +115,13 @@ public unsafe class FoodStats : TooltipTweaks.SubTweak {
         var action = item.ItemAction.Value;
         
 
-        if (action is { Type : 847 }) {
+        if (action is { Action.RowId: 847 }) {
             // Healing Potion
             var percentNumber = hq ? action.DataHQ[0] : action.Data[0];
             var percent = percentNumber / 100f;
 
             var max = hq ? action.DataHQ[1] : action.Data[1];
-            var actual = Math.Floor(Service.ClientState.LocalPlayer.MaxHp * percent);
+            var actual = Math.Floor(Service.Objects.LocalPlayer.MaxHp * percent);
 
             var seStr = hpPotionEffectString;
 
@@ -137,7 +137,7 @@ public unsafe class FoodStats : TooltipTweaks.SubTweak {
             SetTooltipString(stringArrayData, TooltipTweaks.ItemTooltipField.Effects, seStr);
         }
 
-        if (action is not { Type: 844 or 845 or 846 }) return;
+        if (action is not { Action.RowId: 844 or 845 or 846 }) return;
 
         if (!foodSheet.TryGetRow(hq ? action.DataHQ[1] : action.Data[1], out var itemFood)) return;
         var payloads = new List<Payload>();

@@ -7,7 +7,7 @@ using Dalamud.Memory;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Common.Configuration;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using ConfigType = Dalamud.Game.Config.ConfigType;
 
 namespace SimpleTweaksPlugin.Debugging;
@@ -19,7 +19,6 @@ public unsafe class ConfigDebug : DebugHelper {
 
     private void DrawConfigBase(ConfigBase* configBase) {
         ImGui.Text($"Config Count: {configBase->ConfigCount}");
-        ImGui.Text($"{configBase->UnkString.ToString()}");
 
         DebugManager.PrintAddress(configBase);
         ImGui.SameLine();
@@ -374,7 +373,7 @@ public enum UiControlOption
         return (attr?.Type, attr?.Name);
     }
     
-    private void OnConfigChange(object sender, ConfigChangeEvent e) {
+    private void OnConfigChange(object? sender, ConfigChangeEvent e) {
         
         var section = e.Option switch {
             SystemConfigOption => Service.GameConfig.System,

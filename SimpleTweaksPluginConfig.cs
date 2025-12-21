@@ -1,5 +1,5 @@
 ﻿using Dalamud.Configuration;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -34,7 +34,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
 
     public List<string> EnabledTweaks = new();
     public List<string> HiddenTweaks = new();
-    public List<string> CustomProviders;
+    public List<string>? CustomProviders;
     public bool ShouldSerializeCustomProviders() => CustomProviders != null;
     
     public List<CustomTweakProviderConfig> CustomTweakProviders = new();
@@ -65,6 +65,8 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
 
     public string CustomCulture = string.Empty;
     public string Language;
+    public DateTime LanguageListUpdate = DateTime.MinValue;
+    public Dictionary<string, DateTime> LanguageUpdates = new();
 
     public string LastSeenChangelog = string.Empty;
     public bool AutoOpenChangelog;
@@ -105,7 +107,9 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
     }
     
     public void Save() {
+        #if !TEST
         Service.PluginInterface.SavePluginConfig(this);
+        #endif
     }
     
     [NonSerialized] private string searchInput = string.Empty;
@@ -139,13 +143,13 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
     private record TweakCategoryContainer(string CategoryName) {
         public string LocalizedName => LocalizedCategoryName(CategoryName);
         public List<BaseTweak> Tweaks = new();
-        public virtual bool Equals(TweakCategoryContainer other) => CategoryName == other?.CategoryName;
+        public virtual bool Equals(TweakCategoryContainer? other) => CategoryName == other?.CategoryName;
         public override int GetHashCode() => CategoryName.GetHashCode();
     }
 
-    [NonSerialized] private static List<TweakCategoryContainer> _tweakCategories;
-    [NonSerialized] private static List<BaseTweak> _allTweaks;
-    [NonSerialized] private static List<BaseTweak> _enabledTweaks;
+    [NonSerialized] private static List<TweakCategoryContainer>? _tweakCategories;
+    [NonSerialized] private static List<BaseTweak>? _allTweaks;
+    [NonSerialized] private static List<BaseTweak>? _enabledTweaks;
 
     private void DrawTweakConfig(BaseTweak t, ref bool hasChange) {
         var enabled = t.Enabled;
@@ -477,7 +481,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                         if (ImGui.Checkbox(LocalizedCategoryName("Enabled Tweaks"), ref ShowEnabledTweaksTab)) Save();
                         if (ImGui.Checkbox(LocalizedCategoryName("All Tweaks"), ref ShowAllTweaksTab)) Save();
 
-                        string categoryDescription;
+                        string? categoryDescription;
                         foreach (var c in HiddenCategories.Select(s => new TweakCategoryContainer(s)).Union(tweakCategories.Where(c => c.Tweaks.Any(IsTweakVisible))).OrderBy(c => c.LocalizedName)) {
                             if (c.CategoryName == $"{TweakCategory.Other}") continue;
                             if (c.CategoryName == $"{TweakCategory.Experimental}" && ShowExperimentalTweaks == false) continue;
@@ -596,15 +600,13 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                                 }
 #endif
 
-                                var locDir = Service.PluginInterface.GetPluginLocDirectory();
-
-                                var locFiles = Directory.GetDirectories(locDir);
-
-                                foreach (var f in locFiles) {
-                                    var dir = new DirectoryInfo(f);
-                                    if (ImGui.Selectable($"{dir.Name}##LanguageSelection", Language == dir.Name)) {
-                                        Language = dir.Name;
-                                        plugin.SetupLocalization();
+                                foreach (var lang in LanguageUpdates.Keys) {
+                                    if (ImGui.Selectable($"{lang}##LanguageSelection", Language == lang)) {
+                                        Language = lang;
+                                        Loc.UpdateTranslations(ImGui.GetIO().KeyShift, () => {
+                                            plugin.SetupLocalization();
+                                        });
+                                        
                                         Save();
                                     }
                                 }
@@ -615,7 +617,15 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                             ImGui.SameLine();
 
                             if (ImGui.SmallButton("Update Translations")) {
-                                Loc.UpdateTranslations();
+#if DEBUG
+                                if (ImGui.GetIO().KeyAlt) {
+                                    LanguageUpdates.Clear();
+                                } else {
+#endif
+                                Loc.UpdateTranslations(ImGui.GetIO().KeyShift);
+#if DEBUG           
+                                }
+#endif
                             }
 
 #if DEBUG
@@ -726,7 +736,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
                     if (HiddenTweaks.Count > 0) {
                         if (ImGui.CollapsingHeader($"Hidden Tweaks ({HiddenTweaks.Count})###hiddenTweaks")) {
                             ImGui.Indent();
-                            string removeKey = null;
+                            string? removeKey = null;
                             foreach (var hidden in HiddenTweaks) {
                                 var tweak = plugin.GetTweakById(hidden);
                                 if (tweak == null) continue;

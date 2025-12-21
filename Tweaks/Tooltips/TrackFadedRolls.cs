@@ -23,15 +23,8 @@ public unsafe class TrackFadedRolls : TooltipTweaks.SubTweak {
     [TweakHook(typeof(UIState), nameof(UIState.IsItemActionUnlocked), nameof(IsItemActionUnlockedDetour))]
     private HookWrapper<UIState.Delegates.IsItemActionUnlocked> isItemActionUnlockedHookWrapper;
 
+    [LinkHandler(LinkHandlerId.TrackFadedRollsIdentifier)]
     private DalamudLinkPayload identifier;
-
-    protected override void Enable() {
-        identifier = PluginInterface.AddChatLinkHandler((uint) LinkHandlerId.TrackFadedRollsIdentifier, (_, _) => { });
-    }
-
-    protected override void Disable() {
-        PluginInterface.RemoveChatLinkHandler((uint)LinkHandlerId.TrackFadedRollsIdentifier);
-    }
     
    private long IsItemActionUnlockedDetour(UIState* uiState, void* item) {
         if (!IsHoveredItemOrchestrion(out var luminaItem)) {
@@ -50,8 +43,8 @@ public unsafe class TrackFadedRolls : TooltipTweaks.SubTweak {
         var craftResults = GetRollsCraftedWithItem(luminaItem);
         if (craftResults.Count > 1) {
             var description = GetTooltipString(stringArrayData, TooltipTweaks.ItemTooltipField.ItemDescription);
-            
-            if (description.Payloads.Any(payload => payload is DalamudLinkPayload { CommandId: (uint)LinkHandlerId.TrackFadedRollsIdentifier })) return; // Don't append when it already exists.
+            if (description == null) return;
+            if (description.Payloads.Any(payload => payload is DalamudLinkPayload dlp && dlp.CommandId == identifier.CommandId)) return; // Don't append when it already exists.
 
             description.Payloads.Add(identifier);
             description.Payloads.Add(RawPayload.LinkTerminator);

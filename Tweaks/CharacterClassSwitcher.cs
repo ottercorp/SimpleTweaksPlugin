@@ -56,8 +56,6 @@ public unsafe class CharacterClassSwitcher : Tweak {
         { 18, 88 }, // FSH
     };
 
-    [TweakHook] private HookWrapper<AtkUnitBase.Delegates.ReceiveEvent> eventHook;
-
     [AddonPostSetup("CharacterClass")]
     private void SetupCharacterClass(AtkUnitBase* atkUnitBase) {
         if (atkUnitBase != null) {
@@ -127,7 +125,7 @@ public unsafe class CharacterClassSwitcher : Tweak {
         }
 
         if (eventType == AtkEventType.InputReceived) {
-            var a5 = (byte*)args.Data;
+            var a5 = (byte*)args.AtkEventData;
             if (a5 == null || a5[0] != 0x01 || a5[4] != 1) {
                 return;
             }

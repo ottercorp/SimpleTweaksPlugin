@@ -61,11 +61,6 @@
   Allows setting a custom amount to deposit or withdraw when using the 'Retrieve Quantity' and 'Entrust Quantity' options.
 
 
-- **Customize Group Pose Camera Control**
-
-  Allows you to customize the camera control in group pose
-
-
 - **Data Centre on Title Screen**
 
   Shows the current Data Centre on the Title Screen
@@ -124,6 +119,11 @@
 - **Emote Log Subcommand**
 
   Adds a 'text' subcommand for emotes when emotelog is disabled.  /yes text
+
+
+- **Enable chat bubbles in combat**
+
+  Allow chat bubbles to be displayed while in combat.
 
 
 - **Ensure tooltips remain on screen**
@@ -204,6 +204,11 @@
 - **Improved Sent Message History**
 
   Recover messages after accidentally pressing up in the chat, and increase the amount of history retained.
+
+
+- **Increase max line count in chat bubbles**
+
+  Allow upto 7 lines of text to be displayed in chat bubbles.
 
 
 - **Increased zoom on character previews**
@@ -796,11 +801,6 @@
   Calculates the item level of other players when examining them.
 
   Red value means the player is wearing an item that scales to their level and it is showing the max level.
-
-
-- **Label Submarine Destinations with Letters**
-
-  Uses the standard A-Z lettering to identify submarine destinations for easier use with other tools.
 
 
 - **Limit Break Adjustments**

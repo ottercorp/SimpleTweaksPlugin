@@ -1,5 +1,51 @@
 # Changelog
 
+## 1.10.12.6
+***Tweak Changes***
+- **`Fix '/target' command`** - Add ability to clear target by providing no name.
+
+
+## 1.10.12.1
+***Tweak Changes***
+- **`Increase max line count in chat bubbles`** - Added ability to adjust the duration of chat bubbles.
+
+
+## 1.10.12.0
+***General Changes***
+- Disabled error messages in chat when using a tweak command in a macro after using '/macroerror off'.
+
+***New Tweaks***
+- **`Enable chat bubbles in combat`** - Allow chat bubbles to be displayed while in combat.
+
+
+## 1.10.11.1
+***New Tweaks***
+- **`Increase max line count in chat bubbles`** - Allow upto 7 lines of text to be displayed in chat bubbles.
+
+
+***Tweak Changes***
+- **`Adjust Equipment Positions`** - Fixed incorrect ordering of equipment.
+
+- **`Reduced Deep Dungeon Info`** - Fixed crash.
+
+## 1.10.11.0
+***General Changes***
+- Fixed translation loading.
+
+***New Tweaks***
+- **`Use Steam Floating Keyboard`** - Replaces the default Steam Virtual Keyboard with one that doesn't take over the screen. *(KazWolfe)*
+
+
+***Tweak Changes***
+- **`Accurate Venture Times`** - Reduced the size of the timer when not using simple display.
+
+- **`Auto Lock Action Bars`** - Added option to automatically unlock after combat ends. *(SitiSchu)*
+
+- **`Change Map Area Colours`** - Added reset button to return option to default colour.
+
+- **`Keyboard Gaming Mode`** - Added option to block Caps Lock key *(KazWolfe)*
+
+
 ## 1.10.10.0
 ***New Tweaks***
 - **`Phantom Job Command`** - Adds a command to switch phantom jobs within Occult Crescent

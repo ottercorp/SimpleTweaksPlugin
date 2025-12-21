@@ -35,15 +35,15 @@ public unsafe class ImprovedCraftingLog : Tweak {
     [TweakHook, Signature("E8 ?? ?? ?? ?? 48 8B 4B 10 33 FF C6 83", DetourName = nameof(CancelCraftingDetour))]
     private readonly HookWrapper<CancelCrafting> cancelCraftingHook = null!;
 
-    [TweakHook, Signature("40 55 53 56 57 41 56 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 0F 4C 8B 75 7F 49 8B D9 0F B7 C2 41 8B F8", DetourName = nameof(ReceiveEventDetour))]
+    [TweakHook, Signature("40 55 53 56 57 41 56 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 0F 48 8B 75 7F 49 8B D9 0F B7 C2 41 8B F8", DetourName = nameof(ReceiveEventDetour))]
     private readonly HookWrapper<AtkUnitBase.Delegates.ReceiveEvent> receiveEventHook = null!;
 
     protected override void Enable() {
-        passThroughFunction = (delegate*<RecipeNote*, void*>)Service.SigScanner.ScanText("E8 ?? ?? ?? ?? 0F B6 C3 48 8B 5C 24 ?? 48 83 C4 20 5D");
+        passThroughFunction = (delegate*<RecipeNote*, void*>)Service.SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8D 8F ?? ?? ?? ?? E8 ?? ?? ?? ?? 33 F6 48 89 B7");
 
         Service.Commands.AddHandler("/stopcrafting", new CommandInfo(((_, _) => {
-            if (Service.ClientState.LocalPlayer != null && !standingUp) {
-                var localPlayer = (Character*)Service.ClientState.LocalPlayer.Address;
+            if (Service.Objects.LocalPlayer != null && !standingUp) {
+                var localPlayer = (Character*)Service.Objects.LocalPlayer.Address;
                 var addon = Common.GetUnitBase("RecipeNote");
                 if (addon != null) {
                     GetCraftReadyState(out var selectedRecipeId);
@@ -111,7 +111,7 @@ public unsafe class ImprovedCraftingLog : Tweak {
 
             switch (readyState) {
                 case CraftReadyState.AlreadyCrafting: {
-                    if (Service.ClientState.LocalPlayer != null && !standingUp) {
+                    if (Service.Objects.LocalPlayer != null && !standingUp) {
                         ReopenCraftingLog();
                     } else {
                         return true;
@@ -145,8 +145,8 @@ public unsafe class ImprovedCraftingLog : Tweak {
             removeFrameworkUpdateEventStopwatch.Stop();
         }
 
-        if (standingUp == false || Service.ClientState.LocalPlayer == null) return;
-        var localPlayer = (Character*)Service.ClientState.LocalPlayer.Address;
+        if (standingUp == false || Service.Objects.LocalPlayer == null) return;
+        var localPlayer = (Character*)Service.Objects.LocalPlayer.Address;
         if (localPlayer->Mode != CharacterModes.Crafting) {
             standingUp = false;
         }
@@ -168,7 +168,7 @@ public unsafe class ImprovedCraftingLog : Tweak {
 
     private CraftReadyState GetCraftReadyState(ref uint requiredClass, out ushort selectedRecipeId) {
         selectedRecipeId = 0;
-        if (Service.ClientState.LocalPlayer == null) return CraftReadyState.NotReady;
+        if (Service.Objects.LocalPlayer == null) return CraftReadyState.NotReady;
         var uiRecipeNote = RecipeNote.Instance();
         if (uiRecipeNote == null || uiRecipeNote->RecipeList == null) return CraftReadyState.NotReady;
         var selectedRecipe = uiRecipeNote->RecipeList->SelectedRecipe;
@@ -176,8 +176,8 @@ public unsafe class ImprovedCraftingLog : Tweak {
         selectedRecipeId = selectedRecipe->RecipeId;
         if (selectedRecipe->CraftType >= 8) return CraftReadyState.NotReady;
         requiredClass = uiRecipeNote->Jobs[selectedRecipe->CraftType];
-        if (Service.ClientState.LocalPlayer.ClassJob.RowId == requiredClass) return CraftReadyState.Ready;
-        var localPlayer = (Character*)Service.ClientState.LocalPlayer.Address;
+        if (Service.Objects.LocalPlayer.ClassJob.RowId == requiredClass) return CraftReadyState.Ready;
+        var localPlayer = (Character*)Service.Objects.LocalPlayer.Address;
         return localPlayer->Mode == CharacterModes.Crafting ? CraftReadyState.AlreadyCrafting : CraftReadyState.WrongClass;
     }
 
@@ -201,7 +201,7 @@ public unsafe class ImprovedCraftingLog : Tweak {
 
     private void ReopenCraftingLog() {
         if (!Common.GetUnitBase("RecipeNote", out var addon)) return;
-        var localPlayer = (Character*)(Service.ClientState.LocalPlayer?.Address ?? nint.Zero);
+        var localPlayer = (Character*)(Service.Objects.LocalPlayer?.Address ?? nint.Zero);
         if (localPlayer == null) return;
 
         GetCraftReadyState(out var selectedRecipeId);

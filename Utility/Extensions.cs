@@ -15,6 +15,7 @@ using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
+using FFXIVClientStructs.STD;
 using Lumina.Excel;
 using SimpleTweaksPlugin.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
@@ -171,11 +172,11 @@ public static class Extensions {
         return new PointerSpanUnboxer<T>(span);
     }
 
-    internal static IEnumerable<(FieldInfo Field, TAttribute Attribute)> GetFieldsWithAttribute<TAttribute>(this object obj, BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) where TAttribute : Attribute {
+    internal static IEnumerable<(FieldInfo Field, TAttribute? Attribute)> GetFieldsWithAttribute<TAttribute>(this object obj, BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) where TAttribute : Attribute {
         return obj.GetType().GetFields(flags).Select(f => (f, f.GetCustomAttribute<TAttribute>())).Where(f => f.Item2 != null);
     }
     
-    public static unsafe string ValueString(this AtkValue v) {
+    public unsafe static string ValueString(this AtkValue v) {
         return v.Type switch {
             ValueType.Int => $"{v.Int}",
             ValueType.String => Marshal.PtrToStringUTF8(new IntPtr(v.String)),
@@ -186,7 +187,7 @@ public static class Extensions {
             ValueType.ManagedString => Marshal.PtrToStringUTF8(new IntPtr(v.String))?.TrimEnd('\0') ?? string.Empty,
             ValueType.ManagedVector => "[Managed Vector]",
             _ => $"Unknown Type: {v.Type}"
-        };
+        } ?? string.Empty;
     }
     
     /// <summary> Return the first object fulfilling the predicate or null for structs. </summary>
@@ -205,15 +206,24 @@ public static class Extensions {
 
     public static TExtension GetExtension<TExtension, TBase>(this TBase row) where TExtension : struct, IExcelRow<TExtension>, IRowExtension<TExtension, TBase> where TBase : struct, IExcelRow<TBase> => TExtension.GetExtended(row);
 
-    public static bool TryGetAttribute<TAttribute>(this Type type, [NotNullWhen(true)] out TAttribute attribute) where TAttribute : Attribute {
+    public static bool TryGetAttribute<TAttribute>(this Type type, [NotNullWhen(true)] out TAttribute? attribute) where TAttribute : Attribute {
         attribute = type.GetCustomAttribute<TAttribute>();
         return attribute != null;
     }
 
-    public static bool IsPressed(this ModifierFlag modifierFlag) {
+    public static bool IsPressed(this AtkEventData.AtkMouseData.ModifierFlag modifierFlag) {
         return 
-            Service.KeyState[VirtualKey.SHIFT] == modifierFlag.HasFlag(ModifierFlag.Shift) &&
-            Service.KeyState[VirtualKey.MENU] == modifierFlag.HasFlag(ModifierFlag.Alt) &&
-            Service.KeyState[VirtualKey.CONTROL] == modifierFlag.HasFlag(ModifierFlag.Ctrl);
+            Service.KeyState[VirtualKey.SHIFT] == modifierFlag.HasFlag(AtkEventData.AtkMouseData.ModifierFlag.Shift) &&
+            Service.KeyState[VirtualKey.MENU] == modifierFlag.HasFlag(AtkEventData.AtkMouseData.ModifierFlag.Alt) &&
+            Service.KeyState[VirtualKey.CONTROL] == modifierFlag.HasFlag(AtkEventData.AtkMouseData.ModifierFlag.Ctrl);
     }
+
+
+    public unsafe static T* GetPointer<T>(this StdVector<T> vector, int index) where T : unmanaged {
+        if (index < 0 || index >= vector.Count) throw new IndexOutOfRangeException();
+        var v = vector.First;
+        v += index;
+        return v;
+    }
+    
 }

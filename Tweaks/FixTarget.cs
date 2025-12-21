@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using Dalamud.Game;
@@ -15,8 +15,9 @@ namespace SimpleTweaksPlugin.Tweaks;
 [TweakName("Fix '/target' command")]
 [TweakDescription("Allows using the default '/target' command for targeting players or NPCs by their names.")]
 [Changelog("1.8.3.0", "Fixed tweak not working in french.", Author = "Aireil")]
+[Changelog("1.10.12.6", "Add ability to clear target by providing no name.")]
 public class FixTarget : Tweak {
-    private Regex regex;
+    private Regex? regex;
 
     protected override void Enable() {
         regex = Service.ClientState.ClientLanguage switch {
@@ -35,9 +36,18 @@ public class FixTarget : Tweak {
     }
 
     private unsafe void OnChatMessage(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled) {
+        if (regex == null) return;
         if (type != XivChatType.ErrorMessage) return;
         if (Common.LastCommand == null || Common.LastCommand->StringPtr.Value == null) return;
-        var lastCommandStr = Encoding.UTF8.GetString(Common.LastCommand->StringPtr, (int)Common.LastCommand->BufUsed);
+        var lastCommandStr = Common.LastCommand->ToString();
+        if (lastCommandStr.Equals("/target") || lastCommandStr.Equals("/ziel") || lastCommandStr.Equals("/cibler")) {
+            // Clear target
+            Service.Targets.Target = null;
+            Service.Targets.SoftTarget = null;
+            isHandled = true;
+            return;
+        }
+
         if (!(lastCommandStr.StartsWith("/target ") || lastCommandStr.StartsWith("/ziel ") || lastCommandStr.StartsWith("/cibler "))) {
             return;
         }
@@ -46,12 +56,11 @@ public class FixTarget : Tweak {
         if (!match.Success) return;
         var searchName = match.Groups[1].Value.ToLowerInvariant();
 
-        IGameObject closestMatch = null;
+        IGameObject? closestMatch = null;
         var closestDistance = float.MaxValue;
-        var player = Service.ClientState.LocalPlayer;
+        var player = Service.Objects.LocalPlayer;
         if (player == null) return;
         foreach (var actor in Service.Objects) {
-            if (actor == null) continue;
             if (!actor.Name.TextValue.Contains(searchName, System.StringComparison.InvariantCultureIgnoreCase) || !((GameObjectStruct*)actor.Address)->GetIsTargetable()) continue;
             var distance = Vector3.Distance(player.Position, actor.Position);
             if (closestMatch == null) {

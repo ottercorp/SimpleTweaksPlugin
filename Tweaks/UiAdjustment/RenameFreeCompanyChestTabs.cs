@@ -3,7 +3,7 @@ using Dalamud.Game.Text;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -21,7 +21,7 @@ public unsafe class RenameFreeCompanyChestTabs : UiAdjustments.SubTweak {
     public class Configuration : TweakConfig {
         public Dictionary<ulong, FreeCompanyConfig> FreeCompanies = new();
 
-        public FreeCompanyConfig GetCompanyConfig() {
+        public FreeCompanyConfig? GetCompanyConfig() {
             var fcId = InfoProxyFreeCompany.Instance()->Id;
             return fcId == 0 ? null : FreeCompanies.GetValueOrDefault(fcId);
         }

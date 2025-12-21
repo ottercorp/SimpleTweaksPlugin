@@ -5,7 +5,7 @@ using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -55,7 +55,7 @@ public unsafe class ImprovedInterruptableCastbars : UiAdjustments.SubTweak{
 
     [AddonPostRequestedUpdate("_TargetInfoCastBar", "_TargetInfo", "_FocusTargetInfo")]
     private void OnAddonRequestedUpdate(AddonArgs args) {
-        var addon = (AtkUnitBase*) args.Addon;
+        var addon = (AtkUnitBase*) args.Addon.Address;
         
         switch (args.AddonName) {
             case "_TargetInfoCastBar" when addon->IsVisible:
@@ -96,7 +96,7 @@ public unsafe class ImprovedInterruptableCastbars : UiAdjustments.SubTweak{
         if (interject is null || headGraze is null) return;
         
         if (target as IBattleChara is { IsCasting: true, IsCastInterruptible: true } && castBarVisible) {
-            switch (Service.ClientState.LocalPlayer) {
+            switch (Service.Objects.LocalPlayer) {
                 case { ClassJob.Value.Role: 1, Level: >= 18 }: // Tank
                     interject->ToggleVisibility(true);
                     headGraze->ToggleVisibility(false);
@@ -118,7 +118,7 @@ public unsafe class ImprovedInterruptableCastbars : UiAdjustments.SubTweak{
         var imageNode = UiHelper.MakeImageNode(nodeId, new UiHelper.PartInfo(0, 0, 36, 36));
         imageNode->NodeFlags = NodeFlags.AnchorLeft | NodeFlags.AnchorTop | NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.EmitsEvents;
         imageNode->WrapMode = 1;
-        imageNode->Flags = (byte) ImageNodeFlags.AutoFit;
+        imageNode->Flags = ImageNodeFlags.AutoFit;
         
         imageNode->LoadIconTexture((uint)icon, 0);
         imageNode->ToggleVisibility(true);

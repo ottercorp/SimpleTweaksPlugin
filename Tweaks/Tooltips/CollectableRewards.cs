@@ -51,7 +51,7 @@ public class CollectableRewards : TooltipTweaks.SubTweak {
 
     private class CollectableCachedDetails {
         public sbyte? JobTableIndex;
-        public string JobName;
+        public string? JobName;
         public int LevelMin;
         public int LevelMax;
         public int ScripRewardType;
@@ -72,18 +72,18 @@ public class CollectableRewards : TooltipTweaks.SubTweak {
         }
 
         var craftingJobExpArrayIndex = Service.Data.Excel.GetSheet<ClassJob>()!
-            .Where(job => job.DohDolJobIndex >= 0 && job.ItemSoulCrystal.RowId != 0)
+            .Where(job => job.ClassJobCategory.RowId == 33)
             .ToDictionary(job => job.DohDolJobIndex, job => job.ExpArrayIndex);
 
         var gatheringJobExpArrayIndex = Service.Data.Excel.GetSheet<ClassJob>()!
-            .Where(job => job is { DohDolJobIndex: >= 0, ItemSoulCrystal.RowId: 0 })
+            .Where(job => job.ClassJobCategory.RowId == 32)
             .ToDictionary(job => job.DohDolJobIndex, job => job.ExpArrayIndex);
 
         jobShortName = Service.Data.Excel.GetSheet<ClassJob>()!.Where(job => job.DohDolJobIndex >= 0)
             .Select(job => job.Abbreviation.ToString())
             .ToList();
 
-        Dictionary<uint, (sbyte, string)> rowToJobInfo = new();
+        Dictionary<uint, (sbyte, string?)> rowToJobInfo = new();
 
         // Cache the list of collectable items we support
         foreach (var collectableCollection in Service.Data.Excel.GetSubrowSheet<CollectablesShopItem>()) {
@@ -99,7 +99,7 @@ public class CollectableRewards : TooltipTweaks.SubTweak {
                             entry.index < 8
                                 ? craftingJobExpArrayIndex[(sbyte)entry.index]
                                 : gatheringJobExpArrayIndex[(sbyte)(entry.index - 8)], jobShortName[entry.index]))
-                        .FirstOrDefault((0, null));
+                        .FirstOrDefault();
                     if (jobInfo.Item2 is null) continue;
                     rowToJobInfo.Add(collectable.RowId, jobInfo);
                 }

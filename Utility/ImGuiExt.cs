@@ -6,7 +6,8 @@ using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.UI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Enums;
 
@@ -104,8 +105,9 @@ public static class ImGuiExt {
         uniqueSortedUiForeground.Sort((a, b) => {
             var aRgb = Common.UiColorToVector4(a.Dark);
             var bRgb = Common.UiColorToVector4(b.Dark);
-            ImGui.ColorConvertRGBtoHSV(aRgb.X, aRgb.Y, aRgb.Z, out var aH, out var aS, out var aV);
-            ImGui.ColorConvertRGBtoHSV(bRgb.X, bRgb.Y, bRgb.Z, out var bH, out var bS, out var bV);
+            float aH = 0f, aS = 0f, aV = 0f, bH = 0f, bS = 0f, bV = 0f;
+            ImGui.ColorConvertRGBtoHSV(aRgb.X, aRgb.Y, aRgb.Z, ref aH, ref aS, ref aV);
+            ImGui.ColorConvertRGBtoHSV(bRgb.X, bRgb.Y, bRgb.Z, ref bH, ref bS, ref bV);
             if (aH < bH) return -1;
             if (aH > bH) return 1;
             if (aS < bS) return -1;
@@ -118,8 +120,9 @@ public static class ImGuiExt {
         uniqueSortedUiGlow.Sort((a, b) => {
             var aRgb = Common.UiColorToVector4(a.Light);
             var bRgb = Common.UiColorToVector4(b.Light);
-            ImGui.ColorConvertRGBtoHSV(aRgb.X, aRgb.Y, aRgb.Z, out var aH, out var aS, out var aV);
-            ImGui.ColorConvertRGBtoHSV(bRgb.X, bRgb.Y, bRgb.Z, out var bH, out var bS, out var bV);
+            float aH = 0f, aS = 0f, aV = 0f, bH = 0f, bS = 0f, bV = 0f;
+            ImGui.ColorConvertRGBtoHSV(aRgb.X, aRgb.Y, aRgb.Z, ref aH, ref aS, ref aV);
+            ImGui.ColorConvertRGBtoHSV(bRgb.X, bRgb.Y, bRgb.Z, ref bH, ref bS, ref bV);
             if (aH < bH) return -1;
             if (aH > bH) return 1;
             if (aS < bS) return -1;
@@ -236,31 +239,31 @@ public static class ImGuiExt {
         }
     }
 
-    public static bool ModifierFlagEditor(ref ModifierFlag tweakConfigPanModifier, bool allowNone = false) {
+    public static bool ModifierFlagEditor(ref AtkEventData.AtkMouseData.ModifierFlag tweakConfigPanModifier, bool allowNone = false) {
         var e = false;
         using (ImRaii.Group()) {
             var btnSize = new Vector2(ImGui.GetTextLineHeightWithSpacing() * 2, ImGui.GetTextLineHeightWithSpacing()) + ImGui.GetStyle().FramePadding * 2;
             using (ImRaii.PushColor(ImGuiCol.Button, Vector4.Zero)) {
-                using (ImRaii.PushColor(ImGuiCol.Text, tweakConfigPanModifier.HasFlag(ModifierFlag.Shift) ? ImGuiColors.HealerGreen : ImGuiColors.DPSRed)) {
+                using (ImRaii.PushColor(ImGuiCol.Text, tweakConfigPanModifier.HasFlag(AtkEventData.AtkMouseData.ModifierFlag.Shift) ? ImGuiColors.HealerGreen : ImGuiColors.DPSRed)) {
                     if (ImGui.Button($"SHIFT", btnSize)) {
-                        tweakConfigPanModifier ^= ModifierFlag.Shift;
-                        if (!allowNone && tweakConfigPanModifier == 0) tweakConfigPanModifier = ModifierFlag.Shift;
+                        tweakConfigPanModifier ^= AtkEventData.AtkMouseData.ModifierFlag.Shift;
+                        if (!allowNone && tweakConfigPanModifier == 0) tweakConfigPanModifier = AtkEventData.AtkMouseData.ModifierFlag.Shift;
                         e = true;
                     }
                 }
                 ImGui.SameLine();
-                using (ImRaii.PushColor(ImGuiCol.Text, tweakConfigPanModifier.HasFlag(ModifierFlag.Ctrl) ? ImGuiColors.HealerGreen : ImGuiColors.DPSRed)) {
+                using (ImRaii.PushColor(ImGuiCol.Text, tweakConfigPanModifier.HasFlag(AtkEventData.AtkMouseData.ModifierFlag.Ctrl) ? ImGuiColors.HealerGreen : ImGuiColors.DPSRed)) {
                     if (ImGui.Button("CTRL", btnSize)) {
-                        tweakConfigPanModifier ^= ModifierFlag.Ctrl;
-                        if (!allowNone && tweakConfigPanModifier == 0) tweakConfigPanModifier = ModifierFlag.Ctrl;
+                        tweakConfigPanModifier ^= AtkEventData.AtkMouseData.ModifierFlag.Ctrl;
+                        if (!allowNone && tweakConfigPanModifier == 0) tweakConfigPanModifier = AtkEventData.AtkMouseData.ModifierFlag.Ctrl;
                         e = true;
                     }
                 }
                 ImGui.SameLine();
-                using (ImRaii.PushColor(ImGuiCol.Text, tweakConfigPanModifier.HasFlag(ModifierFlag.Alt) ? ImGuiColors.HealerGreen : ImGuiColors.DPSRed)) {
+                using (ImRaii.PushColor(ImGuiCol.Text, tweakConfigPanModifier.HasFlag(AtkEventData.AtkMouseData.ModifierFlag.Alt) ? ImGuiColors.HealerGreen : ImGuiColors.DPSRed)) {
                     if (ImGui.Button("ALT", btnSize)) {
-                        tweakConfigPanModifier ^= ModifierFlag.Alt;
-                        if (!allowNone && tweakConfigPanModifier == 0) tweakConfigPanModifier = ModifierFlag.Alt;
+                        tweakConfigPanModifier ^= AtkEventData.AtkMouseData.ModifierFlag.Alt;
+                        if (!allowNone && tweakConfigPanModifier == 0) tweakConfigPanModifier = AtkEventData.AtkMouseData.ModifierFlag.Alt;
                         e = true;
                     }
                 }

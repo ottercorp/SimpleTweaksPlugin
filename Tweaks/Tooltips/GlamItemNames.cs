@@ -20,7 +20,7 @@ public unsafe class GlamItemNames : TooltipTweaks.SubTweak {
     private string last = "";
 
     public override void OnGenerateItemTooltip(NumberArrayData* numberArrayData, StringArrayData* stringArrayData) {
-        if (Service.ClientState.LocalPlayer == null) return;
+        if (Service.Objects.LocalPlayer == null) return;
         AtkUnitBase* unitBase = Common.GetUnitBase("ItemDetail");
         if (unitBase == null) return;
 
@@ -33,13 +33,13 @@ public unsafe class GlamItemNames : TooltipTweaks.SubTweak {
         if (vanillaNameNode == null) return;
         vanillaNameNode->ToggleVisibility(true);
 
-        SeString glamName = GetTooltipString(stringArrayData, TooltipTweaks.ItemTooltipField.GlamourName);
+        var glamName = GetTooltipString(stringArrayData, TooltipTweaks.ItemTooltipField.GlamourName);
 
         // We don't need to do anything the item isn't / cannot be glamoured
         if (glamName == null) return;
 
-        SeString normalName = GetTooltipString(stringArrayData, TooltipTweaks.ItemTooltipField.ItemName);
-
+        var normalName = GetTooltipString(stringArrayData, TooltipTweaks.ItemTooltipField.ItemName);
+        if (normalName == null) return;
         normalName.Append(NewLinePayload.Payload);
         normalName.Append(glamName);
 
@@ -79,7 +79,6 @@ public unsafe class GlamItemNames : TooltipTweaks.SubTweak {
         node->AtkResNode.SetPositionFloat(replacedNode->GetXFloat(), replacedNode->GetYFloat());
         node->FontSize = NameDefaultFontSize;
         node->TextFlags = replacedNode->GetAsAtkTextNode()->TextFlags;
-        node->TextFlags2 = replacedNode->GetAsAtkTextNode()->TextFlags2;
         node->AlignmentFontType = replacedNode->GetAsAtkTextNode()->AlignmentFontType;
         node->LineSpacing = replacedNode->GetAsAtkTextNode()->LineSpacing;
         node->SetAlignment(replacedNode->GetAsAtkTextNode()->AlignmentType);

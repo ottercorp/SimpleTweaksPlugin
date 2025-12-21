@@ -8,7 +8,7 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.ExtraPayloads;
 using SimpleTweaksPlugin.TweakSystem;
@@ -41,7 +41,7 @@ public class ChatNameColours : ChatTweaks.SubTweak {
         public ushort DefaultColourKey = 1;
         public Vector3 DefaultColour = Vector3.One;
 
-        public ChannelConfig DefaultChannelConfig = new();
+        public ChannelConfig? DefaultChannelConfig = new();
         public Dictionary<XivChatType, ChannelConfig> ChannelConfigs = new();
     }
 
@@ -78,8 +78,9 @@ public class ChatNameColours : ChatTweaks.SubTweak {
         if (!forceRandom && !Config.RandomColours) return Config.ApplyDefaultColour ? Config.DefaultColour : null;
         var key = $"{playerName}@{worldName}".GetStableHashCode();
         var hue = new Random(key).NextSingle();
-        ImGui.ColorConvertHSVtoRGB(hue, 1, 1, out var r, out var g, out var b);
-        return new Vector3(r, g, b);
+        var c = new Vector3();
+        ImGui.ColorConvertHSVtoRGB(hue, 1, 1, ref c.X, ref c.Y, ref c.Z);
+        return c;
     }
 
     private Vector3? GetGlow(string playerName, string worldName) {
@@ -158,7 +159,7 @@ public class ChatNameColours : ChatTweaks.SubTweak {
 
             ImGui.TableHeadersRow();
 
-            ForcedColour del = null;
+            ForcedColour? del = null;
             foreach (var fc in Config.ForcedColours) {
                 ImGui.TableNextColumn();
 
@@ -233,7 +234,7 @@ public class ChatNameColours : ChatTweaks.SubTweak {
                 Config.ForcedColours.Remove(del);
             }
 
-            if (Service.ClientState?.LocalPlayer != null) {
+            if (Service.Objects.LocalPlayer != null) {
                 ImGui.TableNextColumn();
                 if (ImGui.Button("+##newPlayerName", buttonSize)) {
                     addError = string.Empty;
@@ -251,7 +252,7 @@ public class ChatNameColours : ChatTweaks.SubTweak {
 
                 ImGui.TableNextColumn();
 
-                var currentWorld = Service.ClientState.LocalPlayer.CurrentWorld.Value.Name.ExtractText();
+                var currentWorld = Service.Objects.LocalPlayer.CurrentWorld.Value.Name.ExtractText();
                 var currentRegion = Regions.Find(r => r.DataCentres.Any(dc => dc.Worlds.Contains(currentWorld)));
 
                 ImGui.SetNextItemWidth(-1);
@@ -345,7 +346,7 @@ public class ChatNameColours : ChatTweaks.SubTweak {
                         if (v is None or Debug) continue;
 
                         if (ImGui.Selectable($"{v.GetDetails()?.FancyName ?? $"{v}"}")) {
-                            Config.ChannelConfigs.TryAdd(v, new ChannelConfig { Message = Config.DefaultChannelConfig.Message, Sender = Config.DefaultChannelConfig.Sender });
+                            Config.ChannelConfigs.TryAdd(v, new ChannelConfig { Message = Config.DefaultChannelConfig?.Message ?? false, Sender = Config.DefaultChannelConfig?.Sender ?? false });
                         }
                     }
 
@@ -358,7 +359,8 @@ public class ChatNameColours : ChatTweaks.SubTweak {
         }
     }
 
-    public void DrawChannelConfig(XivChatType type, ref ChannelConfig config) {
+    public void DrawChannelConfig(XivChatType type, ref ChannelConfig? config) {
+        if (config == null) return;
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
         if (type == None) {
@@ -370,7 +372,7 @@ public class ChatNameColours : ChatTweaks.SubTweak {
             }
 
             ImGui.SameLine();
-            ImGui.Text(type.GetDetails().FancyName);
+            ImGui.Text(type.GetDetails()?.FancyName ?? $"{type}");
         }
 
         ImGui.TableNextColumn();
@@ -447,8 +449,8 @@ public class ChatNameColours : ChatTweaks.SubTweak {
                 if (channelConfig.Message) Parse(ref message);
             }
         } else if (chatTypes.Contains(type)) {
-            if (Config.DefaultChannelConfig.Sender) Parse(ref sender);
-            if (Config.DefaultChannelConfig.Message) Parse(ref message);
+            if (Config.DefaultChannelConfig?.Sender == true) Parse(ref sender);
+            if (Config.DefaultChannelConfig?.Message == true) Parse(ref message);
         }
     }
 

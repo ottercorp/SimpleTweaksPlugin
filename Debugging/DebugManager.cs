@@ -1,7 +1,7 @@
 ﻿using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -31,13 +31,13 @@ namespace SimpleTweaksPlugin {
 namespace SimpleTweaksPlugin.Debugging {
     public partial class DebugConfig {
         public string SelectedPage = String.Empty;
-        public Dictionary<string, object> SavedValues = new();
+        public Dictionary<string, object?> SavedValues = new();
 
         public List<string> Undocked = new List<string>();
     }
 
     public abstract class DebugHelper : IDisposable {
-        public SimpleTweaksPlugin Plugin;
+        public SimpleTweaksPlugin Plugin = null!;
         public abstract void Draw();
         public abstract string Name { get; }
 
@@ -95,7 +95,7 @@ namespace SimpleTweaksPlugin.Debugging {
                 foreach (var t in tp.Assembly.GetTypes().Where(t => t.IsSubclassOf(typeof(DebugHelper)) && !t.IsAbstract)) {
                     try {
                         if (DebugHelpers.Any(h => h.GetType() == t)) continue;
-                        var debugger = (DebugHelper)Activator.CreateInstance(t);
+                        var debugger = (DebugHelper?) Activator.CreateInstance(t);
                         if (debugger != null) {
                             SignatureHelper.Initialise(debugger);
                             debugger.TweakProvider = tp;
@@ -137,7 +137,8 @@ namespace SimpleTweaksPlugin.Debugging {
                     foreach (var tp in SimpleTweaksPlugin.Plugin.TweakProviders) {
                         if (tp.IsDisposed) continue;
                         foreach (var t in tp.Assembly.GetTypes().Where(t => t.IsSubclassOf(typeof(DebugHelper)) && !t.IsAbstract)) {
-                            var debugger = (DebugHelper)Activator.CreateInstance(t);
+                            var debugger = (DebugHelper?) Activator.CreateInstance(t);
+                            if (debugger == null) continue;
                             debugger.TweakProvider = tp;
                             debugger.Plugin = _plugin;
                             RegisterDebugPage(debugger.FullName, debugger.Draw);
@@ -266,7 +267,7 @@ namespace SimpleTweaksPlugin.Debugging {
             ImGui.GetForegroundDrawList().AddRect(position, position + size, nodeVisible ? 0xFF00FF00 : 0xFF0000FF);
         }
 
-        public static void ClickToCopyText(string text, string textCopy = null) {
+        public static void ClickToCopyText(string text, string? textCopy = null) {
             textCopy ??= text;
             ImGui.Text($"{text}");
             if (ImGui.IsItemHovered()) {
@@ -320,15 +321,15 @@ namespace SimpleTweaksPlugin.Debugging {
         private static ulong beginModule;
         private static ulong endModule;
 
-        private static unsafe void PrintOutValue(ulong addr, List<string> path, Type type, object value, MemberInfo member) {
+        private unsafe static void PrintOutValue(ulong addr, List<string> path, Type type, object? value, MemberInfo member) {
             try {
                 if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>)) {
                     value = type.GetMethod("ToArray")?.Invoke(value, null);
-                    type = value.GetType();
+                    type = value?.GetType() ?? throw new Exception("Invalid Type");
                 }
 
                 var valueParser = member.GetCustomAttribute(typeof(ValueParser));
-                var fixedBuffer = (FixedBufferAttribute)member.GetCustomAttribute(typeof(FixedBufferAttribute));
+                var fixedBuffer = (FixedBufferAttribute?)member.GetCustomAttribute(typeof(FixedBufferAttribute));
 
                 if (valueParser is ValueParser vp) {
                     vp.ImGuiPrint(type, value, member, addr);
@@ -336,8 +337,8 @@ namespace SimpleTweaksPlugin.Debugging {
                 }
 
                 if (type.IsPointer) {
-                    var val = (Pointer)value;
-                    var unboxed = Pointer.Unbox(val);
+                    var val = (Pointer?)value;
+                    var unboxed = val == null ? null : Pointer.Unbox(val);
                     if (unboxed != null) {
                         var unboxedAddr = (ulong)unboxed;
                         ClickToCopyText($"{(ulong)unboxed:X}");
@@ -350,7 +351,8 @@ namespace SimpleTweaksPlugin.Debugging {
 
                         try {
                             var eType = type.GetElementType();
-                            var ptrObj = SafeMemory.PtrToStructure(new IntPtr(unboxed), eType);
+                            
+                            var ptrObj = eType == null ? null : SafeMemory.PtrToStructure(new IntPtr(unboxed), eType);
                             ImGui.SameLine();
                             PrintOutObject(ptrObj, (ulong)unboxed, new List<string>(path));
                         } catch {
@@ -360,13 +362,12 @@ namespace SimpleTweaksPlugin.Debugging {
                         ImGui.Text("null");
                     }
                 } else {
-                    if (type.IsArray) {
-                        var arr = (Array)value;
+                    if (type.IsArray && value is Array arr) {
                         if (ImGui.TreeNode($"Values##{member.Name}-{addr}-{string.Join("-", path)}")) {
                             for (var i = 0; i < arr.Length; i++) {
                                 ImGui.Text($"[{i}]");
                                 ImGui.SameLine();
-                                PrintOutValue(addr, new List<string>(path) { $"_arrValue_{i}" }, type.GetElementType(), arr.GetValue(i), member);
+                                PrintOutValue(addr, new List<string>(path) { $"_arrValue_{i}" }, type.GetElementType() ?? throw new Exception("Invalid Element Type"), arr.GetValue(i), member);
                             }
 
                             ImGui.TreePop();
@@ -426,8 +427,8 @@ namespace SimpleTweaksPlugin.Debugging {
                         }
                     } else if (!type.IsPrimitive) {
                         switch (value) {
-                            case Lumina.Text.SeString seString:
-                                ImGui.Text($"{seString.RawString}");
+                            case Lumina.Text.ReadOnly.ReadOnlySeString seString:
+                                ImGui.Text($"{seString.ExtractText()}");
                                 break;
                             default:
                                 PrintOutObject(value, addr, new List<string>(path));
@@ -453,15 +454,15 @@ namespace SimpleTweaksPlugin.Debugging {
             }
         }
 
-        public static unsafe void PrintOutObject<T>(T* ptr, bool autoExpand = false, string headerText = null) where T : unmanaged {
+        public static unsafe void PrintOutObject<T>(T* ptr, bool autoExpand = false, string? headerText = null) where T : unmanaged {
             PrintOutObject(ptr, new List<string>(), autoExpand, headerText);
         }
 
-        public static unsafe void PrintOutObject<T>(T* ptr, List<string> path, bool autoExpand = false, string headerText = null) where T : unmanaged {
+        public static unsafe void PrintOutObject<T>(T* ptr, List<string> path, bool autoExpand = false, string? headerText = null) where T : unmanaged {
             PrintOutObject(*ptr, (ulong)ptr, path, autoExpand, headerText);
         }
 
-        public static unsafe void PrintOutObject(object obj, ulong addr, bool autoExpand = false, string headerText = null) {
+        public static unsafe void PrintOutObject(object obj, ulong addr, bool autoExpand = false, string? headerText = null) {
             PrintOutObject(obj, addr, new List<string>(), autoExpand, headerText);
         }
 
@@ -474,11 +475,11 @@ namespace SimpleTweaksPlugin.Debugging {
         }
 
         public static T GetSavedValue<T>(string key, T defaultValue) {
-            if (!_plugin.PluginConfig.Debugging.SavedValues.ContainsKey(key)) return defaultValue;
-            return (T)_plugin.PluginConfig.Debugging.SavedValues[key];
+            if (!_plugin.PluginConfig.Debugging.SavedValues.TryGetValue(key, out var value) || value is not T tVal) return defaultValue;
+            return tVal;
         }
 
-        private static string ParseTypeName(Type type, List<Type> loopSafety = null) {
+        private static string ParseTypeName(Type type, List<Type>? loopSafety = null) {
             if (!type.IsGenericType) return type.Name;
             loopSafety ??= new List<Type>();
             if (loopSafety.Contains(type)) return $"...{type.Name}";
@@ -488,7 +489,7 @@ namespace SimpleTweaksPlugin.Debugging {
             return $"{n}<{string.Join(',', gArgs)}>";
         }
 
-        private static unsafe void PrintOutField(FieldInfo f, LayoutKind layoutKind, ref ulong offsetAddress, ulong addr, object obj, List<string> path, string customTypeName = null, string customName = null) {
+        private unsafe static void PrintOutField(FieldInfo f, LayoutKind layoutKind, ref ulong offsetAddress, ulong addr, object obj, List<string> path, string? customTypeName = null, string? customName = null) {
             var fixedSizeArrayAttribute = f.GetCustomAttribute<FixedSizeArrayAttribute>();
             if (fixedSizeArrayAttribute?.IsString ?? false) return;
 
@@ -525,7 +526,7 @@ namespace SimpleTweaksPlugin.Debugging {
                 fixedSizeArraySize = 0;
             }
 
-            var fixedBuffer = (FixedBufferAttribute)f.GetCustomAttribute(typeof(FixedBufferAttribute));
+            var fixedBuffer = (FixedBufferAttribute?)f.GetCustomAttribute(typeof(FixedBufferAttribute));
 
             if (fixedBuffer != null) {
                 ImGui.Text($"fixed");
@@ -534,8 +535,7 @@ namespace SimpleTweaksPlugin.Debugging {
             } else {
                 if (fixedSizeArrayAttribute != null) {
                     ImGui.TextColored(new Vector4(0.2f, 0.9f, 0.9f, 1), $"{customTypeName ?? ParseTypeName(f.FieldType.GetElementType() ?? f.FieldType)}[{fixedSizeArraySize}]");
-                } else if (f.FieldType.IsArray) {
-                    var arr = (Array)f.GetValue(obj);
+                } else if (f.FieldType.IsArray && f.GetValue(obj) is Array arr) {
                     ImGui.TextColored(new Vector4(0.2f, 0.9f, 0.9f, 1), $"{customTypeName ?? ParseTypeName(f.FieldType.GetElementType() ?? f.FieldType)}[{arr?.Length ?? 0}]");
                 } else {
                     ImGui.TextColored(new Vector4(0.2f, 0.9f, 0.9f, 1), $"{customTypeName ?? ParseTypeName(f.FieldType)}");
@@ -670,10 +670,14 @@ namespace SimpleTweaksPlugin.Debugging {
             }
         }
 
-        public static unsafe void PrintOutObject(object obj, ulong addr, List<string> path, bool autoExpand = false, string headerText = null) {
+        public unsafe static void PrintOutObject(object? obj, ulong addr, List<string> path, bool autoExpand = false, string? headerText = null) {
+            if (obj == null) {
+                ImGui.TextDisabled("null");
+                return;
+            }
             if (obj is Utf8String utf8String) {
                 var text = string.Empty;
-                Exception err = null;
+                Exception? err = null;
                 try {
                     var s = utf8String.BufUsed > int.MaxValue ? int.MaxValue : (int)utf8String.BufUsed;
                     if (s > 1) {
@@ -696,9 +700,12 @@ namespace SimpleTweaksPlugin.Debugging {
             var openedNode = false;
             try {
                 if (endModule == 0 && beginModule == 0) {
+                    
                     try {
-                        beginModule = (ulong)Process.GetCurrentProcess().MainModule.BaseAddress.ToInt64();
-                        endModule = (beginModule + (ulong)Process.GetCurrentProcess().MainModule.ModuleMemorySize);
+                        var mainModule = Process.GetCurrentProcess().MainModule;
+                        if (mainModule == null) throw new Exception();
+                        beginModule = (ulong)mainModule.BaseAddress.ToInt64();
+                        endModule = (beginModule + (ulong)mainModule.ModuleMemorySize);
                     } catch {
                         endModule = 1;
                     }
@@ -749,8 +756,9 @@ namespace SimpleTweaksPlugin.Debugging {
             try {
                 if (endModule == 0 && beginModule == 0) {
                     try {
-                        beginModule = (ulong)Process.GetCurrentProcess().MainModule.BaseAddress.ToInt64();
-                        endModule = (beginModule + (ulong)Process.GetCurrentProcess().MainModule.ModuleMemorySize);
+                        var mainModule = Process.GetCurrentProcess().MainModule ?? throw new Exception();
+                        beginModule = (ulong)mainModule.BaseAddress.ToInt64();
+                        endModule = (beginModule + (ulong)mainModule.ModuleMemorySize);
                     } catch {
                         endModule = 1;
                     }

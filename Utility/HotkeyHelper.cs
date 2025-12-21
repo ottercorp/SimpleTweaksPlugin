@@ -5,13 +5,13 @@ using System.Linq;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 
 namespace SimpleTweaksPlugin.Utility;
 
 public static class HotkeyHelper {
-    private static string _settingKey;
-    private static string _focused;
+    private static string? _settingKey;
+    private static string? _focused;
     private static readonly List<VirtualKey> NewKeys = [];
     private static readonly Stopwatch Safety = Stopwatch.StartNew();
     
@@ -65,7 +65,7 @@ public static class HotkeyHelper {
 
             for (var k = 0;
                  k < ImGui.GetIO()
-                     .KeysDown.Count && k < 160;
+                     .KeysDown.Length && k < 160;
                  k++) {
                 if (ImGui.GetIO()
                     .KeysDown[k]) {

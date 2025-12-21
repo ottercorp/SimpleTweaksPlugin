@@ -38,15 +38,14 @@ public unsafe class ShowItemID : TooltipTweaks.SubTweak {
     private void ActionDetailRefresh(AtkUnitBase* unitBase) {
         var node = unitBase->GetTextNodeById(6);
         if (node == null) return;
-        node->TextFlags |= (byte)TextFlags.MultiLine;
+        node->TextFlags |= TextFlags.MultiLine;
     }
 
     [AddonPostRefresh("ItemDetail")]
     private void ItemDetailRefresh(AtkUnitBase* unitBase) {
         var node = unitBase->GetTextNodeById(35);
         if (node == null) return;
-        node->TextFlags |= (byte)TextFlags.MultiLine;
-        node->TextFlags2 = 0;
+        node->TextFlags |= TextFlags.MultiLine;
     }
 
     public override void OnGenerateItemTooltip(NumberArrayData* numberArrayData, StringArrayData* stringArrayData) {
@@ -76,8 +75,7 @@ public unsafe class ShowItemID : TooltipTweaks.SubTweak {
     }
 
     public override void OnActionTooltip(AtkUnitBase* addon, TooltipTweaks.HoveredActionDetail action) {
-        if (addon->UldManager.NodeList == null || addon->UldManager.NodeListCount < 29) return;
-        var categoryText = (AtkTextNode*)addon->UldManager.NodeList[28];
+        var categoryText = addon->GetTextNodeById(6);
         if (categoryText == null) return;
         var seStr = Common.ReadSeString(categoryText->NodeText.StringPtr);
         if (seStr.Payloads.Count > 1) return;

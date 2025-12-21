@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using Dalamud.Game.Addon.Lifecycle;
@@ -7,6 +8,7 @@ using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.Attributes;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using JetBrains.Annotations;
 using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Debugging;
 using SimpleTweaksPlugin.TweakSystem;
@@ -60,9 +62,6 @@ public static unsafe class EventController {
             AddonPointerWithArrays, // (AddonX*, NumberArrayData**. StringArrayData**) 
             AddonArgs,
             AddonSetupArgs,
-            AddonUpdateArgs,
-            AddonDrawArgs,
-            AddonFinalizeArgs,
             AddonRequestedUpdateArgs,
             AddonRefreshArgs,
             AddonReceiveEventArgs,
@@ -108,21 +107,6 @@ public static unsafe class EventController {
                         return true;
                     }
 
-                    if (p[0].ParameterType == typeof(AddonUpdateArgs)) {
-                        Kind = SubscriberKind.AddonUpdateArgs;
-                        return true;
-                    }
-
-                    if (p[0].ParameterType == typeof(AddonDrawArgs)) {
-                        Kind = SubscriberKind.AddonDrawArgs;
-                        return true;
-                    }
-
-                    if (p[0].ParameterType == typeof(AddonFinalizeArgs)) {
-                        Kind = SubscriberKind.AddonFinalizeArgs;
-                        return true;
-                    }
-
                     if (p[0].ParameterType == typeof(AddonRequestedUpdateArgs)) {
                         Kind = SubscriberKind.AddonRequestedUpdateArgs;
                         return true;
@@ -165,7 +149,7 @@ public static unsafe class EventController {
             return false;
         }
 
-        public void Invoke(object args) {
+        public void Invoke(object? args) {
             if (!Enabled) return;
             if (NthTick > 1) {
                 if (++tick < NthTick) return;
@@ -188,15 +172,12 @@ public static unsafe class EventController {
                     SubscriberKind.Unknown => null,
                     SubscriberKind.Framework => Method.Invoke(Tweak, []),
                     SubscriberKind.NoParameter => Method.Invoke(Tweak, []),
-                    SubscriberKind.AtkUnitBase => Method.Invoke(Tweak, [Pointer.Box((void*)((AddonArgs)args).Addon, typeof(AtkUnitBase*))]),
-                    SubscriberKind.AtkUnitBaseWithArrays => Method.Invoke(Tweak, [Pointer.Box((void*)((AddonArgs)args).Addon, typeof(AtkUnitBase*)), Pointer.Box(AtkStage.Instance()->GetNumberArrayData(), typeof(NumberArrayData**)), Pointer.Box(AtkStage.Instance()->GetStringArrayData(), typeof(StringArrayData**))]),
-                    SubscriberKind.AddonPointer => Method.Invoke(Tweak, [Pointer.Box((void*)((AddonArgs)args).Addon, addonPointerType)]),
-                    SubscriberKind.AddonPointerWithArrays => Method.Invoke(Tweak, [Pointer.Box((void*)((AddonArgs)args).Addon, addonPointerType), Pointer.Box(AtkStage.Instance()->GetNumberArrayData(), typeof(NumberArrayData**)), Pointer.Box(AtkStage.Instance()->GetStringArrayData(), typeof(StringArrayData**))]),
+                    SubscriberKind.AtkUnitBase => Method.Invoke(Tweak, [Pointer.Box((void*)((AddonArgs)args!).Addon.Address, typeof(AtkUnitBase*))]),
+                    SubscriberKind.AtkUnitBaseWithArrays => Method.Invoke(Tweak, [Pointer.Box((void*)((AddonArgs)args!).Addon.Address, typeof(AtkUnitBase*)), Pointer.Box(AtkStage.Instance()->GetNumberArrayData(), typeof(NumberArrayData**)), Pointer.Box(AtkStage.Instance()->GetStringArrayData(), typeof(StringArrayData**))]),
+                    SubscriberKind.AddonPointer => Method.Invoke(Tweak, [Pointer.Box((void*)((AddonArgs)args!).Addon.Address, addonPointerType)]),
+                    SubscriberKind.AddonPointerWithArrays => Method.Invoke(Tweak, [Pointer.Box((void*)((AddonArgs)args!).Addon.Address, addonPointerType), Pointer.Box(AtkStage.Instance()->GetNumberArrayData(), typeof(NumberArrayData**)), Pointer.Box(AtkStage.Instance()->GetStringArrayData(), typeof(StringArrayData**))]),
                     SubscriberKind.AddonArgs => Method.Invoke(Tweak, [args]),
                     SubscriberKind.AddonSetupArgs when args is AddonSetupArgs addonSetupArgs => Method.Invoke(Tweak, [addonSetupArgs]),
-                    SubscriberKind.AddonUpdateArgs when args is AddonUpdateArgs addonUpdateArgs => Method.Invoke(Tweak, [addonUpdateArgs]),
-                    SubscriberKind.AddonDrawArgs when args is AddonDrawArgs addonDrawArgs => Method.Invoke(Tweak, [addonDrawArgs]),
-                    SubscriberKind.AddonFinalizeArgs when args is AddonFinalizeArgs addonFinalizeArgs => Method.Invoke(Tweak, [addonFinalizeArgs]),
                     SubscriberKind.AddonRequestedUpdateArgs when args is AddonRequestedUpdateArgs addonRequestedUpdateArgs => Method.Invoke(Tweak, [addonRequestedUpdateArgs]),
                     SubscriberKind.AddonRefreshArgs when args is AddonRefreshArgs addonRefreshArgs => Method.Invoke(Tweak, [addonRefreshArgs]),
                     SubscriberKind.AddonReceiveEventArgs when args is AddonReceiveEventArgs addonReceiveEventArgs => Method.Invoke(Tweak, [addonReceiveEventArgs]),
@@ -215,12 +196,12 @@ public static unsafe class EventController {
     private static List<EventSubscriber> FrameworkUpdateSubscribers { get; } = [];
     private static List<EventSubscriber> TerritoryChangedSubscribers { get; } = [];
 
-    private static bool TryGetCustomAttribute<T>(this MemberInfo element, out T attribute) where T : Attribute {
+    private static bool TryGetCustomAttribute<T>(this MemberInfo element, [NotNullWhen(true)] out T? attribute) where T : Attribute {
         attribute = element.GetCustomAttribute<T>();
         return attribute != null;
     }
 
-    public static void RegisterEvents(BaseTweak tweak) {
+    public static void RegisterEvents(BaseTweak? tweak) {
         if (tweak == null) return;
         if (tweak.IsDisposed) return;
 

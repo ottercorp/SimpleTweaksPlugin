@@ -11,7 +11,9 @@ using System.Runtime.InteropServices;
 using Dalamud.Utility.Signatures;
 using Dalamud.Memory;
 using System.Text;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
+using JetBrains.Annotations;
 using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Events;
 
@@ -32,13 +34,13 @@ public unsafe class FastSearch : UiAdjustments.SubTweak {
     [TweakConfig] public FastSearchConfig Config { get; private set; }
 
     [Agent(AgentId.ItemSearch)]
-    [StructLayout(LayoutKind.Explicit, Size = 0x37F0)]
+    [StructLayout(LayoutKind.Explicit, Size = 0x3888)]
     public struct AgentItemSearch2 {
         [FieldOffset(0x0000)] public AgentItemSearch AgentItemSearch;
-        [FieldOffset(0x3860)] public uint* ItemBuffer;
-        [FieldOffset(0x3868)] public uint ItemCount;
-        [FieldOffset(0x3874)] public byte IsPartialSearching;
-        [FieldOffset(0x3875)] public byte IsItemPushPending;
+        [FieldOffset(0x3868)] public uint* ItemBuffer;
+        [FieldOffset(0x3870)] public uint ItemCount;
+        [FieldOffset(0x387C)] public byte IsPartialSearching;
+        [FieldOffset(0x387D)] public byte IsItemPushPending;
     }
 
     private delegate void RecipeNoteRecieveDelegate(AgentRecipeNote* a1, Utf8String* a2, bool a3, bool a4);
@@ -47,16 +49,17 @@ public unsafe class FastSearch : UiAdjustments.SubTweak {
     private readonly HookWrapper<RecipeNoteRecieveDelegate> recipeNoteRecieveHook;
 
     [TweakHook, Signature("80 B9 ?? ?? ?? ?? ?? 74 27 8B 81 ?? ?? ?? ?? 41 B8", DetourName = nameof(RecipeNoteIterateDetour))]
-    private readonly HookWrapper<System.Action> recipeNoteIterateHook;
+    private readonly HookWrapper<System.Action> recipeNoteIterateHook = null!;
 
     private delegate void AgentItemSearchUpdateDelegate(AgentItemSearch* a1);
 
-    [TweakHook, Signature("E8 ?? ?? ?? ?? 48 8B CB E8 ?? ?? ?? ?? 48 8B CB E8 ?? ?? ?? ?? 80 BB ?? ?? ?? ?? ?? 0F 85", DetourName = nameof(AgentItemSearchUpdateDetour))]
-    private readonly HookWrapper<AgentItemSearchUpdateDelegate> agentItemSearchUpdate1Hook;
+
+    [UsedImplicitly, TweakHook, Signature("E8 ?? ?? ?? ?? 48 8B CB E8 ?? ?? ?? ?? 48 8B CB E8 ?? ?? ?? ?? 80 BB ?? ?? ?? ?? ?? 0F 85", DetourName = nameof(AgentItemSearchUpdateDetour))]
+    private readonly HookWrapper<AgentItemSearchUpdateDelegate> agentItemSearchUpdate1Hook = null!;
 
     private delegate void AgentItemSearchUpdateAtkValuesDelegate(AgentItemSearch* a1, uint a2, byte* a3, bool a4);
 
-    [TweakHook, Signature("40 55 56 41 56 B8", DetourName = nameof(AgentItemSearchUpdateAtkValuesDetour))]
+    [TweakHook, Signature("40 55 56 41 56 B8 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 2B E0 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 83 79 20 00", DetourName = nameof(AgentItemSearchUpdateAtkValuesDetour))]
     private readonly HookWrapper<AgentItemSearchUpdateAtkValuesDelegate> agentItemSearchUpdateAtkValuesHook;
 
     private delegate void AgentItemSearchPushFoundItemsDelegate(AgentItemSearch* a1);

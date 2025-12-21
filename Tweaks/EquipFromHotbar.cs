@@ -7,7 +7,7 @@ using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -45,7 +45,7 @@ public unsafe class EquipFromHotbar : Tweak {
 
     private delegate void MoveItem(RaptureAtkModule* a1, void* outValue, AtkValue* atkValues);
 
-    [Signature("48 89 5C 24 ?? 55 56 57 41 55 41 56 48 8B EC 48 83 EC 40")]
+    [Signature("48 89 5C 24 ?? 48 89 74 24 ?? 48 89 7C 24 ?? 55 41 56 41 57 48 8B EC 48 83 EC 40 4C 8B F1")]
     private readonly MoveItem moveItem = null!;
 
     private uint GetContainerId(InventoryType inventoryType) =>

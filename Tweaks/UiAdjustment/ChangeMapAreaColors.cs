@@ -6,7 +6,8 @@ using Dalamud.Interface.Components;
 using Dalamud.Utility;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
 using JetBrains.Annotations;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -17,6 +18,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 [TweakDescription("Allows players to change the color of map areas like quest targets and FATEs.")]
 [TweakAuthor("KazWolfe")]
 [TweakAutoConfig]
+[Changelog("1.10.11.0", "Added reset button to return option to default colour.")]
 public unsafe class ChangeMapAreaColors : UiAdjustments.SubTweak {
     public class MapColorConfig : TweakConfig {
         public class AreaEntry {
@@ -139,6 +141,14 @@ public unsafe class ChangeMapAreaColors : UiAdjustments.SubTweak {
                 var newColor = ImGuiComponents.ColorPickerWithPalette((int)areaType, "##color", overrideColor, ImGuiColorEditFlags.NoAlpha);
                 edited |= !overrideColor.Equals(newColor);
 
+                if (!newColor.Equals(areaTypeMeta.DefaultColor)) {
+                    ImGui.SameLine();
+                    if (ImGuiComponents.IconButton(FontAwesomeIcon.Undo)) {
+                        edited = true;
+                        newColor = areaTypeMeta.DefaultColor;
+                    }
+                }
+
                 if (edited) {
                     Config!.Areas[(int)areaType] = new MapColorConfig.AreaEntry { Enabled = enabled, OverrideColor = newColor };
 
@@ -177,7 +187,8 @@ public unsafe class ChangeMapAreaColors : UiAdjustments.SubTweak {
         // SimpleLog.Debug($"Called for AreaType: {(int) areaType}");
 
         if (Config.RaveMode && !Service.ClientState.IsPvP) {
-            ImGui.ColorConvertHSVtoRGB(raveHue / 255f, 1f, 1f, out var r, out var g, out var b);
+            float r = 0, g = 0, b = 0;
+            ImGui.ColorConvertHSVtoRGB(raveHue / 255f, 1f, 1f, ref r, ref g, ref b);
             SetNodeColor(node, new Vector4(r, g, b, 1));
 
             raveHue += 1;

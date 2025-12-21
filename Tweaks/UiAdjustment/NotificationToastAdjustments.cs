@@ -6,7 +6,7 @@ using Dalamud.Game.Gui.Toast;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.Tweaks.UiAdjustment;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -14,7 +14,7 @@ using SimpleTweaksPlugin.Utility;
 namespace SimpleTweaksPlugin {
     public partial class UiAdjustmentsConfig {
         public bool ShouldSerializeNotificationToastAdjustments() => NotificationToastAdjustments != null;
-        public NotificationToastAdjustments.Configs NotificationToastAdjustments = null;
+        public NotificationToastAdjustments.Configs? NotificationToastAdjustments = null;
     }
 }
 
@@ -145,7 +145,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             if (toastUnitBase == null) return null;
             if (toastUnitBase->UldManager.NodeList == null || toastUnitBase->UldManager.NodeListCount < 4) return null;
 
-            return toastUnitBase->UldManager.NodeList[0];
+            return toastUnitBase->RootNode;
         }
 
         private static void SetOffsetPosition(AtkResNode* node, float offsetX, float offsetY, float scale) {

@@ -8,7 +8,7 @@ using Dalamud.Game.ClientState.Keys;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.Tweaks.Tooltips.Hotkeys;
@@ -58,7 +58,7 @@ public unsafe class ItemHotkeys : TooltipTweaks.SubTweak {
 
         foreach (var hk in Hotkeys) {
             if (!hk.Enabled) continue;
-            if (hk.Config.HideFromTooltip) continue;
+            if (hk.Config is { HideFromTooltip: true }) continue;
 
             if (itemId >= 2000000) {
                 if (!hk.AcceptsEventItem) continue;
@@ -84,6 +84,7 @@ public unsafe class ItemHotkeys : TooltipTweaks.SubTweak {
     public Configs Config { get; private set; }
 
     public void DrawHotkeyConfig(ItemHotkey hotkey) {
+        if (hotkey.Config == null) return;
         ImGui.PushID(hotkey.Key);
         while (ImGui.GetColumnIndex() != 0) ImGui.NextColumn();
 
@@ -129,7 +130,7 @@ public unsafe class ItemHotkeys : TooltipTweaks.SubTweak {
 
     protected override void Setup() {
         foreach (var t in Assembly.GetExecutingAssembly().GetTypes().Where(t => t.IsSubclassOf(typeof(ItemHotkey)))) {
-            var h = (ItemHotkey)Activator.CreateInstance(t);
+            var h = (ItemHotkey?)Activator.CreateInstance(t);
             if (h != null) {
                 Hotkeys.Add(h);
             }
@@ -168,7 +169,7 @@ public unsafe class ItemHotkeys : TooltipTweaks.SubTweak {
 
             var id = Service.GameGui.HoveredItem;
 
-            object item;
+            object? item;
             if (id >= 2000000) {
                 item = Service.Data.Excel.GetSheet<EventItem>().GetRowOrDefault((uint)id);
             } else {

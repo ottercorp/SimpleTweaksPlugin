@@ -1,7 +1,8 @@
 using System.Numerics;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 
@@ -14,14 +15,9 @@ namespace SimpleTweaksPlugin.Tweaks.Chat;
 public unsafe class ZoomedChatCustomization : ChatTweaks.SubTweak {
     private delegate void ZoomChat(AtkUnitBase* atkUnitBase);
 
-    [TweakHook, Signature("E8 ?? ?? ?? ?? 48 8D 8E ?? ?? ?? ?? E8 ?? ?? ?? ?? 85 C0 0F 84 ?? ?? ?? ?? 48 8B CB", DetourName = nameof(ChatZoomedDetour))]
+    [TweakHook, Signature("40 53 56 41 54 48 83 EC 60", DetourName = nameof(ChatZoomedDetour))]
     private readonly HookWrapper<ZoomChat> chatZoomedHook = null!;
-
-    private delegate byte IsChatZoomed(AtkUnitBase* atkUnitBase);
-
-    [Signature("E8 ?? ?? ?? ?? 48 8B CF 84 C0 74 07")]
-    private readonly IsChatZoomed isChatZoomed = null!;
-
+    
     public class Configs : TweakConfig {
         public Vector2 Size = new(70f, 90f);
         public Vector2 Position = new(50f, 50f);
@@ -42,8 +38,9 @@ public unsafe class ZoomedChatCustomization : ChatTweaks.SubTweak {
     }
 
     private void TryApply() {
-        var addon = Common.GetUnitBase("ChatLog");
-        if (addon != null && isChatZoomed(addon) != 0) {
+        var addon = (AddonChatLog*) Common.GetUnitBase("ChatLog");
+        
+        if (addon != null && addon->IsZoomed()) {
             Service.Framework.RunOnTick(ApplyCustomization);
             Service.Framework.RunOnTick(ApplyCustomization, delayTicks: 1);
         }
