@@ -47,13 +47,11 @@ public abstract class BaseTweak {
     public string LocalizedName => LocString("Name", Name, "Tweak Name");
 
 
-    private string cachedDescription;
-    
     private readonly Regex descriptionTemplate = new(@"\$\[(?<field>\w+)\]", RegexOptions.Compiled);
     
-    public string Description {
+    public string? Description {
         get {
-            if (cachedDescription != null) return cachedDescription;
+            if (field != null) return field;
             var description = TweakDescriptionAttribute?.Description;
             if (description == null) return null;
             
@@ -64,8 +62,8 @@ public abstract class BaseTweak {
                         if (m.Length == 0) return $"InvalidTemplate.NoMatches({match.Groups["field"].Value})";
                         if (m.Length > 1) return $"InvalidTemplate.MultipleMatches({match.Groups["field"].Value})";
                         if (m[0] is MethodInfo) return $"InvalidTemplate.MethodMatch({match.Groups["field"].Value})";
-                        if (m[0] is PropertyInfo pi) return pi.GetValue(this)?.ToString();
-                        if (m[0] is FieldInfo fi) return fi.GetValue(this)?.ToString();
+                        if (m[0] is PropertyInfo pi) return pi.GetValue(this)?.ToString() ?? string.Empty;
+                        if (m[0] is FieldInfo fi) return fi.GetValue(this)?.ToString() ?? string.Empty;
                     } catch (Exception ex) {
                         return $"InvalidTemplate.Error({match.Groups["field"].Value}): {ex.Message}";
                     }
@@ -74,17 +72,17 @@ public abstract class BaseTweak {
                 return string.Empty;
             });
 
-            return cachedDescription = parsedTemplate;
+            return field = parsedTemplate;
         }
     }
     
-    protected string Author => TweakAuthorAttribute?.Author;
+    protected string? Author => TweakAuthorAttribute?.Author;
     public virtual bool Experimental => false;
     public IEnumerable<string> Tags => TweakTagsAttribute?.Tags ?? [];
     internal bool ForceOpenConfig { private get; set; }
 
     public TweakProvider TweakProvider { get; private set; }
-    public SubTweakManager TweakManager { get; private set; }
+    public SubTweakManager? TweakManager { get; private set; }
 
     public virtual bool CanLoad => true;
 
@@ -92,7 +90,7 @@ public abstract class BaseTweak {
 
     protected CultureInfo Culture => Plugin.Culture;
 
-    public void InterfaceSetup(SimpleTweaksPlugin plugin, IDalamudPluginInterface pluginInterface, SimpleTweaksPluginConfig config, TweakProvider tweakProvider, SubTweakManager tweakManager = null) {
+    public void InterfaceSetup(SimpleTweaksPlugin plugin, IDalamudPluginInterface pluginInterface, SimpleTweaksPluginConfig config, TweakProvider tweakProvider, SubTweakManager? tweakManager = null) {
         this.PluginInterface = pluginInterface;
         this.PluginConfig = config;
         this.Plugin = plugin;
@@ -100,7 +98,7 @@ public abstract class BaseTweak {
         this.TweakManager = tweakManager;
     }
 
-    public string LocString(string key, string fallback, string description = null) {
+    public string LocString(string key, string fallback, string? description = null) {
         description ??= $"{Name} - {fallback}";
         return Loc.Localize($"{this.Key} / {key}", fallback, $"[{this.GetType().Name}] {description}");
     }
@@ -162,9 +160,9 @@ public abstract class BaseTweak {
         }
     }
 
-    protected T LoadConfig<T>() where T : TweakConfig => LoadConfig<T>(this.Key);
+    protected T? LoadConfig<T>() where T : TweakConfig => LoadConfig<T>(this.Key);
 
-    protected T LoadConfig<T>(string key) where T : TweakConfig {
+    protected T? LoadConfig<T>(string key) where T : TweakConfig {
         try {
             var configDirectory = PluginInterface.GetPluginConfigDirectory();
             var configFile = Path.Combine(configDirectory, key + ".json");
@@ -178,7 +176,7 @@ public abstract class BaseTweak {
         }
     }
 
-    private object LoadConfig(Type T, string key) {
+    private object? LoadConfig(Type T, string key) {
         if (!T.IsSubclassOf(typeof(TweakConfig))) throw new Exception($"{T} is not a TweakConfig class.");
 #if TEST
         return null;
@@ -186,7 +184,7 @@ public abstract class BaseTweak {
         try {
             var configDirectory = PluginInterface.GetPluginConfigDirectory();
             var configFile = Path.Combine(configDirectory, key + ".json");
-            if (!File.Exists(configFile)) return default;
+            if (!File.Exists(configFile)) return null;
             var jsonString = File.ReadAllText(configFile);
             return JsonConvert.DeserializeObject(jsonString, T);
         } catch (Exception ex) {
@@ -326,13 +324,15 @@ public abstract class BaseTweak {
 
             if (configObj == null) {
                 configObj = Activator.CreateInstance(configProperty.PropertyType);
+                if (configObj == null) return;
                 configProperty.SetValue(this, configObj);
             }
 
-            var fields = configObj.GetType().GetFields().Where(f => f.GetCustomAttribute(typeof(TweakConfigOptionAttribute)) != null).Select(f => (f, (TweakConfigOptionAttribute)f.GetCustomAttribute(typeof(TweakConfigOptionAttribute)))).OrderBy(a => a.Item2.Priority).ThenBy(a => a.Item2.Name);
+            var fields = configObj.GetType().GetFields().Where(f => f.GetCustomAttribute(typeof(TweakConfigOptionAttribute)) != null).Select(f => (f, (TweakConfigOptionAttribute?)f.GetCustomAttribute(typeof(TweakConfigOptionAttribute)))).OrderBy(a => a.Item2?.Priority).ThenBy(a => a.Item2?.Name);
 
             var configOptionIndex = 0;
             foreach (var (f, attr) in fields) {
+                if (attr == null) continue;
                 if (attr.ConditionalDisplay) {
                     var conditionalMethod = configObj.GetType().GetMethod($"ShouldShow{f.Name}", BindingFlags.Public | BindingFlags.Instance);
                     if (conditionalMethod != null) {
@@ -347,19 +347,19 @@ public abstract class BaseTweak {
                 if (attr.Editor != null) {
                     var v = f.GetValue(configObj);
                     var arr = new[] { $"{localizedName}##{f.Name}_{this.GetType().Name}_{configOptionIndex++}", v };
-                    var o = (bool)attr.Editor.Invoke(null, arr);
+                    var o = (bool?)attr.Editor.Invoke(null, arr) ?? false;
                     if (o) {
                         hasChanged = true;
                         f.SetValue(configObj, arr[1]);
                     }
                 } else if (f.FieldType == typeof(bool)) {
-                    var v = (bool)f.GetValue(configObj);
+                    var v = (bool?)f.GetValue(configObj) ?? false;
                     if (ImGui.Checkbox($"{localizedName}##{f.Name}_{this.GetType().Name}_{configOptionIndex++}", ref v)) {
                         hasChanged = true;
                         f.SetValue(configObj, v);
                     }
                 } else if (f.FieldType == typeof(int)) {
-                    var v = (int)f.GetValue(configObj);
+                    var v = (int?)f.GetValue(configObj) ?? 0;
                     ImGui.SetNextItemWidth(attr.EditorSize == -1 ? -1 : attr.EditorSize * ImGui.GetIO().FontGlobalScale);
                     var e = attr.IntType switch {
                         TweakConfigOptionAttribute.IntEditType.Slider => ImGui.SliderInt($"{localizedName}##{f.Name}_{this.GetType().Name}_{configOptionIndex++}", ref v, attr.IntMin, attr.IntMax),
@@ -381,19 +381,17 @@ public abstract class BaseTweak {
                         f.SetValue(configObj, v);
                         hasChanged = true;
                     }
-                } else if (f.FieldType.IsEnum) {
-                    var v = (Enum)f.GetValue(configObj);
-
+                } else if (f.FieldType.IsEnum && f.GetValue(configObj) is Enum v) {
                     if (attr.EditorSize != int.MinValue) ImGui.SetNextItemWidth(attr.EditorSize == -1 ? -1 : attr.EditorSize * ImGui.GetIO().FontGlobalScale);
 
-                    if (ImGui.BeginCombo($"{localizedName}##{f.Name}_{this.GetType().Namespace}_{configOptionIndex++}", $"{v.GetDescription()}")) {
+                    if (ImGui.BeginCombo($"{localizedName}##{f.Name}_{this.GetType().Namespace}_{configOptionIndex++}", $"{v?.GetDescription() ?? "Unknown"}")) {
                         foreach (var eV in f.FieldType.GetEnumValues()) {
                             if (eV is not Enum enumValue) {
                                 ImGui.Selectable($"???{eV}");
                                 continue;
                             }
 
-                            if (ImGui.Selectable($"{enumValue.GetDescription()}", v.Equals(enumValue))) {
+                            if (ImGui.Selectable($"{enumValue.GetDescription()}", v != null && v.Equals(enumValue))) {
                                 f.SetValue(configObj, enumValue);
                             }
 
@@ -430,7 +428,7 @@ public abstract class BaseTweak {
 
             var configObj = this.GetType().GetProperties().FirstOrDefault(p => p.PropertyType.IsSubclassOf(typeof(TweakConfig)))?.GetValue(this);
             if (configObj != null) {
-                var fields = configObj.GetType().GetFields().Select(f => (f, (TweakConfigOptionAttribute)f.GetCustomAttribute(typeof(TweakConfigOptionAttribute)))).OrderBy(a => a.Item2.Priority).ThenBy(a => a.Item2.Name);
+                var fields = configObj.GetType().GetFields().Select(f => (f, (TweakConfigOptionAttribute?)f.GetCustomAttribute(typeof(TweakConfigOptionAttribute)))).OrderBy(a => a.Item2?.Priority).ThenBy(a => a.Item2?.Name);
 
                 if (args.Length > 1) {
                     var field = fields.FirstOrDefault(f => f.f.Name == args[0]);
@@ -454,8 +452,9 @@ public abstract class BaseTweak {
                                     break;
                                 }
                                 case "t":
-                                case "toggle": {
-                                    var v = (bool)field.f.GetValue(configObj);
+                                case "toggle":
+                                {
+                                    var v = (bool?)field.f.GetValue(configObj) ?? false;
                                     field.f.SetValue(configObj, !v);
                                     break;
                                 }
@@ -468,11 +467,11 @@ public abstract class BaseTweak {
                             RequestSaveConfig();
                         } else if (field.f.FieldType == typeof(int)) {
                             var isValidInt = int.TryParse(args[1], out var val);
-                            if (isValidInt && val >= field.Item2.IntMin && val <= field.Item2.IntMax) {
+                            if (isValidInt && val >= field.Item2?.IntMin && val <= field.Item2?.IntMax) {
                                 field.f.SetValue(configObj, val);
                                 RequestSaveConfig();
                             } else {
-                                Service.Chat.PrintError($"'{args[1]}' is not a valid integer between {field.Item2.IntMin} and {field.Item2.IntMax}.");
+                                Service.Chat.PrintError($"'{args[1]}' is not a valid integer between {field.Item2?.IntMin} and {field.Item2?.IntMax}.");
                             }
                         }
 
@@ -491,7 +490,7 @@ public abstract class BaseTweak {
                     if (aField.f.FieldType == typeof(bool)) {
                         valuesString = $"on|off";
                     } else if (aField.f.FieldType == typeof(int)) {
-                        valuesString = $"{aField.Item2.IntMin} - {aField.Item2.IntMax}";
+                        valuesString = $"{aField.Item2?.IntMin} - {aField.Item2?.IntMax}";
                     }
 
                     if (!string.IsNullOrEmpty(valuesString)) {
@@ -619,6 +618,7 @@ public abstract class BaseTweak {
         EventController.RegisterEvents(this);
 
         foreach (var (field, attribute) in this.GetFieldsWithAttribute<TweakHookAttribute>()) {
+            if (attribute == null) continue;
             if (attribute.AddressType != null && field.GetValue(this) is null) {
                 SimpleLog.Verbose($"Setup Tweak Hook: [{Name}] {field.Name} for {attribute.AddressType.Name}.{attribute.AddressName}");
 
@@ -627,9 +627,8 @@ public abstract class BaseTweak {
                     throw new Exception($"Tweak Hook for named address not supported on {field.FieldType}");
 #else
                     SimpleLog.Error($"Tweak Hook for named address not supported on {field.FieldType}");
-#endif
-                    
                     continue;
+#endif
                 }
 
                 var addressesType = attribute.AddressType.GetNestedType("Addresses");
@@ -638,23 +637,19 @@ public abstract class BaseTweak {
                     throw new Exception($"Failed to find {attribute.AddressType}.Addresses");
 #else
                     SimpleLog.Error($"Failed to find {attribute.AddressType}.Addresses");
-#endif
-                    
                     continue;
+#endif
                 }
 
                 var addressField = addressesType.GetField(attribute.AddressName);
 
                 if (addressField == null) {
-                    
 #if TEST
                     throw new Exception($"Failed to find {attribute.AddressType.Name}.Addresses.{attribute.AddressName}");
 #else
                     SimpleLog.Error($"Failed to find {attribute.AddressType.Name}.Addresses.{attribute.AddressName}");
-#endif
-                    
-                    
                     continue;
+#endif
                 }
 
                 var addressObj = addressField.GetValue(null);
@@ -664,9 +659,8 @@ public abstract class BaseTweak {
                     throw new Exception($"{attribute.AddressType.Name}.Addresses.{attribute.AddressName} is not an Address?");
 #else
                     SimpleLog.Error($"{attribute.AddressType.Name}.Addresses.{attribute.AddressName} is not an Address?");
-#endif
-                    
                     continue;
+#endif
                 }
 
                 SimpleLog.Verbose($"    {attribute.AddressType.Name}.Addresses.{attribute.AddressName} = 0x{address.Value:X}");
@@ -739,15 +733,17 @@ public abstract class BaseTweak {
 
 
         foreach (var (field, attr) in this.GetFieldsWithAttribute<LinkHandlerAttribute>()) {
+            if (attr == null) continue;
             if (field.FieldType != typeof(DalamudLinkPayload)) {
                 Plugin.Error(this, new Exception($"Invalid LinkHandler '{field.Name}' must be DalamudLinkPayload."));
                 continue;
             }
-            DalamudLinkPayload handler = null;
+            DalamudLinkPayload? handler = null;
             if (string.IsNullOrEmpty(attr.MethodName)) {
                 handler = Service.Chat.AddChatLinkHandler((uint) attr.Id, (i, s) => { });
             } else {
                 var method = this.GetType().GetMethod(attr.MethodName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                if (method == null) continue;
                 var methodParams = method.GetParameters();
 
                 handler = methodParams.Length switch {
@@ -895,17 +891,15 @@ public abstract class BaseTweak {
         }
     }
 
-    private HashSet<string> categories;
-
     public HashSet<string> Categories {
         get {
-            if (categories != null) return categories;
+            if (field != null) return field;
 
             void HandleAttributes(IEnumerable<TweakCategoryAttribute> attributes) {
-                categories = new HashSet<string>();
+                field = new HashSet<string>();
                 foreach (var attr in attributes) {
                     foreach (var v in attr.Categories) {
-                        categories.Add(v);
+                        field.Add(v);
                     }
                 }
             }
@@ -915,9 +909,9 @@ public abstract class BaseTweak {
                 HandleAttributes(i.GetCustomAttributes<TweakCategoryAttribute>(true));
             }
 
-            if (Experimental) categories.Add($"{TweakCategory.Experimental}");
+            if (Experimental) field?.Add($"{TweakCategory.Experimental}");
 
-            return categories;
+            return field ?? [];
         }
     }
 

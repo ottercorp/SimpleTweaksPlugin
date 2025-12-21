@@ -20,10 +20,10 @@ public unsafe class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
         public virtual void OnGenerateItemTooltip(NumberArrayData* numberArrayData, StringArrayData* stringArrayData) { }
         public virtual void OnGenerateActionTooltip(NumberArrayData* numberArrayData, StringArrayData* stringArrayData) { }
 
-        protected static SeString GetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ItemTooltipField field) => GetTooltipString(stringArrayData, (int)field);
-        protected static SeString GetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ActionTooltipField field) => GetTooltipString(stringArrayData, (int)field);
+        protected static SeString? GetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ItemTooltipField field) => GetTooltipString(stringArrayData, (int)field);
+        protected static SeString? GetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ActionTooltipField field) => GetTooltipString(stringArrayData, (int)field);
 
-        protected static SeString GetTooltipString(StringArrayData* stringArrayData, int field) {
+        protected static SeString? GetTooltipString(StringArrayData* stringArrayData, int field) {
             try {
                 if (stringArrayData->AtkArrayData.Size <= field)
                     throw new IndexOutOfRangeException($"Attempted to get Index#{field} ({field}) but size is only {stringArrayData->AtkArrayData.Size}");
@@ -116,12 +116,12 @@ public unsafe class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
 
     public static uint LastLoadedItem { get; private set; }
 
-    private void ActionHoveredDetour(AgentActionDetail* agent, ActionKind actionKind, uint actionId, int flag, bool isLovmActionDetail) {
+    private void ActionHoveredDetour(AgentActionDetail* agent, ActionKind actionKind, uint actionId, int flag, bool isLovmActionDetail, int a6, int a7) {
         HoveredAction.Category = actionKind;
         HoveredAction.Id = actionId;
         HoveredAction.Flag = flag;
         HoveredAction.IsLovmActionDetail = isLovmActionDetail;
-        actionHoveredHook?.Original(agent, actionKind, actionId, flag, isLovmActionDetail);
+        actionHoveredHook?.Original(agent, actionKind, actionId, flag, isLovmActionDetail, a6, a7);
     }
 
     private IntPtr ActionTooltipDetour(AtkUnitBase* addon, void* a2, ulong a3) {

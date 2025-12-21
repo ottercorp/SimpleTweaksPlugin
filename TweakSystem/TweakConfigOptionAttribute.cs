@@ -31,20 +31,20 @@ public class TweakConfigOptionAttribute : Attribute {
 
     public delegate bool ConfigOptionEditor(string name, ref object configOption);
         
-    public MethodInfo Editor { get; set; }
+    public MethodInfo? Editor { get; set; }
 
     public enum IntEditType {
         Slider,
         Drag,
     }
         
-    public TweakConfigOptionAttribute(string name, int priority = 0, string localizeKey = null) {
+    public TweakConfigOptionAttribute(string name, int priority = 0, string? localizeKey = null) {
         Name = name;
         LocalizeKey = localizeKey ?? name;
         Priority = priority;
     }
 
-    public TweakConfigOptionAttribute(string name, string editorType, int priority = 0, string localizeKey = null) {
+    public TweakConfigOptionAttribute(string name, string editorType, int priority = 0, string? localizeKey = null) {
         Name = name;
         Priority = priority;
         LocalizeKey = localizeKey ?? name;

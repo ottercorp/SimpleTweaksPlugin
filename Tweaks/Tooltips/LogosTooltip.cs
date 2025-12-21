@@ -98,12 +98,13 @@ public unsafe class LogosTooltip : TooltipTweaks.SubTweak {
                 var logosItem = Service.Data.Excel.GetSheet<Item>()?.FirstOrNull(a => a.RowId == Item.ItemId);
                 if (logosItem == null) return;
 				var logosMemory = Service.Data.Excel.GetSheet<Item>()?.FirstOrNull(a => a.RowId == logos);
+                if (logosMemory == null) continue;
 				stringLogos += $"{logosMemory.Value.Name.ExtractText()}, ";
             }
 			stringLogos = $"{stringLogos.Substring(0, stringLogos.Length - 2)}.";
             var description = GetTooltipString(stringArrayData, TooltipTweaks.ItemTooltipField.ItemDescription);
 
-            if (description.TextValue.Contains(containsString)) return; // Don't append when it already exists.
+            if (description == null || description.TextValue.Contains(containsString)) return; // Don't append when it already exists.
 
             description.Payloads.Add(RawPayload.LinkTerminator);
 

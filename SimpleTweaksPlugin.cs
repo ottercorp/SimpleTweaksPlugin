@@ -13,6 +13,7 @@ using Dalamud.Game;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
+using KamiToolKit;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Debugging;
 using SimpleTweaksPlugin.Utility;
@@ -64,6 +65,7 @@ namespace SimpleTweaksPlugin {
 
         public void Dispose() {
             SimpleLog.Debug("Dispose");
+            TestUtil.Cancel();
             SaveAllConfig();
             Service.Framework.Update -= FrameworkOnUpdate;
             Service.PluginInterface.UiBuilder.Draw -= this.BuildUI;
@@ -83,6 +85,7 @@ namespace SimpleTweaksPlugin {
             Common.Shutdown();
             TooltipManager.Destroy();
             SimpleEvent.Destroy();
+            KamiToolKitLibrary.Dispose();
             Service.Dispose();
         }
 
@@ -97,7 +100,7 @@ namespace SimpleTweaksPlugin {
             #if TEST
             this.PluginConfig = new SimpleTweaksPluginConfig();
             #else
-            this.PluginConfig = (SimpleTweaksPluginConfig)Service.PluginInterface.GetPluginConfig() ?? new SimpleTweaksPluginConfig();
+            this.PluginConfig = Service.PluginInterface.GetPluginConfig() as SimpleTweaksPluginConfig ?? new SimpleTweaksPluginConfig();
             #endif
             
             this.PluginConfig.Init(this);
@@ -148,6 +151,7 @@ namespace SimpleTweaksPlugin {
         }
         
         private void Initialize() {
+            KamiToolKitLibrary.Initialize(Service.PluginInterface);
             SetupLocalization();
 
             UiHelper.Setup(Service.SigScanner);
@@ -223,7 +227,7 @@ namespace SimpleTweaksPlugin {
             OnConfigCommandHandler(null, null);
         }
 
-        public void OnConfigCommandHandler(object command, object args) {
+        public void OnConfigCommandHandler(object? command, object? args) {
             if (args is string argString) {
                 if (argString == "Debug") {
                     DebugWindow.UnCollapseOrToggle();
@@ -359,7 +363,7 @@ namespace SimpleTweaksPlugin {
             return null;
         }
 
-        public T GetTweak<T>(IEnumerable<BaseTweak>? tweakList = null) where T : BaseTweak {
+        public T? GetTweak<T>(IEnumerable<BaseTweak>? tweakList = null) where T : BaseTweak {
             tweakList ??= Tweaks;
             foreach (var t in tweakList) {
                 if (t is T tweak) return tweak;
@@ -389,10 +393,11 @@ namespace SimpleTweaksPlugin {
             
             
             
-            foreach (var e in ErrorList.Where(e => e.IsNew && e.Tweak != null)) {
+            foreach (var e in ErrorList.Where(e => e is { IsNew: true, Tweak: not null })) {
+                if (e.Tweak == null) continue;
                 e.IsNew = false;
-                e.Tweak.InternalDisable();
-                Service.NotificationManager.AddNotification(new Notification { Content = $"{e.Tweak.Name} has been disabled due to an error.", Title = "Simple Tweaks", Type = NotificationType.Error }); 
+                e.Tweak?.InternalDisable();
+                Service.NotificationManager.AddNotification(new Notification { Content = $"{e.Tweak?.Name} has been disabled due to an error.", Title = "Simple Tweaks", Type = NotificationType.Error }); 
             }
 
             WindowSystem.Draw();
@@ -456,14 +461,14 @@ namespace SimpleTweaksPlugin {
 
 
         internal class CaughtError {
-            public BaseTweak Tweak;
-            public SubTweakManager Manager;
+            public BaseTweak? Tweak;
+            public SubTweakManager? Manager;
             public Exception Exception;
             public bool IsNew = true;
             public bool Closed;
             public string Message = string.Empty;
             public ulong Count = 1;
-            public override bool Equals(object obj) {
+            public override bool Equals(object? obj) {
                 if (obj is CaughtError otherError) {
                     if (otherError.Manager != Manager) return false;
                     if (otherError.Tweak != Tweak) return false;
@@ -484,7 +489,7 @@ namespace SimpleTweaksPlugin {
             Error(null, ex, true, message, callerFilePath, callerLineNumber, callerMemberName);
         }
         
-        public void Error(BaseTweak tweak, Exception exception, bool allowContinue = false, string message = "", [CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0, [CallerMemberName] string callerMemberName = "" ) {
+        public void Error(BaseTweak? tweak, Exception exception, bool allowContinue = false, string message = "", [CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0, [CallerMemberName] string callerMemberName = "" ) {
             if (tweak != null) {
                 SimpleLog.Error($"Exception in '{tweak.Name}'" + (string.IsNullOrEmpty(message) ? "" : ($": {message}")), callerFilePath, callerMemberName, callerLineNumber);
             } else {

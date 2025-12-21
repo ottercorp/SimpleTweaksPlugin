@@ -20,7 +20,7 @@ using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 namespace SimpleTweaksPlugin {
     public partial class UiAdjustmentsConfig {
         public bool ShouldSerializeLimitTargetStatusEffects() => LimitTargetStatusEffects != null;
-        public LimitTargetStatusEffects.Configs LimitTargetStatusEffects = null;
+        public LimitTargetStatusEffects.Configs? LimitTargetStatusEffects = null;
     }
 }
 
@@ -185,7 +185,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 }
 
                 if (localPlayer == null) {
-                    localPlayer = (GameObject*)Service.ClientState.LocalPlayer?.Address;
+                    localPlayer = (GameObject*) (Service.Objects.LocalPlayer?.Address ?? 0);
                     if (localPlayer == null || localPlayer->EntityId == target->EntityId || (Config.FilterOnlyInCombat && !((Character*)localPlayer)->InCombat) || Service.ClientState.IsPvP) {
                         break;
                     }

@@ -72,7 +72,7 @@ public unsafe class AddonDebug : DebugHelper {
                         }
                         case ValueType.String8:
                         case ValueType.String: {
-                            atkValueList.Add(Marshal.PtrToStringUTF8(new IntPtr(a->String)));
+                            atkValueList.Add(Marshal.PtrToStringUTF8(new IntPtr(a->String)) ?? string.Empty);
                             break;
                         }
                         case ValueType.UInt: {
@@ -270,7 +270,7 @@ public unsafe class AddonDebug : DebugHelper {
 
                         var addr = (ulong) l.UpdateItemCallback;
                         if (addr > 0) {
-                            var baseAddr = (ulong) Process.GetCurrentProcess().MainModule.BaseAddress;
+                            var baseAddr = (ulong) (Process.GetCurrentProcess().MainModule?.BaseAddress ?? throw new Exception("Failed to get BaseAddress"));
                             var offset = addr - baseAddr;
                             ImGui.SameLine();
                             DebugManager.ClickToCopyText($"ffxiv_dx11.exe+{offset:X}");
@@ -367,8 +367,9 @@ public unsafe class AddonDebug : DebugHelper {
                         atkValueList.Add(a->Int);
                         break;
                     }
-                    case ValueType.String: {
-                        atkValueList.Add(Marshal.PtrToStringUTF8(new IntPtr(a->String)));
+                    case ValueType.String:
+                    {
+                        atkValueList.Add(Marshal.PtrToStringUTF8(new IntPtr(a->String)) ?? string.Empty);
                         break;
                     }
                     case ValueType.UInt: {

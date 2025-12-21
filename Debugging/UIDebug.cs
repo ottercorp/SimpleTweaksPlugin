@@ -49,7 +49,7 @@ public unsafe class UIDebug : DebugHelper {
     private readonly bool[] selectedInList = new bool[UnitListCount];
     private readonly string[] listNames = ["Depth Layer 1", "Depth Layer 2", "Depth Layer 3", "Depth Layer 4", "Depth Layer 5", "Depth Layer 6", "Depth Layer 7", "Depth Layer 8", "Depth Layer 9", "Depth Layer 10", "Depth Layer 11", "Depth Layer 12", "Depth Layer 13", "Loaded Units", "Focused Units", "Units 16", "Units 17", "Units 18"];
 
-    private static object originalHandler;
+    private static object? originalHandler;
 
     internal bool FindByAddress(AtkResNode* node, ulong address, out List<ulong>? path) {
         if (node == null) {
@@ -348,7 +348,7 @@ public unsafe class UIDebug : DebugHelper {
         public AtkUnitBase* UnitBase;
         public List<NodeResult> Nodes = [];
 
-        public override bool Equals(object obj) {
+        public override bool Equals(object? obj) {
             if (!(obj is AddonResult ar)) return false;
             return UnitBase == ar.UnitBase;
         }
@@ -358,13 +358,13 @@ public unsafe class UIDebug : DebugHelper {
         public AtkResNode* ResNode;
         public NodeState State;
 
-        public override bool Equals(object obj) {
+        public override bool Equals(object? obj) {
             if (!(obj is NodeResult nr)) return false;
             return nr.ResNode == ResNode;
         }
     }
 
-    private static readonly Dictionary<string, Type> AddonMapping = new();
+    private readonly static Dictionary<string, Type?> AddonMapping = new();
 
     private List<NodeResult> GetAtkResNodeAtPosition(AtkUldManager* uldManager, Vector2 position, bool noReverse = false) {
         var list = new List<NodeResult>();
@@ -521,13 +521,14 @@ public unsafe class UIDebug : DebugHelper {
 
         ImGui.Separator();
 
-        object addonObj;
+        object? addonObj;
 
         if (addonName != null && AddonMapping.ContainsKey(addonName)) {
-            if (AddonMapping[addonName] == null) {
+            var m = AddonMapping[addonName];
+            if (m == null) {
                 addonObj = *atkUnitBase;
             } else {
-                addonObj = Marshal.PtrToStructure(new IntPtr(atkUnitBase), AddonMapping[addonName]);
+                addonObj = Marshal.PtrToStructure(new IntPtr(atkUnitBase), m);
             }
         } else if (addonName != null) {
             AddonMapping.Add(addonName, null);
@@ -536,7 +537,7 @@ public unsafe class UIDebug : DebugHelper {
                 try {
                     foreach (var t in a.GetTypes()) {
                         if (!t.IsPublic) continue;
-                        var xivAddonAttr = (AddonAttribute)t.GetCustomAttribute(typeof(AddonAttribute), false);
+                        var xivAddonAttr = (AddonAttribute?)t.GetCustomAttribute(typeof(AddonAttribute), false);
                         if (xivAddonAttr == null) continue;
                         if (!xivAddonAttr.AddonIdentifiers.Contains(addonName)) continue;
                         AddonMapping[addonName] = t;
@@ -599,7 +600,7 @@ public unsafe class UIDebug : DebugHelper {
         }
     }
 
-    public static void PrintNode(AtkResNode* node, bool printSiblings = true, string treePrefix = "", bool textOnly = false) {
+    public static void PrintNode(AtkResNode* node, bool printSiblings = true, string? treePrefix = "", bool textOnly = false) {
         if (node == null)
             return;
 
@@ -655,7 +656,7 @@ public unsafe class UIDebug : DebugHelper {
 
     private static int counterNodeInputNumber;
 
-    private static void PrintSimpleNode(AtkResNode* node, string treePrefix, bool textOnly = false) {
+    private static void PrintSimpleNode(AtkResNode* node, string? treePrefix, bool textOnly = false) {
         bool popped = false;
         bool isVisible = node->IsVisible();
 
@@ -937,7 +938,7 @@ public unsafe class UIDebug : DebugHelper {
 
     }
 
-    private static void PrintComponentNode(AtkResNode* node, string treePrefix, bool textOnly = false) {
+    private static void PrintComponentNode(AtkResNode* node, string? treePrefix, bool textOnly = false) {
         var compNode = (AtkComponentNode*)node;
         var componentInfo = compNode->Component->UldManager;
         var objectInfo = (AtkUldComponentInfo*)componentInfo.Objects;
@@ -1143,10 +1144,10 @@ public unsafe class UIDebug : DebugHelper {
             switch (objectInfo->ComponentType) {
                 case ComponentType.TextInput:
                     var textInputComponent = (AtkComponentTextInput*)compNode->Component;
-                    ImGui.Text($"InputBase Text1: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->AtkComponentInputBase.UnkText1.StringPtr))}");
-                    ImGui.Text($"InputBase Text2: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->AtkComponentInputBase.UnkText2.StringPtr))}");
-                    ImGui.Text($"Text1: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->UnkText01.StringPtr))}");
-                    ImGui.Text($"Text2: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->UnkText02.StringPtr))}");
+                    ImGui.Text($"InputBase Text1: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->AtkComponentInputBase.EvaluatedString.StringPtr))}");
+                    ImGui.Text($"InputBase Text2: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->AtkComponentInputBase.RawString.StringPtr))}");
+                    ImGui.Text($"RawString: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->RawString.StringPtr))}");
+                    ImGui.Text($"EvalString: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->EvaluatedString.StringPtr))}");
                     ImGui.Text($"Text3: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->AvailableLines.StringPtr))}");
                     ImGui.Text($"Text4: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->HighlightedAutoTranslateOptionColorPrefix.StringPtr))}");
                     ImGui.Text($"Text5: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->HighlightedAutoTranslateOptionColorSuffix.StringPtr))}");
@@ -1235,7 +1236,7 @@ public unsafe class UIDebug : DebugHelper {
                         ImGui.TableNextColumn();
                         ImGui.Text($"{evt->State.StateFlags}");
                         ImGui.TableNextColumn();
-                        ImGui.Text($"{evt->State.ReturnFlags}/{evt->State.UnkFlags3}");
+                        ImGui.Text($"{evt->State.ReturnFlags}");
                         ImGui.TableNextColumn();
                         DebugManager.PrintAddress(evt->Target);
                         ImGui.TableNextColumn();
