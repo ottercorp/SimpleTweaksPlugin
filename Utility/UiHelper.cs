@@ -45,28 +45,38 @@ public static unsafe partial class UiHelper {
 
         SetSize(windowNode, width, height);  // Window
         var n = windowNode->Component->UldManager.RootNode;
+        if (n == null) return;
         SetSize(n, width, height);  // Collision
         n = n->PrevSiblingNode;
+        if (n == null) return;
         SetSize(n, (ushort)(width - 14), null); // Header Collision
         n = n->PrevSiblingNode;
+        if (n == null) return;
         SetSize(n, width, height); // Background
         n = n->PrevSiblingNode;
+        if (n == null) return;
         SetSize(n, width, height); // Focused Border
         n = n->PrevSiblingNode;
+        if (n == null) return;
         if (Service.GameConfig.System.GetUInt("ColorThemeType") == 3) {
             SetSize(n, width - 8, height - 16); // Gradient
         } else {
             SetSize(n, width, height); // Gradient
         }
         n = n->PrevSiblingNode;
+        if (n == null) return;
         SetSize(n, (ushort) (width - 5), null); // Header Node
         n = n->ChildNode;
+        if (n == null) return;
         SetSize(n, (ushort) (width - 20), null); // Header Seperator
         n = n->PrevSiblingNode;
+        if (n == null) return;
         SetPosition(n, width - 33, 6); // Close Button
         n = n->PrevSiblingNode;
+        if (n == null) return;
         SetPosition(n, width - 47, 8); // Gear Button
         n = n->PrevSiblingNode;
+        if (n == null) return;
         SetPosition(n, width - 61, 8); // Help Button
 
         windowNode->AtkResNode.DrawFlags |= 0x1;
