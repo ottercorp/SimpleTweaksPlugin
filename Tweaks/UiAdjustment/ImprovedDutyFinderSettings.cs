@@ -356,7 +356,7 @@ public unsafe class ImprovedDutyFinderSettings : UiAdjustments.SubTweak {
     private static byte[] GetCurrentSettingArray() {
         var array = new byte[27];
         var nbSettings = Enum.GetValues<DutyFinderSetting>().Length;
-        for (var i = 4; i < nbSettings; i++) {
+        for (var i = 0; i < nbSettings; i++) {
             array[i] = GetCurrentSettingValue((DutyFinderSetting)i);
             array[i + nbSettings] = GetCurrentSettingValue((DutyFinderSetting)i); // prev value to print in chat when changed
         }
