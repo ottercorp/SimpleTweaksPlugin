@@ -5,8 +5,8 @@ using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using ImGuiNET;
-using Lumina.Excel.GeneratedSheets;
+using Dalamud.Bindings.ImGui;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
@@ -78,18 +78,19 @@ public unsafe class QuickSellItems : Tweak {
     private string retainerSellText = "Have Retainer Sell Items";
 
     protected override void Enable() {
-        var sellRow = Service.Data.Excel.GetSheet<Addon>()?.GetRow(93);
-        if (sellRow != null) sellText = sellRow.Text?.RawString ?? "Sell";
+        var sellRow = Service.Data.Excel.GetSheet<Addon>().GetRowOrDefault(93);
+        if (sellRow != null) sellText = sellRow.Value.Text.ExtractText();
 
-        var retainerSellRow = Service.Data.Excel.GetSheet<Addon>()?.GetRow(5480);
-        if (retainerSellRow != null) retainerSellText = retainerSellRow.Text?.RawString ?? "Have Retainer Sell Items";
+        var retainerSellRow = Service.Data.Excel.GetSheet<Addon>().GetRowOrDefault(5480);
+        if (retainerSellRow != null) retainerSellText = retainerSellRow.Value.Text.ExtractText();
     }
 
     private bool HotkeyIsHeld => (Service.KeyState[VirtualKey.SHIFT] || !Config.Shift) && (Service.KeyState[VirtualKey.CONTROL] || !Config.Ctrl) && (Service.KeyState[VirtualKey.MENU] || !Config.Alt) && (Config.Ctrl || Config.Shift || Config.Alt);
 
-    private void OpenInventoryContextDetour(AgentInventoryContext* agent, uint inventoryId, int slot, int a4, uint addonId) {
+    private void OpenInventoryContextDetour(AgentInventoryContext* agent, InventoryType inventoryId, int slot, int a4, uint addonId) {
         openInventoryContextHook.Original(agent, inventoryId, slot, a4, addonId);
-        var inventoryType = (InventoryType)inventoryId;
+        
+        var inventoryType = inventoryId;
         try {
             bool TrySell(string sellText) {
                 var inventory = InventoryManager.Instance()->GetInventoryContainer(inventoryType);
@@ -97,7 +98,7 @@ public unsafe class QuickSellItems : Tweak {
                 var itemSlot = inventory->GetInventorySlot(slot);
                 if (itemSlot == null) return false;
                 var itemId = itemSlot->ItemId;
-                var item = Service.Data.Excel.GetSheet<Item>()?.GetRow(itemId);
+                var item = Service.Data.Excel.GetSheet<Item>()?.GetRowOrDefault(itemId);
                 if (item == null) return false;
                 var agentAddonId = agent->AgentInterface.GetAddonId();
                 if (agentAddonId == 0) return false;

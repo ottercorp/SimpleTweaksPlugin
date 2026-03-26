@@ -5,7 +5,7 @@ using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 
@@ -42,7 +42,7 @@ public unsafe class ImprovedSentMessageHistory : Tweak {
     [TweakHook, Signature("48 89 5C 24 ?? 57 48 83 EC 20 48 8B 51 18 48 8B F9", DetourName = nameof(TrimHistoryDetour))]
     private HookWrapper<TrimHistory> trimHistoryHook;
     
-    [TweakHook, Signature("E8 ?? ?? ?? ?? 48 8D 8B ?? ?? ?? ?? C6 83 ?? ?? ?? ?? ?? 4C 8B C3 C7 83 ?? ?? ?? ?? ?? ?? ?? ?? 48 8B D7", DetourName = nameof(AddHistoryDetour))]
+    [TweakHook, Signature("E8 ?? ?? ?? ?? 4C 8B C7 C6 87 ?? ?? ?? ?? ?? 48 8B D6", DetourName = nameof(AddHistoryDetour))]
     private HookWrapper<AddHistory> addHistoryHook;
 
 
@@ -82,7 +82,7 @@ public unsafe class ImprovedSentMessageHistory : Tweak {
         if (textInputComponent->AtkTextNode == null) return;
         
         var text = textInputComponent->AtkTextNode->GetText();
-        if (text == null) return;
+        if (text.Value == null) return;
         
         var str = Common.ReadString(text, 500);
         if (string.IsNullOrWhiteSpace(str)) return;

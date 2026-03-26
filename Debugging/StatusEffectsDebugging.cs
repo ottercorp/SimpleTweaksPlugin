@@ -2,11 +2,11 @@
 using System.Linq;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Memory;
-using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.Interop;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
+using Lumina.Excel.Sheets;
 
 namespace SimpleTweaksPlugin.Debugging;
 
@@ -43,23 +43,24 @@ public unsafe class StatusEffectsDebugging : DebugHelper {
 
             ImGui.TableHeadersRow();
 
-            var sheet = Service.Data.Excel.GetSheet<Lumina.Excel.GeneratedSheets.Status>();
+            var sheet = Service.Data.Excel.GetSheet<Status>();
 
             for (var i = 0; i < statusManager->Status.Length; i++) {
                 var status = statusManager->Status.GetPointer(i);
-                var s = sheet?.GetRow(status->StatusId);
+                
                 ImGui.TableNextColumn();
                 ImGui.Text($"{i}");
                 ImGui.TableNextColumn();
                 ImGui.Text($"{status->StatusId}");
                 ImGui.TableNextColumn();
-                if (s != null) {
-                    var statusName = s.Name.ToDalamudString().TextValue;
+
+                if (sheet.TryGetRow(status->StatusId, out var s)) {
+                    var statusName = s.Name.ExtractText();
                     ImGui.Text($"{statusName}");
                 }
 
                 ImGui.TableNextColumn();
-                ImGui.Text($"{status->StackCount}");
+                ImGui.Text($"{status->Param}");
                 ImGui.TableNextColumn();
                 if (s is { IsPermanent: true }) {
                     ImGui.Text("Permanent");
@@ -70,15 +71,15 @@ public unsafe class StatusEffectsDebugging : DebugHelper {
 
                 ImGui.TableNextColumn();
 
-                if (status->SourceId == 0xE0000000 || status->SourceId == 0) {
+                if (status->SourceObject.ObjectId == 0xE0000000 || status->SourceObject.ObjectId == 0) {
                     ImGui.Text("None");
                 } else {
-                    var sourceObj = CharacterManager.Instance()->LookupBattleCharaByEntityId(status->SourceId);
+                    var sourceObj = CharacterManager.Instance()->LookupBattleCharaByEntityId(status->SourceObject.ObjectId);
                     if (sourceObj == null) {
-                        DebugManager.ClickToCopyText($"0x{status->SourceId:X}");
+                        DebugManager.ClickToCopyText($"0x{status->SourceObject.ObjectId:X}");
                     } else {
                         var sourceName = SeString.Parse(sourceObj->Name);
-                        DebugManager.ClickToCopyText($"{sourceName.TextValue}", $"0x{status->SourceId:X}");
+                        DebugManager.ClickToCopyText($"{sourceName.TextValue}", $"0x{status->SourceObject.ObjectId:X}");
                     }
                 }
 
@@ -109,7 +110,7 @@ public unsafe class StatusEffectsDebugging : DebugHelper {
                 if (Service.Targets?.Target == null) {
                     ImGui.Text("No Target");
                 } else {
-                    var targetObject = (GameObject*)Service.Targets?.Target?.Address;
+                    var targetObject = (GameObject*) (Service.Targets.Target?.Address ?? 0);
                     if (targetObject == null || !battleCharaKinds.Contains(targetObject->ObjectKind)) {
                         ImGui.Text($"Unsupported Target Kind: {targetObject->ObjectKind}");
                     } else {
@@ -124,7 +125,7 @@ public unsafe class StatusEffectsDebugging : DebugHelper {
                 if (Service.Targets?.FocusTarget == null) {
                     ImGui.Text("No Focus Target");
                 } else {
-                    var targetObject = (GameObject*)Service.Targets?.FocusTarget?.Address;
+                    var targetObject = (GameObject*) (Service.Targets.FocusTarget?.Address ?? 0);
                     if (targetObject == null || !battleCharaKinds.Contains(targetObject->ObjectKind)) {
                         ImGui.Text($"Unsupported Target Kind: {targetObject->ObjectKind}");
                     } else {

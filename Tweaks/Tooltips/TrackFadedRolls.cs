@@ -4,7 +4,7 @@ using System.Linq;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Enums;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -23,38 +23,28 @@ public unsafe class TrackFadedRolls : TooltipTweaks.SubTweak {
     [TweakHook(typeof(UIState), nameof(UIState.IsItemActionUnlocked), nameof(IsItemActionUnlockedDetour))]
     private HookWrapper<UIState.Delegates.IsItemActionUnlocked> isItemActionUnlockedHookWrapper;
 
+    [LinkHandler(LinkHandlerId.TrackFadedRollsIdentifier)]
     private DalamudLinkPayload identifier;
-
-    protected override void Enable() {
-        identifier = PluginInterface.AddChatLinkHandler((uint) LinkHandlerId.TrackFadedRollsIdentifier, (_, _) => { });
-    }
-
-    protected override void Disable() {
-        PluginInterface.RemoveChatLinkHandler((uint)LinkHandlerId.TrackFadedRollsIdentifier);
-    }
     
    private long IsItemActionUnlockedDetour(UIState* uiState, void* item) {
         if (!IsHoveredItemOrchestrion(out var luminaItem)) {
            return isItemActionUnlockedHookWrapper!.Original(uiState, item);
         }
-        
-        if (luminaItem == null) return 4;
 
         var areAllUnlocked = GetRollsCraftedWithItem(luminaItem)
-            .TrueForAll(o => UIState.Instance()->PlayerState.IsOrchestrionRollUnlocked(o.AdditionalData));
+            .TrueForAll(o => UIState.Instance()->PlayerState.IsOrchestrionRollUnlocked(o.AdditionalData.RowId));
 
         return areAllUnlocked ? 1 : 2;
     }
     
     public override void OnGenerateItemTooltip(NumberArrayData* numberArrayData, StringArrayData* stringArrayData) {
         if (!IsHoveredItemOrchestrion(out var luminaItem)) return;
-        if (luminaItem == null) return;
 
         var craftResults = GetRollsCraftedWithItem(luminaItem);
         if (craftResults.Count > 1) {
             var description = GetTooltipString(stringArrayData, TooltipTweaks.ItemTooltipField.ItemDescription);
-            
-            if (description.Payloads.Any(payload => payload is DalamudLinkPayload { CommandId: (uint)LinkHandlerId.TrackFadedRollsIdentifier })) return; // Don't append when it already exists.
+            if (description == null) return;
+            if (description.Payloads.Any(payload => payload is DalamudLinkPayload dlp && dlp.CommandId == identifier.CommandId)) return; // Don't append when it already exists.
 
             description.Payloads.Add(identifier);
             description.Payloads.Add(RawPayload.LinkTerminator);
@@ -63,7 +53,7 @@ public unsafe class TrackFadedRolls : TooltipTweaks.SubTweak {
             description.Payloads.Add(new TextPayload("Craftable Orchestrion Rolls"));
             
             foreach (var craftedRoll in craftResults) {
-                var isRollUnlocked = UIState.Instance()->PlayerState.IsOrchestrionRollUnlocked(craftedRoll.AdditionalData);
+                var isRollUnlocked = UIState.Instance()->PlayerState.IsOrchestrionRollUnlocked(craftedRoll.AdditionalData.RowId);
                 
                 description.Payloads.Add(new NewLinePayload());
                 description.Payloads.Add(new UIForegroundPayload((ushort)(isRollUnlocked ? 45 : 14)));
@@ -81,14 +71,11 @@ public unsafe class TrackFadedRolls : TooltipTweaks.SubTweak {
     
     private static List<Item> GetRollsCraftedWithItem(Item item) {
         return Service.Data.Excel.GetSheet<Recipe>()!
-            .Where(r => r.UnkData5.Any(i => i.ItemIngredient == item.RowId))
+            .Where(r => r.Ingredient.Any(i => i.IsValid && i.Value.RowId == item.RowId))
+            .Where(r => r.ItemResult.IsValid)
             .Select(r => r.ItemResult.Value)
-            .Where(r => r != null)
             .ToList()!;
     }
 
-    private static bool IsHoveredItemOrchestrion(out Item? item) {
-        item = Service.Data.GetExcelSheet<Item>()!.GetRow(Item.ItemId);
-        return item is { FilterGroup: 12, ItemUICategory.Row: 94, LevelItem.Row: 1 };
-    }
+    private static bool IsHoveredItemOrchestrion(out Item item) => Service.Data.GetExcelSheet<Item>().TryGetRow(Item.ItemId, out item) && item is { FilterGroup: 12, ItemUICategory.RowId: 94, LevelItem.RowId: 1 };
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Dalamud.Game.Config;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using SimpleTweaksPlugin.Tweaks.AbstractTweaks;
 using SimpleTweaksPlugin.TweakSystem;
@@ -224,8 +224,11 @@ public unsafe class SetOptionCommand : CommandTweak {
         var optionDefinition = optionDefinitions.FirstOrDefault(o => string.Equals(o.Name, optionKind, StringComparison.InvariantCultureIgnoreCase)) ?? optionDefinitions.FirstOrDefault(o => o.Alias.Any(a => string.Equals(a, optionKind, StringComparison.InvariantCultureIgnoreCase)));
 
         if (optionDefinition == null) {
-            Service.Chat.PrintError("Unknown Option");
-            Service.Chat.PrintError("/setoption list for a list of options");
+            if (ShowCommandErrors) {
+                Service.Chat.PrintError("Unknown Option");
+                Service.Chat.PrintError("/setoption list for a list of options");
+            }
+
             return;
         }
 
@@ -246,7 +249,7 @@ public unsafe class SetOptionCommand : CommandTweak {
         if (optionDefinition.AllowToggle && inputValue is "t" or "toggle") {
             switch (optionDefinition) {
                 case OptionDefinition<uint> i: {
-                    if (!optionSection.TryGetProperties(optionDefinition.ID, out UIntConfigProperties properties) || properties == null) {
+                    if (!optionSection.TryGetProperties(optionDefinition.ID, out UIntConfigProperties? properties) || properties == null) {
                         Plugin.Error(this, new Exception($"Failed to get option detail for {optionDefinition.Name}"), allowContinue: true);
                         return;
                     }
@@ -290,7 +293,7 @@ public unsafe class SetOptionCommand : CommandTweak {
                 }
             }
         } else {
-            Service.Chat.PrintError($"/setoption {optionKind} ({string.Join(" | ", optionDefinition.ValueNames)})");
+            if (ShowCommandErrors) Service.Chat.PrintError($"/setoption {optionKind} ({string.Join(" | ", optionDefinition.ValueNames)})");
         }
     }
 }

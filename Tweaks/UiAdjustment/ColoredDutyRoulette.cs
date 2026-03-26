@@ -5,12 +5,11 @@ using System.Text.RegularExpressions;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Interface.Utility;
 using Dalamud.Utility;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
-using Lumina.Excel.GeneratedSheets;
+using Dalamud.Bindings.ImGui;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -41,9 +40,9 @@ public unsafe partial class ColoredDutyRoulette : UiAdjustments.SubTweak {
         public List<uint> EnabledRoulettes = new();
     }
     
-    private Config TweakConfig { get; set; } = null!;
+    [TweakConfig] private Config TweakConfig { get; set; } = null!;
 
-    private void DrawConfig() {
+    protected void DrawConfig() {
         if (ImGui.Checkbox("Recolor Completed Roulettes", ref TweakConfig.ColorCompleteRoulette)) SaveConfig(TweakConfig);
         if (ImGui.Checkbox("Recolor Incomplete Roulettes", ref TweakConfig.ColorIncompleteRoulette)) SaveConfig(TweakConfig);
         if (ImGui.ColorEdit4("Completed Color", ref TweakConfig.CompleteColor, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.AlphaPreviewHalf)) SaveConfig(TweakConfig);
@@ -87,14 +86,14 @@ public unsafe partial class ColoredDutyRoulette : UiAdjustments.SubTweak {
     
     [AddonPostRefresh("ContentsFinder")]
     private void OnContentsFinderRefresh(AddonRefreshArgs args) {
-        var addon = (AddonContentsFinder*) args.Addon;
+        var addon = (AddonContentsFinder*) args.Addon.Address;
 
         foreach (var itemRenderer in addon->DutyList->Items.AsSpan()) {
             var componentNode = itemRenderer.Value->Renderer->AtkDragDropInterface.ComponentNode;
             if (componentNode is null) continue;
 
             var textNode = (AtkTextNode*)componentNode->Component->GetTextNodeById(5);
-            var levelNode = (AtkTextNode*)componentNode->Component->GetTextNodeById(15);
+            var levelNode = (AtkTextNode*)componentNode->Component->GetTextNodeById(18);
             if (levelNode is null || textNode is null) continue;
 
             if (AgentContentsFinder.Instance()->SelectedTab is not 0) {

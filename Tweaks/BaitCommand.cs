@@ -4,7 +4,7 @@ using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Tweaks.AbstractTweaks;
 using SimpleTweaksPlugin.TweakSystem;
 
@@ -18,12 +18,12 @@ public unsafe class BaitCommand : CommandTweak {
     protected override string Command => "bait";
 
     private static readonly Dictionary<string, uint> Bait = Service.Data.GetExcelSheet<Item>()!
-        .Where(i => i.ItemSearchCategory.Row == 30)
+        .Where(i => i.ItemSearchCategory.RowId == 30)
         .ToDictionary(b => b.Name.ToString().ToLower(), b => b.RowId);
     
     private delegate byte ExecuteCommandDelegate(int id, int unk1, uint baitId, int unk2, int unk3);
     
-    [Signature("E8 ?? ?? ?? ?? 8D 43 0A")]
+    [Signature("E8 ?? ?? ?? ?? 8D 46 0A")]
     private ExecuteCommandDelegate executeCommand;
 
     protected override void OnCommand(string args) {
@@ -43,14 +43,14 @@ public unsafe class BaitCommand : CommandTweak {
 
         if (InventoryManager.Instance()->GetInventoryItemCount(bait) <= 0) {
             SimpleLog.Debug("refusing to switch, not enough bait");
-            Service.Chat.PrintError("You have none of that bait.", Name);
+            if (ShowCommandErrors) Service.Chat.PrintError("You have none of that bait.", Name);
             return;
         }
         
         var fishing = Service.Condition[ConditionFlag.Fishing];
         if (fishing) {
             SimpleLog.Debug("refusing to switch, fishing");
-            Service.Chat.PrintError("You cannot currently change bait.", Name);
+            if (ShowCommandErrors) Service.Chat.PrintError("You cannot currently change bait.", Name);
             return;
         }
 

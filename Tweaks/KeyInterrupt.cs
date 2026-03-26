@@ -5,7 +5,7 @@ using System.Threading;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Colors;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.TweakSystem;
 
 // ReSharper disable UnusedMethodReturnValue.Local
@@ -20,6 +20,7 @@ namespace SimpleTweaksPlugin.Tweaks;
 [TweakAuthor("KazWolfe")]
 [TweakDescription("Block Alt-Tab and other keys to keep you in the game.")]
 [TweakAutoConfig]
+[Changelog("1.10.11.0", "Added option to block Caps Lock key", Author = "KazWolfe")]
 public partial class KeyInterrupt : Tweak {
     public class Configs : TweakConfig {
         public bool InCombatOnly = true;
@@ -27,6 +28,7 @@ public partial class KeyInterrupt : Tweak {
         public bool BlockAltTab = true;
         public bool BlockWinKey = true;
         public bool BlockCtrlEsc = true;
+        public bool BlockCapsLock = false;
     }
 
     private const int WH_KEYBOARD_LL = 13;
@@ -177,6 +179,10 @@ public partial class KeyInterrupt : Tweak {
         if (ImGui.Checkbox("Block Ctrl-Esc", ref this.Config.BlockCtrlEsc)) {
             hasChanged = true;
         }
+        
+        if (ImGui.Checkbox("Block Caps Lock", ref this.Config.BlockCapsLock)) {
+            hasChanged = true;
+        }
 
         ImGui.Spacing();
 
@@ -201,6 +207,7 @@ public partial class KeyInterrupt : Tweak {
             case VirtualKey.F4 when lParam.flags == KeyInfoFlags.LLKHF_ALTDOWN:
             case VirtualKey.ESCAPE when IsKeyDown(VirtualKey.CONTROL) && this.Config.BlockCtrlEsc:
             case VirtualKey.LWIN or VirtualKey.RWIN when this.Config.BlockWinKey:
+            case VirtualKey.CAPITAL when this.Config.BlockCapsLock:
                 // Send this keystroke to the game directly so it can be used as a keybind 
                 SendMessageW(handle, lParam.flags == KeyInfoFlags.LLKHF_UP ? WM_KEYUP : WM_KEYDOWN, lParam.vkCode, 0);
                 return 1;

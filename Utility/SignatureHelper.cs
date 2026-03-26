@@ -95,8 +95,8 @@ public static class SignatureHelper {
 
     private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-    private static PropertyInfo PIsFunctionPointer { get; } = typeof(Type).GetProperty("IsFunctionPointer", BindingFlags.Public | BindingFlags.Instance);
-    private static PropertyInfo PIsUnmanagedFunctionPointer { get; } = typeof(Type).GetProperty("IsUnmanagedFunctionPointer", BindingFlags.Public | BindingFlags.Instance);
+    private static PropertyInfo? PIsFunctionPointer { get; } = typeof(Type).GetProperty("IsFunctionPointer", BindingFlags.Public | BindingFlags.Instance);
+    private static PropertyInfo? PIsUnmanagedFunctionPointer { get; } = typeof(Type).GetProperty("IsUnmanagedFunctionPointer", BindingFlags.Public | BindingFlags.Instance);
 
     public static void Initialise(object self, bool log = true) {
         var scanner = Service.SigScanner;
@@ -117,7 +117,12 @@ public static class SignatureHelper {
                 fallibility = info.IsNullable || wasWrapped ? Fallibility.Fallible : Fallibility.Infallible;
             }
 
+            #if TEST
+            var fallible = false;
+            #else
             var fallible = fallibility == Fallibility.Fallible;
+            #endif
+            
 
             void Invalid(string message, bool prepend = true) {
                 var errorMsg = prepend ? $"Invalid Signature attribute for {selfType.FullName}.{info.Name}: {message}" : message;
@@ -202,8 +207,9 @@ public static class SignatureHelper {
                     var hookType = actualType;
 
                     if (isHookWrapper) {
-                        hookType = actualType.GetField("wrappedHook", BindingFlags.Instance | BindingFlags.NonPublic).FieldType;
+                        hookType = actualType.GetField("wrappedHook", BindingFlags.Instance | BindingFlags.NonPublic)?.FieldType;
                     }
+                    if (hookType == null) continue;
 
                     var createMethod = hookType.GetMethod("FromAddress", BindingFlags.Static | BindingFlags.NonPublic);
                     if (createMethod == null) {

@@ -4,7 +4,7 @@ using System.Linq;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Enums;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -51,40 +51,37 @@ public unsafe class TrackGachaItems : TooltipTweaks.SubTweak {
         ],
     };
 
-    private DalamudLinkPayload? identifier;
+    [LinkHandler(LinkHandlerId.TrackGachaItemsIdentifier)]
+    private DalamudLinkPayload identifier;
 
     [TweakHook(typeof(UIState), nameof(UIState.IsItemActionUnlocked), nameof(IsItemActionUnlockedDetour))]
     private HookWrapper<UIState.Delegates.IsItemActionUnlocked>? isItemActionUnlockedHookWrapper;
-
-    protected override void Enable() {
-        identifier = PluginInterface.AddChatLinkHandler((uint)LinkHandlerId.TrackGachaItemsIdentifier, (_, _) => { });
-    }
 
     private bool IsGachaFullyObtained(uint[] gachaList, out int obtainedCount) {
         obtainedCount = 0;
         var allObtained = true;
         foreach (var i in gachaList) {
-            var gachaResultItem = Service.Data.Excel.GetSheet<Item>()?.GetRow(i);
-            if (gachaResultItem == null || gachaResultItem.ItemAction.Row == 0) continue;
+            var gachaResultItem = Service.Data.Excel.GetSheet<Item>().GetRowOrDefault(i);
+            if (gachaResultItem == null || gachaResultItem.Value.ItemAction.RowId == 0) continue;
 
             var obtained = false;
-            var action = gachaResultItem.ItemAction.Value;
-            if (action == null) continue;
-            switch (action.Type) {
+            var action = gachaResultItem.Value.ItemAction;
+            if (!action.IsValid || action.RowId == 0) continue;
+            switch (action.Value.Action.RowId) {
                 case 1322:
                     // Mount
-                    obtained = UIState.Instance()->PlayerState.IsMountUnlocked(action.Data[0]);
+                    obtained = UIState.Instance()->PlayerState.IsMountUnlocked(action.Value.Data[0]);
                     break;
                 case 853:
                     // Minion
-                    obtained = UIState.Instance()->IsCompanionUnlocked(action.Data[0]);
+                    obtained = UIState.Instance()->IsCompanionUnlocked(action.Value.Data[0]);
                     break;
                 case 3357:
                     // Triad Card
-                    obtained = UIState.Instance()->IsTripleTriadCardUnlocked((ushort)gachaResultItem.AdditionalData);
+                    obtained = UIState.Instance()->IsTripleTriadCardUnlocked((ushort)gachaResultItem.Value.AdditionalData.RowId);
                     break;
                 default:
-                    Plugin.Error(this, new Exception($"Unhandled Item Action Type: {gachaResultItem?.ItemAction?.Value?.Type}"), true);
+                    Plugin.Error(this, new Exception($"Unhandled Item Action Type: {action.Value.Action.RowId}"), true);
                     break;
             }
 
@@ -102,8 +99,8 @@ public unsafe class TrackGachaItems : TooltipTweaks.SubTweak {
         if (!Gachas.TryGetValue(Item.ItemId, out var gachaList)) return;
         var fullyObtained = IsGachaFullyObtained(gachaList, out var obtainedCount);
         var description = GetTooltipString(stringArrayData, TooltipTweaks.ItemTooltipField.ItemDescription);
-
-        if (description.Payloads.Any(payload => payload is DalamudLinkPayload { CommandId: (uint)LinkHandlerId.TrackGachaItemsIdentifier })) return; // Don't append when it already exists.
+        if (description == null) return;
+        if (description.Payloads.Any(payload => payload is DalamudLinkPayload dlp && dlp.CommandId == identifier.CommandId)) return; // Don't append when it already exists.
 
         description.Payloads.Add(identifier);
         description.Payloads.Add(RawPayload.LinkTerminator);
@@ -128,15 +125,11 @@ public unsafe class TrackGachaItems : TooltipTweaks.SubTweak {
     }
 
     private long IsItemActionUnlockedDetour(UIState* uiState, void* item) {
-        var loadedItem = Service.Data.Excel.GetSheet<Item>()?.GetRow(LoadedItem);
-        if (loadedItem != null && Gachas.TryGetValue(loadedItem.RowId, out var gachaList)) {
+        var loadedItem = Service.Data.Excel.GetSheet<Item>().GetRowOrDefault(LoadedItem);
+        if (loadedItem != null && Gachas.TryGetValue(loadedItem.Value.RowId, out var gachaList)) {
             return (byte)(IsGachaFullyObtained(gachaList, out _) ? 1 : 2);
         }
 
         return isItemActionUnlockedHookWrapper!.Original(uiState, item);
-    }
-
-    protected override void Disable() {
-        PluginInterface.RemoveChatLinkHandler((uint)LinkHandlerId.TrackGachaItemsIdentifier);
     }
 }

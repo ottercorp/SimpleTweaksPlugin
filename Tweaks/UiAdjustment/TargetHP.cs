@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Numerics;
 using Dalamud.Game.ClientState.Objects.Types;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -38,14 +38,19 @@ public unsafe class TargetHP : UiAdjustments.SubTweak {
         [Description("Short Number")] ZeroDecimalPrecision,
         [Description("1 Decimal")] OneDecimalPrecision,
         [Description("2 Decimal")] TwoDecimalPrecision,
+        
+        // Percent Displays
+        [Description("Percent, no decimal")] Percent0Decimal = 1000,
+        [Description("Percent, 1 decimal")] Percent1Decimal,
+        [Description("Percent, 2 decimal")] Percent2Decimal,
     }
 
     public Configs Config { get; private set; }
 
     protected void DrawConfig(ref bool hasChanged) {
-        if (ImGui.BeginCombo("Display Format###targetHpFormat", $"{Config.DisplayFormat.GetDescription()} ({FormatNumber(5555555, Config.DisplayFormat)})")) {
+        if (ImGui.BeginCombo("Display Format###targetHpFormat", $"{Config.DisplayFormat.GetDescription()} ({FormatNumber(5555555, 10000000, Config.DisplayFormat)})")) {
             foreach (var v in (DisplayFormat[])Enum.GetValues(typeof(DisplayFormat))) {
-                if (!ImGui.Selectable($"{v.GetDescription()} ({FormatNumber(5555555, v)})##targetHpFormatSelect", Config.DisplayFormat == v)) continue;
+                if (!ImGui.Selectable($"{v.GetDescription()} ({FormatNumber(5555555, 10000000, v)})##targetHpFormatSelect", Config.DisplayFormat == v)) continue;
                 Config.DisplayFormat = v;
                 hasChanged = true;
             }
@@ -128,31 +133,36 @@ public unsafe class TargetHP : UiAdjustments.SubTweak {
         }
     }
 
-    private void UpdateMainTarget(AtkUnitBase* unitBase, IGameObject target, bool reset = false) {
-        if (unitBase == null || unitBase->UldManager.NodeList == null || unitBase->UldManager.NodeListCount < 40) return;
-        var gauge = (AtkComponentNode*)unitBase->UldManager.NodeList[36];
-        var textNode = (AtkTextNode*)unitBase->UldManager.NodeList[39];
-        UiHelper.SetSize(unitBase->UldManager.NodeList[37], reset || !Config.HideAutoAttack ? 44 : 0, reset || !Config.HideAutoAttack ? 20 : 0);
+    private void UpdateMainTarget(AtkUnitBase* unitBase, IGameObject? target, bool reset = false) {
+        if (unitBase == null) return;
+        var gauge = unitBase->GetComponentNodeById(19);
+        var textNode = unitBase->GetTextNodeById(16);
+        var autoAttackNode = unitBase->GetImageNodeById(18);
+        if (gauge == null || textNode == null || autoAttackNode == null) return;
+        UiHelper.SetSize(autoAttackNode, reset || !Config.HideAutoAttack ? 44 : 0, reset || !Config.HideAutoAttack ? 20 : 0);
         UpdateGaugeBar(gauge, textNode, target, Config.Position, Config.UseCustomColor ? Config.CustomColor : null, Config.FontSize, Config.AlignLeft, reset);
     }
 
-    private void UpdateFocusTarget(AtkUnitBase* unitBase, IGameObject target, bool reset = false) {
+    private void UpdateFocusTarget(AtkUnitBase* unitBase, IGameObject? target, bool reset = false) {
         if (Config.NoFocus) reset = true;
-        if (unitBase == null || unitBase->UldManager.NodeList == null || unitBase->UldManager.NodeListCount < 11) return;
-        var gauge = (AtkComponentNode*)unitBase->UldManager.NodeList[2];
-        var textNode = (AtkTextNode*)unitBase->UldManager.NodeList[10];
+        if (unitBase == null) return;
+        var gauge = unitBase->GetComponentNodeById(18);
+        var textNode = unitBase->GetTextNodeById(10);
+        if (gauge == null || textNode == null) return;
         UpdateGaugeBar(gauge, textNode, target, Config.FocusPosition, Config.FocusUseCustomColor ? Config.FocusCustomColor : null, Config.FocusFontSize, Config.FocusAlignLeft, reset);
     }
 
-    private void UpdateMainTargetSplit(AtkUnitBase* unitBase, IGameObject target, bool reset = false) {
-        if (unitBase == null || unitBase->UldManager.NodeList == null || unitBase->UldManager.NodeListCount < 9) return;
-        var gauge = (AtkComponentNode*)unitBase->UldManager.NodeList[5];
-        var textNode = (AtkTextNode*)unitBase->UldManager.NodeList[8];
-        UiHelper.SetSize(unitBase->UldManager.NodeList[6], reset || !Config.HideAutoAttack ? 44 : 0, reset || !Config.HideAutoAttack ? 20 : 0);
+    private void UpdateMainTargetSplit(AtkUnitBase* unitBase, IGameObject? target, bool reset = false) {
+        if (unitBase == null) return;
+        var gauge = unitBase->GetComponentNodeById(13);
+        var textNode = unitBase->GetTextNodeById(10);
+        var autoAttackNode = unitBase->GetImageNodeById(12);
+        if (gauge == null || textNode == null || autoAttackNode == null) return;
+        UiHelper.SetSize(autoAttackNode, reset || !Config.HideAutoAttack ? 44 : 0, reset || !Config.HideAutoAttack ? 20 : 0);
         UpdateGaugeBar(gauge, textNode, target, Config.Position, Config.UseCustomColor ? Config.CustomColor : null, Config.FontSize, Config.AlignLeft, reset);
     }
 
-    private void UpdateGaugeBar(AtkComponentNode* gauge, AtkTextNode* cloneTextNode, IGameObject target, Vector2 positionOffset, Vector4? customColor, byte fontSize, bool alignLeft, bool reset) {
+    private void UpdateGaugeBar(AtkComponentNode* gauge, AtkTextNode* cloneTextNode, IGameObject? target, Vector2 positionOffset, Vector4? customColor, byte fontSize, bool alignLeft, bool reset) {
         if (gauge == null || (ushort)gauge->AtkResNode.Type < 1000) return;
 
         AtkTextNode* textNode = null;
@@ -212,14 +222,26 @@ public unsafe class TargetHP : UiAdjustments.SubTweak {
         textNode->FontSize = fontSize;
 
         if (target is ICharacter chara) {
-            textNode->SetText($"{FormatNumber(chara.CurrentHp)}/{FormatNumber(chara.MaxHp)}");
+            textNode->SetText(FormatNumber(chara.CurrentHp, chara.MaxHp));
         } else {
             textNode->SetText("");
         }
     }
 
-    private string FormatNumber(uint num, DisplayFormat? displayFormat = null) {
+    private string FormatNumber(uint num, uint max, DisplayFormat? displayFormat = null) {
         displayFormat ??= Config.DisplayFormat;
+
+        if (displayFormat >= DisplayFormat.Percent0Decimal) {
+            var percent = num / (float)max * 100;
+            return displayFormat switch {
+                DisplayFormat.Percent0Decimal => $"{percent:F0}%",
+                DisplayFormat.Percent1Decimal => $"{percent:F1}%",
+                DisplayFormat.Percent2Decimal => $"{percent:F2}%",
+                _ => $"{percent}%"
+            };
+        }
+
+        if (max != 0) return $"{FormatNumber(num, 0, displayFormat)}/{FormatNumber(max, 0, displayFormat)}";
         if (displayFormat == DisplayFormat.FullNumber) return num.ToString(Culture);
         if (displayFormat == DisplayFormat.FullNumberSeparators) return num.ToString("N0", Culture);
 

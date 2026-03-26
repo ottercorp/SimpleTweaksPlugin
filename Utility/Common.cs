@@ -9,17 +9,24 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.IoC;
 using Dalamud.Networking.Http;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.Attributes;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using FFXIVClientStructs.FFXIV.Client.UI.Shell;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
+using KamiToolKit;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Debugging;
+using SimpleTweaksPlugin.Enums;
+using Action = System.Action;
 using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace SimpleTweaksPlugin.Utility;
@@ -32,8 +39,8 @@ public unsafe class Common {
     public static Utf8String* LastCommand { get; private set; }
 
     public static uint ClientStructsVersion => CsVersion.Value;
-    private static readonly Lazy<uint> CsVersion = new(() => uint.TryParse(FFXIVClientStructs.ThisAssembly.Git.Commits, out var v) ? v : 0);
-
+    private static readonly Lazy<uint> CsVersion = new(() => (uint?)typeof(FFXIVClientStructs.ThisAssembly).Assembly.GetName().Version?.Build ?? 0U);
+    
     public static event Action FrameworkUpdate;
 
     public static void InvokeFrameworkUpdate() {
@@ -53,7 +60,7 @@ public unsafe class Common {
     public static void* ThrowawayOut { get; private set; } = (void*)Marshal.AllocHGlobal(1024);
 
     public static void Setup() {
-        LastCommandAddress = Service.SigScanner.GetStaticAddressFromSig("4C 8D 05 ?? ?? ?? ?? 41 B1 01 49 8B D4 E8 ?? ?? ?? ?? 83 EB 06");
+        LastCommandAddress = Service.SigScanner.GetStaticAddressFromSig("4C 8D 05 ?? ?? ?? ?? 49 8B D4 48 8B C8 E8 ?? ?? ?? ?? 83 EB 06");
         LastCommand = (Utf8String*)(LastCommandAddress);
 
         updateCursorHook = Hook<AtkModuleUpdateCursor>("48 89 74 24 ?? 48 89 7C 24 ?? 41 56 48 83 EC 20 4C 8B F1 E8 ?? ?? ?? ?? 49 8B CE", UpdateCursorDetour);
@@ -68,12 +75,12 @@ public unsafe class Common {
     }
 
     public static AtkUnitBase* GetUnitBase(string name, int index = 1) {
-        return (AtkUnitBase*)Service.GameGui.GetAddonByName(name, index);
+        return (AtkUnitBase*)Service.GameGui.GetAddonByName(name, index).Address;
     }
 
-    public static T* GetUnitBase<T>(string name = null, int index = 1) where T : unmanaged {
+    public static T* GetUnitBase<T>(string? name = null, int index = 1) where T : unmanaged {
         if (string.IsNullOrEmpty(name)) {
-            var attr = (Addon)typeof(T).GetCustomAttribute(typeof(Addon));
+            var attr = (AddonAttribute?) typeof(T).GetCustomAttribute(typeof(AddonAttribute));
             if (attr != null) {
                 name = attr.AddonIdentifiers.FirstOrDefault();
             }
@@ -81,13 +88,13 @@ public unsafe class Common {
 
         if (string.IsNullOrEmpty(name)) return null;
 
-        return (T*)Service.GameGui.GetAddonByName(name, index);
+        return (T*)Service.GameGui.GetAddonByName(name, index).Address;
     }
 
-    public static bool GetUnitBase<T>(out T* unitBase, string name = null, int index = 1) where T : unmanaged {
+    public static bool GetUnitBase<T>(out T* unitBase, string? name = null, int index = 1) where T : unmanaged {
         unitBase = null;
         if (string.IsNullOrEmpty(name)) {
-            var attr = (Addon)typeof(T).GetCustomAttribute(typeof(Addon));
+            var attr = (AddonAttribute?) typeof(T).GetCustomAttribute(typeof(AddonAttribute));
             if (attr != null) {
                 name = attr.AddonIdentifiers.FirstOrDefault();
             }
@@ -95,20 +102,11 @@ public unsafe class Common {
 
         if (string.IsNullOrEmpty(name)) return false;
 
-        unitBase = (T*)Service.GameGui.GetAddonByName(name, index);
+        unitBase = (T*)Service.GameGui.GetAddonByName(name, index).Address;
         return unitBase != null;
     }
 
-    public static void WriteSeString(byte** startPtr, IntPtr alloc, SeString seString) {
-        if (startPtr == null) return;
-        var start = *(startPtr);
-        if (start == null) return;
-        if (start == (byte*)alloc) return;
-        WriteSeString((byte*)alloc, seString);
-        *startPtr = (byte*)alloc;
-    }
-
-    public static SeString ReadSeString(byte** startPtr) {
+    public static SeString? ReadSeString(byte** startPtr) {
         if (startPtr == null) return null;
         var start = *(startPtr);
         if (start == null) return null;
@@ -131,29 +129,8 @@ public unsafe class Common {
         return SeString.Parse(bytes);
     }
 
-    public static void WriteSeString(byte* dst, SeString s) {
-        var bytes = s.Encode();
-        for (var i = 0; i < bytes.Length; i++) {
-            *(dst + i) = bytes[i];
-        }
-
-        *(dst + bytes.Length) = 0;
-    }
-
     public static SeString ReadSeString(Utf8String xivString) => SeString.Parse(xivString);
-
-    public static void WriteSeString(Utf8String xivString, SeString s) {
-        var bytes = s.Encode();
-        int i;
-        xivString.BufUsed = 0;
-        for (i = 0; i < bytes.Length && i < xivString.BufSize - 1; i++) {
-            *(xivString.StringPtr + i) = bytes[i];
-            xivString.BufUsed++;
-        }
-
-        *(xivString.StringPtr + i) = 0;
-    }
-
+    
     public static HookWrapper<T> Hook<T>(string signature, T detour, int addressOffset = 0) where T : Delegate {
         var addr = Service.SigScanner.ScanText(signature);
         var h = ImNotGonnaCallItThat.HookFromAddress(addr + addressOffset, detour);
@@ -352,6 +329,18 @@ public unsafe class Common {
         return sibNode != null ? GetNodeByIDChain(sibNode, ids) : null;
     }
 
+    public static bool AnyFocused(params AtkUnitBase*[] unitBase) {
+        var focusedList = &RaptureAtkUnitManager.Instance()->FocusedUnitsList;
+        foreach (var f in focusedList->Entries) {
+            if (f.Value == null) continue;
+            foreach (var u in unitBase) {
+                if (u == f.Value) return true;
+            }
+        }
+
+        return false;
+    }
+    
     public static void Shutdown() {
         if (ThrowawayOut != null) {
             Marshal.FreeHGlobal(new IntPtr(ThrowawayOut));
@@ -430,7 +419,7 @@ public unsafe class Common {
         updateCursorHook?.Disable();
     }
 
-    public static string GetTexturePath(AtkImageNode* imageNode) {
+    public static string? GetTexturePath(AtkImageNode* imageNode) {
         if (imageNode == null) return null;
         var partList = imageNode->PartsList;
         if (partList == null || partList->Parts == null) return null;
@@ -446,7 +435,7 @@ public unsafe class Common {
         return handle->ResourceHandle.FileName.ToString();
     }
 
-    public static string ReadString(byte* b, int maxLength = 0, bool nullIsEmpty = true) {
+    public static string? ReadString(byte* b, int maxLength = 0, bool nullIsEmpty = true) {
         if (b == null) return nullIsEmpty ? string.Empty : null;
         if (maxLength > 0) return Encoding.UTF8.GetString(b, maxLength).Split('\0')[0];
         var l = 0;
@@ -454,7 +443,7 @@ public unsafe class Common {
         return Encoding.UTF8.GetString(b, l);
     }
 
-    private static HttpClient httpClient;
+    private static HttpClient? httpClient;
     private static HappyEyeballsCallback happyEyeballsCallback;
 
     public static HttpClient HttpClient {

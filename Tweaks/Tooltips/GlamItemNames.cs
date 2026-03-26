@@ -12,7 +12,7 @@ namespace SimpleTweaksPlugin.Tweaks.Tooltips;
 [TweakDescription("Displays the glamoured item name underneath the real item name.")]
 [TweakReleaseVersion("1.9.3.0")]
 public unsafe class GlamItemNames : TooltipTweaks.SubTweak {
-    private const uint ItemTooltipNameNodeID = 32;
+    private const uint ItemTooltipNameNodeID = 33;
     private const byte NameDefaultFontSize = 14;
 
     private const string GlamNameReplacementText = "GlamNameReplacementText";
@@ -20,8 +20,7 @@ public unsafe class GlamItemNames : TooltipTweaks.SubTweak {
     private string last = "";
 
     public override void OnGenerateItemTooltip(NumberArrayData* numberArrayData, StringArrayData* stringArrayData) {
-        if (Service.ClientState.LocalPlayer == null) return;
-        if (Service.GameGui.HoveredItem > uint.MaxValue) return;
+        if (Service.Objects.LocalPlayer == null) return;
         AtkUnitBase* unitBase = Common.GetUnitBase("ItemDetail");
         if (unitBase == null) return;
 
@@ -34,13 +33,13 @@ public unsafe class GlamItemNames : TooltipTweaks.SubTweak {
         if (vanillaNameNode == null) return;
         vanillaNameNode->ToggleVisibility(true);
 
-        SeString glamName = GetTooltipString(stringArrayData, TooltipTweaks.ItemTooltipField.GlamourName);
+        var glamName = GetTooltipString(stringArrayData, TooltipTweaks.ItemTooltipField.GlamourName);
 
         // We don't need to do anything the item isn't / cannot be glamoured
         if (glamName == null) return;
 
-        SeString normalName = GetTooltipString(stringArrayData, TooltipTweaks.ItemTooltipField.ItemName);
-
+        var normalName = GetTooltipString(stringArrayData, TooltipTweaks.ItemTooltipField.ItemName);
+        if (normalName == null) return;
         normalName.Append(NewLinePayload.Payload);
         normalName.Append(glamName);
 
@@ -58,7 +57,7 @@ public unsafe class GlamItemNames : TooltipTweaks.SubTweak {
             do {
                 replacementNameNode->FontSize = fs;
                 // Set the text each time we change the font to update the drawn size of the text
-                replacementNameNode->SetText(normalName.Encode());
+                replacementNameNode->SetText(normalName.EncodeWithNullTerminator());
                 replacementNameNode->GetTextDrawSize(&w, &h);
                 fs -= 1;
             } while (h > 35);
@@ -80,7 +79,6 @@ public unsafe class GlamItemNames : TooltipTweaks.SubTweak {
         node->AtkResNode.SetPositionFloat(replacedNode->GetXFloat(), replacedNode->GetYFloat());
         node->FontSize = NameDefaultFontSize;
         node->TextFlags = replacedNode->GetAsAtkTextNode()->TextFlags;
-        node->TextFlags2 = replacedNode->GetAsAtkTextNode()->TextFlags2;
         node->AlignmentFontType = replacedNode->GetAsAtkTextNode()->AlignmentFontType;
         node->LineSpacing = replacedNode->GetAsAtkTextNode()->LineSpacing;
         node->SetAlignment(replacedNode->GetAsAtkTextNode()->AlignmentType);

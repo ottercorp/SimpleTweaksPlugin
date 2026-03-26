@@ -1,5 +1,191 @@
 # Changelog
 
+## 1.10.12.6
+***Tweak Changes***
+- **`Fix '/target' command`** - Add ability to clear target by providing no name.
+
+
+## 1.10.12.1
+***Tweak Changes***
+- **`Increase max line count in chat bubbles`** - Added ability to adjust the duration of chat bubbles.
+
+
+## 1.10.12.0
+***General Changes***
+- Disabled error messages in chat when using a tweak command in a macro after using '/macroerror off'.
+
+***New Tweaks***
+- **`Enable chat bubbles in combat`** - Allow chat bubbles to be displayed while in combat.
+
+
+## 1.10.11.1
+***New Tweaks***
+- **`Increase max line count in chat bubbles`** - Allow upto 7 lines of text to be displayed in chat bubbles.
+
+
+***Tweak Changes***
+- **`Adjust Equipment Positions`** - Fixed incorrect ordering of equipment.
+
+- **`Reduced Deep Dungeon Info`** - Fixed crash.
+
+## 1.10.11.0
+***General Changes***
+- Fixed translation loading.
+
+***New Tweaks***
+- **`Use Steam Floating Keyboard`** - Replaces the default Steam Virtual Keyboard with one that doesn't take over the screen. *(KazWolfe)*
+
+
+***Tweak Changes***
+- **`Accurate Venture Times`** - Reduced the size of the timer when not using simple display.
+
+- **`Auto Lock Action Bars`** - Added option to automatically unlock after combat ends. *(SitiSchu)*
+
+- **`Change Map Area Colours`** - Added reset button to return option to default colour.
+
+- **`Keyboard Gaming Mode`** - Added option to block Caps Lock key *(KazWolfe)*
+
+
+## 1.10.10.0
+***New Tweaks***
+- **`Phantom Job Command`** - Adds a command to switch phantom jobs within Occult Crescent
+
+
+***Tweak Changes***
+- **`Display EXP Gain Percentage of Level`**
+  - Added support for Occult Crescent's phantom jobs.
+  - Added support for earning experience on jobs other than current job.
+
+
+## 1.10.9.4
+***New Tweaks***
+- **`Squadron Chemistry Available Icon`** - Show an icon over squadron members who have a new chemistry available.
+
+
+***Tweak Changes***
+- **`Label Submarine Destinations with Letters`** - Rewritten to fix issues, re-enabled tweak.
+
+
+## 1.10.9.3
+***Tweak Changes***
+- **`Hide Unwanted Banners`**
+  - Added banners for Stellar Missions *(MidoriKami)*
+  - Added ability to add other banners after being seen
+  - Added image previews for banners
+
+
+## 1.10.9.1
+***New Tweaks***
+- **`Clickable Alarm Icon`** - Allows clicking the alarm icon in the server bar to open the alarm window.
+
+
+***Tweak Changes***
+- **`Limit Break Adjustments`** - Fixed limit break text appearing when it isn't supposed to
+
+
+## 1.10.9.0
+***Tweak Changes***
+- **`Add Number Separators`** - Fixed flytext number separator not working.
+
+- **`Limit Break Adjustments`** - Added preview for when not in a party
+
+
+## 1.10.8.4
+***New Tweaks***
+- **`Sort World Visit List`** - Removes the randomization from the data center visit world list.
+
+
+***Tweak Changes***
+- **`House Lights Command`** - Added ability to toggle SSAO with 'ssao-on' and 'ssao-off' parameters
+
+
+## 1.10.8.1
+***Tweak Changes***
+- **`Expanded Currency Display`** - Added option to Grand Company seals to display current grand company.
+
+
+## 1.10.8.0
+***New Tweaks***
+- **`Display EXP Gain Percentage of Level`** - Adds the percentage of your next level to exp gains in chat. *(zajrik)*
+
+- **`Grow Buff List Vertically`** - Allows you to change the buff/debuff vertical justification, enabling the list to grow from bottom to top. *(LINKAD0)*
+
+- **`Talk Adjustments`** - Allows further customisation to the Talk addon. *(croizat)*
+
+- **`Track Outfits`** - Shows whether or not you've made an outfit out of the hovered item. *(croizat)*
+
+
+***Tweak Changes***
+- **`Improved Blue Mage Action Tooltips`** - Fixed tweak incorrectly applying to some pseudo-actions.
+
+- **`Scenario Progression Display`** - Once again fixed logic.
+
+
+## 1.10.7.0
+***New Tweaks***
+- **`Disable Camera Culling`** - Disable the hiding of characters when the camera gets too close.
+
+- **`Searchable Friend List`** - Adds a search bar to the friend list.
+
+
+## 1.10.6.0
+***New Tweaks***
+- **`Disable Novice Network Auto-Switch`** - Disables automatically selecting novice network when logging in or transferring to another server.
+
+- **`Ensure tooltips remain on screen`** - Prevents tooltips from extending below the bottom of the screen. Useful when using tweaks that make the tooltips longer.
+
+- **`Logos Tooltips`** - Adds which kind of Logos Mnenes you can obtain from a Logogram in its tooltip. *(Khayle)*
+
+- **`Special Character Input`** - Adds a window for adding special characters to text inputs.
+
+
+***Tweak Changes***
+- **`Item Level in Examine`** - Tweak now uses item level provided by the game, improving accuracy.
+
+- **`Screenshot Improvements`** - Fixed 'Remove Copyright Text' option.
+
+- **`Show Desynthesis Skill`** - Fixed tweak not working on french clients.
+
+
+## 1.10.5.1
+***Tweak Changes***
+- **`Timer on Duty Waiting`** - Fixed display on all clients...
+
+
+## 1.10.5.0
+***General Changes***
+- Fixed tweak preview images not loading correctly
+
+***New Tweaks***
+- **`Estate Access Command`** - Adds a command to open the estate access configuration for the current estate.
+
+
+***Tweak Changes***
+- **`House Lights Command`** - Fixed tweak not working.
+
+- **`Improved Chat Font Sizes`** - Fixed tweak not working.
+
+- **`Improved Crafting Action Tooltips`** - Fixed results preview not resetting.
+
+- **`Screenshot File Name`** - Added option to use milliseconds in name template.
+
+- **`Timer on Duty Waiting`** - Fixed display of text in french clients.
+
+
+## 1.10.4.0
+***New Tweaks***
+- **`Case Insensitive Text Commands`** - Allows text commands to be entered without caring about case. *(KazWolfe)*
+
+- **`Customize Group Pose Camera Control`** - Allows you to customize the camera control in group pose
+
+
+## 1.10.3.2
+***Tweak Changes***
+- **`Show ID`**
+  - Added option to show original action ID alongside resolved.
+  - Fixed ID being cut off on items with long category names, like BLM weapons.
+
+
 ## 1.10.3.0
 ***New Tweaks***
 - **`Auto Focus Market Board Item Search`** - Automatically focus the item search when opening the market board. *(croizat)*

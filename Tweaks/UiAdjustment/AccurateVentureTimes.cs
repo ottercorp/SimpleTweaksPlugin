@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using Dalamud.Game;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 
@@ -14,12 +14,13 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 [TweakName("Accurate Venture Times")]
 [TweakDescription("Show live countdowns to venture completion on the retainer list.")]
 [TweakAutoConfig]
+[Changelog("1.10.11.0", "Reduced the size of the timer when not using simple display.")]
 public unsafe class AccurateVentureTimes : UiAdjustments.SubTweak {
     public class Configs : TweakConfig {
-        [TweakConfigOption("Simple Display")] public bool SimpleDisplay = false;
+        [TweakConfigOption("Simple Display")] public bool SimpleDisplay;
     }
 
-    public Configs Config { get; private set; }
+    [TweakConfig] public Configs Config { get; private set; }
 
     private delegate void UpdateRetainerDelegate(void* a1, int index, void* a3, void* a4);
 
@@ -77,17 +78,19 @@ public unsafe class AccurateVentureTimes : UiAdjustments.SubTweak {
                     var rTime = retainer->VentureComplete - cTime;
 
                     if (rTime <= 0) {
-                        ventureText->SetText(Service.Data.Excel.GetSheet<Addon>()?.GetRow(12592)?.Text?.RawString ?? "Complete");
+                        ventureText->SetText(Service.Data.Excel.GetSheet<Addon>().GetRow(12592).Text.ExtractText());
                     } else {
                         var tSpan = TimeSpan.FromSeconds(rTime);
 
                         if (Config.SimpleDisplay) {
+                            ventureText->FontSize = 14;
                             if (tSpan.Hours > 0) {
                                 ventureText->SetText($"{tSpan.Hours:00}:{tSpan.Minutes:00}:{tSpan.Seconds:00}");
                             } else {
                                 ventureText->SetText($"{tSpan.Minutes:00}:{tSpan.Seconds:00}");
                             }
                         } else {
+                            ventureText->FontSize = 12;
                             var timeString = new List<string>();
                             switch (Service.ClientState.ClientLanguage) {
                                 case ClientLanguage.Japanese:

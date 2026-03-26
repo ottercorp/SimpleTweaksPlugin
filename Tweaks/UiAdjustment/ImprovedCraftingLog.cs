@@ -10,7 +10,7 @@ using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -23,11 +23,10 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 [TweakDescription("Modifies the Synthesize button in the Crafting Log to switch job or stand up from the crafting position, allowing you to stop crafting without closing the crafting log.")]
 [Changelog("1.8.2.1", "Fixed a potential crash in specific circumstances.")]
 [Changelog("1.9.1.0", "Made attempt to fix some issues", "Tweak has been disabled for everyone and marked as experimental.")]
+[RequiredClientStructsVersion(5193)]
 public unsafe class ImprovedCraftingLog : Tweak {
     private readonly Stopwatch removeFrameworkUpdateEventStopwatch = new();
     private bool standingUp;
-
-    private delegate void* ClickSynthesisButton(AddonRecipeNote* a1, void* a2);
 
     private delegate*<RecipeNote*, void*> passThroughFunction;
 
@@ -36,15 +35,15 @@ public unsafe class ImprovedCraftingLog : Tweak {
     [TweakHook, Signature("E8 ?? ?? ?? ?? 48 8B 4B 10 33 FF C6 83", DetourName = nameof(CancelCraftingDetour))]
     private readonly HookWrapper<CancelCrafting> cancelCraftingHook = null!;
 
-    [TweakHook, Signature("40 55 53 56 57 41 57 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 0F 48 8B 7D 7F", DetourName = nameof(ReceiveEventDetour))]
+    [TweakHook, Signature("40 55 53 56 57 41 56 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 0F 48 8B 75 7F 49 8B D9 0F B7 C2 41 8B F8", DetourName = nameof(ReceiveEventDetour))]
     private readonly HookWrapper<AtkUnitBase.Delegates.ReceiveEvent> receiveEventHook = null!;
 
     protected override void Enable() {
-        passThroughFunction = (delegate*<RecipeNote*, void*>)Service.SigScanner.ScanText("E8 ?? ?? ?? ?? 0F B6 C3 48 8B 5C 24 ?? 48 83 C4 20 5D");
+        passThroughFunction = (delegate*<RecipeNote*, void*>)Service.SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8D 8F ?? ?? ?? ?? E8 ?? ?? ?? ?? 33 F6 48 89 B7");
 
         Service.Commands.AddHandler("/stopcrafting", new CommandInfo(((_, _) => {
-            if (Service.ClientState.LocalPlayer != null && !standingUp) {
-                var localPlayer = (Character*)Service.ClientState.LocalPlayer.Address;
+            if (Service.Objects.LocalPlayer != null && !standingUp) {
+                var localPlayer = (Character*)Service.Objects.LocalPlayer.Address;
                 var addon = Common.GetUnitBase("RecipeNote");
                 if (addon != null) {
                     GetCraftReadyState(out var selectedRecipeId);
@@ -91,7 +90,7 @@ public unsafe class ImprovedCraftingLog : Tweak {
 
     private void ReceiveEventDetour(AtkUnitBase* unitBase, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData) {
         try {
-            if (eventType == AtkEventType.ButtonClick && eventParam == 13) {
+            if (eventType == AtkEventType.ButtonClick && eventParam == 14) {
                 SimpleLog.Debug("Clicked Synthesise Button");
                 if (ClickSynthesisButtonDetour()) return;
             }
@@ -112,7 +111,7 @@ public unsafe class ImprovedCraftingLog : Tweak {
 
             switch (readyState) {
                 case CraftReadyState.AlreadyCrafting: {
-                    if (Service.ClientState.LocalPlayer != null && !standingUp) {
+                    if (Service.Objects.LocalPlayer != null && !standingUp) {
                         ReopenCraftingLog();
                     } else {
                         return true;
@@ -129,7 +128,7 @@ public unsafe class ImprovedCraftingLog : Tweak {
                         return true;
                     }
 
-                    Service.Chat.PrintError($"You have no saved gearset for {Service.Data.Excel.GetSheet<ClassJob>()?.GetRow(requiredClass)?.Name?.RawString ?? $"{requiredClass}"}.");
+                    Service.Chat.PrintError($"You have no saved gearset for {Service.Data.Excel.GetSheet<ClassJob>().GetRow(requiredClass).Name.ExtractText()}.");
                     return true;
                 }
             }
@@ -146,8 +145,8 @@ public unsafe class ImprovedCraftingLog : Tweak {
             removeFrameworkUpdateEventStopwatch.Stop();
         }
 
-        if (standingUp == false || Service.ClientState.LocalPlayer == null) return;
-        var localPlayer = (Character*)Service.ClientState.LocalPlayer.Address;
+        if (standingUp == false || Service.Objects.LocalPlayer == null) return;
+        var localPlayer = (Character*)Service.Objects.LocalPlayer.Address;
         if (localPlayer->Mode != CharacterModes.Crafting) {
             standingUp = false;
         }
@@ -169,7 +168,7 @@ public unsafe class ImprovedCraftingLog : Tweak {
 
     private CraftReadyState GetCraftReadyState(ref uint requiredClass, out ushort selectedRecipeId) {
         selectedRecipeId = 0;
-        if (Service.ClientState.LocalPlayer == null) return CraftReadyState.NotReady;
+        if (Service.Objects.LocalPlayer == null) return CraftReadyState.NotReady;
         var uiRecipeNote = RecipeNote.Instance();
         if (uiRecipeNote == null || uiRecipeNote->RecipeList == null) return CraftReadyState.NotReady;
         var selectedRecipe = uiRecipeNote->RecipeList->SelectedRecipe;
@@ -177,10 +176,8 @@ public unsafe class ImprovedCraftingLog : Tweak {
         selectedRecipeId = selectedRecipe->RecipeId;
         if (selectedRecipe->CraftType >= 8) return CraftReadyState.NotReady;
         requiredClass = uiRecipeNote->Jobs[selectedRecipe->CraftType];
-        var requiredJob = Service.Data.Excel.GetSheet<ClassJob>()?.GetRow(requiredClass);
-        if (requiredJob == null) return CraftReadyState.NotReady;
-        if (Service.ClientState.LocalPlayer.ClassJob.Id == requiredClass) return CraftReadyState.Ready;
-        var localPlayer = (Character*)Service.ClientState.LocalPlayer.Address;
+        if (Service.Objects.LocalPlayer.ClassJob.RowId == requiredClass) return CraftReadyState.Ready;
+        var localPlayer = (Character*)Service.Objects.LocalPlayer.Address;
         return localPlayer->Mode == CharacterModes.Crafting ? CraftReadyState.AlreadyCrafting : CraftReadyState.WrongClass;
     }
 
@@ -191,20 +188,20 @@ public unsafe class ImprovedCraftingLog : Tweak {
         if (ready == CraftReadyState.NotReady) return;
 
         var buttonText = ready switch {
-            CraftReadyState.Ready => Service.Data.Excel.GetSheet<Addon>()?.GetRow(1404)?.Text?.ToDalamudString(),
+            CraftReadyState.Ready => Service.Data.Excel.GetSheet<Addon>().GetRow(1404).Text.ToDalamudString(),
             CraftReadyState.WrongClass => GetWrongClassButtonText(),
-            CraftReadyState.AlreadyCrafting => Service.Data.Excel.GetSheet<Addon>()?.GetRow(643)?.Text?.ToDalamudString(),
+            CraftReadyState.AlreadyCrafting => Service.Data.Excel.GetSheet<Addon>().GetRow(643).Text.ToDalamudString(),
             _ => null
         };
 
         if (buttonText != null) {
-            addon->SynthesizeButton->ButtonTextNode->SetText(buttonText.Encode());
+            addon->SynthesizeButton->ButtonTextNode->SetText(buttonText.EncodeWithNullTerminator());
         }
     }
 
     private void ReopenCraftingLog() {
         if (!Common.GetUnitBase("RecipeNote", out var addon)) return;
-        var localPlayer = (Character*)(Service.ClientState.LocalPlayer?.Address ?? nint.Zero);
+        var localPlayer = (Character*)(Service.Objects.LocalPlayer?.Address ?? nint.Zero);
         if (localPlayer == null) return;
 
         GetCraftReadyState(out var selectedRecipeId);
@@ -223,11 +220,9 @@ public unsafe class ImprovedCraftingLog : Tweak {
     protected override void Disable() {
         Common.FrameworkUpdate -= ForceUpdateFramework;
         if (Common.GetUnitBase<AddonRecipeNote>(out var addon)) {
-            var text = Service.Data.Excel.GetSheet<Addon>()?.GetRow(1404)?.Text?.ToDalamudString().Encode();
-            if (text != null) {
-                SimpleLog.Log($"Resetting Button Test: {(ulong)addon->SynthesizeButton->ButtonTextNode:X}");
-                addon->SynthesizeButton->ButtonTextNode->NodeText.SetString(text);
-            }
+            var text = Service.Data.Excel.GetSheet<Addon>().GetRow(1404).Text.ToDalamudString().EncodeWithNullTerminator();
+            SimpleLog.Log($"Resetting Button Test: {(ulong)addon->SynthesizeButton->ButtonTextNode:X}");
+            addon->SynthesizeButton->ButtonTextNode->NodeText.SetString(text);
         }
 
         Service.Commands.RemoveHandler("/stopcrafting");

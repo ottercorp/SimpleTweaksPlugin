@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Game.ClientState.Conditions;
@@ -10,8 +12,13 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.System.String;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
+using FFXIVClientStructs.STD;
+using Lumina.Excel;
+using SimpleTweaksPlugin.Sheets;
+using SimpleTweaksPlugin.TweakSystem;
 using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace SimpleTweaksPlugin.Utility; 
@@ -25,6 +32,16 @@ public static class Extensions {
         return attribs.Length > 0 ? ((System.ComponentModel.DescriptionAttribute)attribs[0]).Description : @enum.ToString();
     }
 
+    public static bool TryGetTooltip(this Enum @enum, [NotNullWhen(true)] out string? tooltip) {
+        tooltip = string.Empty;
+        var eType = @enum.GetType();
+        var member = eType.GetMember(@enum.ToString());
+        if (member.Length <= 0) return false;
+        var attribs = member[0].GetCustomAttributes(typeof(EnumTooltipAttribute), false);
+        tooltip =  attribs.Length > 0 ? ((EnumTooltipAttribute)attribs[0]).Text : null;
+        return tooltip != null;
+    }
+
     public static unsafe string GetString(this Utf8String utf8String) {
         var s = utf8String.BufUsed > int.MaxValue ? int.MaxValue : (int) utf8String.BufUsed;
         try {
@@ -36,10 +53,6 @@ public static class Extensions {
 
     public static SeString GetSeString(this Utf8String utf8String) {
         return Common.ReadSeString(utf8String);
-    }
-
-    public static void SetSeString(this Utf8String utf8String, SeString seString) {
-        Common.WriteSeString(utf8String, seString);
     }
 
     public static int GetStableHashCode(this string str)
@@ -159,11 +172,11 @@ public static class Extensions {
         return new PointerSpanUnboxer<T>(span);
     }
 
-    internal static IEnumerable<(FieldInfo Field, TAttribute Attribute)> GetFieldsWithAttribute<TAttribute>(this object obj, BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) where TAttribute : Attribute {
+    internal static IEnumerable<(FieldInfo Field, TAttribute? Attribute)> GetFieldsWithAttribute<TAttribute>(this object obj, BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) where TAttribute : Attribute {
         return obj.GetType().GetFields(flags).Select(f => (f, f.GetCustomAttribute<TAttribute>())).Where(f => f.Item2 != null);
     }
     
-    public static unsafe string ValueString(this AtkValue v) {
+    public unsafe static string ValueString(this AtkValue v) {
         return v.Type switch {
             ValueType.Int => $"{v.Int}",
             ValueType.String => Marshal.PtrToStringUTF8(new IntPtr(v.String)),
@@ -174,6 +187,43 @@ public static class Extensions {
             ValueType.ManagedString => Marshal.PtrToStringUTF8(new IntPtr(v.String))?.TrimEnd('\0') ?? string.Empty,
             ValueType.ManagedVector => "[Managed Vector]",
             _ => $"Unknown Type: {v.Type}"
-        };
+        } ?? string.Empty;
     }
+    
+    /// <summary> Return the first object fulfilling the predicate or null for structs. </summary>
+    /// <param name="values"> The enumerable. </param>
+    /// <param name="predicate"> The predicate. </param>
+    /// <returns> The first object fulfilling the predicate, or a null-optional. </returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static T? FirstOrNull<T>(this IEnumerable<T> values, Func<T, bool> predicate) where T : struct
+    {
+        foreach(var val in values)
+            if (predicate(val))
+                return val;
+
+        return null;
+    }
+
+    public static TExtension GetExtension<TExtension, TBase>(this TBase row) where TExtension : struct, IExcelRow<TExtension>, IRowExtension<TExtension, TBase> where TBase : struct, IExcelRow<TBase> => TExtension.GetExtended(row);
+
+    public static bool TryGetAttribute<TAttribute>(this Type type, [NotNullWhen(true)] out TAttribute? attribute) where TAttribute : Attribute {
+        attribute = type.GetCustomAttribute<TAttribute>();
+        return attribute != null;
+    }
+
+    public static bool IsPressed(this AtkEventData.AtkMouseData.ModifierFlag modifierFlag) {
+        return 
+            Service.KeyState[VirtualKey.SHIFT] == modifierFlag.HasFlag(AtkEventData.AtkMouseData.ModifierFlag.Shift) &&
+            Service.KeyState[VirtualKey.MENU] == modifierFlag.HasFlag(AtkEventData.AtkMouseData.ModifierFlag.Alt) &&
+            Service.KeyState[VirtualKey.CONTROL] == modifierFlag.HasFlag(AtkEventData.AtkMouseData.ModifierFlag.Ctrl);
+    }
+
+
+    public unsafe static T* GetPointer<T>(this StdVector<T> vector, int index) where T : unmanaged {
+        if (index < 0 || index >= vector.Count) throw new IndexOutOfRangeException();
+        var v = vector.First;
+        v += index;
+        return v;
+    }
+    
 }

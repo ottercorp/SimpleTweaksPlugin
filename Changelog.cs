@@ -1,5 +1,5 @@
 #if DEBUG
-global using static SimpleTweaksPlugin.Changelog;
+global using static SimpleTweaksPlugin.ChangelogConstants;
 #endif
 
 using System;
@@ -10,10 +10,16 @@ using System.Text;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.TweakSystem;
 
 namespace SimpleTweaksPlugin;
+
+#if DEBUG
+public class ChangelogConstants {
+    public const string UnreleasedVersion = "99.99.99.99";
+}
+#endif 
 
 public class ChangelogEntry {
     public BaseTweak? Tweak { get; }
@@ -79,11 +85,12 @@ public class Changelog : Window {
             .Sub("You can also set a permanent decoration to be used all year round.");
         Add("1.10.0.0", "Support for Dawntrail");
         Add("1.10.0.1", "Updated more tweaks for Dawntrail");
+        Add("1.10.5.0", "Fixed tweak preview images not loading correctly");
+        Add("1.10.11.0", "Fixed translation loading.");
+        Add("1.10.11.5", "Disabled error messages in chat when using a tweak command in a macro after using '/macroerror off'.");
     }
 
-#if DEBUG
-    public const string UnreleasedVersion = "99.99.99.99";
-#endif 
+
 
     private static Dictionary<Version, List<ChangelogEntry>> Entries = new();
 
@@ -128,10 +135,18 @@ public class Changelog : Window {
     
     public Version CurrentVersion { get; }
 
-    public static bool HasNewChangelog { get; private set; } = false;
+#if TEST
+    public static bool HasNewChangelog {
+        get => false;
+        set { }
+    }
 
+#else
+     public static bool HasNewChangelog { get; private set; }
+    #endif
+    
     public Changelog() : base("###simpleTweaksChangelog") {
-        CurrentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        CurrentVersion = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0, 0);
         WindowName = $"Simple Tweaks Changelog ({CurrentVersion})###simpleTweaksChangelog";
         Size = ImGuiHelpers.ScaledVector2(600, 600);
         SizeCondition = ImGuiCond.FirstUseEver;
@@ -159,7 +174,7 @@ public class Changelog : Window {
         return true;
     }
 
-    public static string GenerateChangelogMarkdown(Version changelogVersion = null, StringBuilder stringBuilder = null) {
+    public static string GenerateChangelogMarkdown(Version? changelogVersion = null, StringBuilder? stringBuilder = null) {
         stringBuilder ??= new StringBuilder();
 
         if (changelogVersion == null) {
@@ -182,10 +197,10 @@ public class Changelog : Window {
         }
 
         if (Entries.TryGetValue(changelogVersion, out var changelogs)) {
-            
-            var generalChanges = changelogs.Where(c => c.Tweak == null);
-            var newTweaks = changelogs.Where(c => c.IsNewTweak && c.Tweak != null && c.TweakProvider is not CustomTweakProvider).OrderBy(c => c.Tweak.Name);
-            var tweakChanges = changelogs.Where(c => c.Tweak != null && c.IsNewTweak == false && c.TweakProvider is not CustomTweakProvider).OrderBy(c => c.Tweak.Name);
+
+            var generalChanges = changelogs.Where(c => c.Tweak == null).ToArray();
+            var newTweaks = changelogs.Where(c => c is { IsNewTweak: true, Tweak: not null, TweakProvider: not CustomTweakProvider }).OrderBy(c => c.Tweak?.Name).ToArray();
+            var tweakChanges = changelogs.Where(c => c.Tweak != null && c is { IsNewTweak: false, TweakProvider: not CustomTweakProvider }).OrderBy(c => c.Tweak?.Name).ToArray();
 
             if (generalChanges.Any()) {
 
@@ -210,7 +225,9 @@ public class Changelog : Window {
                 stringBuilder.AppendLine("***New Tweaks***");
 
                 foreach (var c in newTweaks) {
-                    stringBuilder.Append($"- **`{c.Tweak.Name}`** - {c.Tweak.Description.Split('\n')[0]}");
+                    if (c.Tweak == null) continue;
+                    
+                    stringBuilder.Append($"- **`{c.Tweak.Name}`** - {c.Tweak?.Description?.Split('\n')[0]}");
                     if (!string.IsNullOrEmpty(c.ChangeAuthor)) {
                         stringBuilder.Append($" *({c.ChangeAuthor})*");
                     }
@@ -229,6 +246,7 @@ public class Changelog : Window {
                 
                 foreach (var g in tweakChangeGroups) {
                     if (!g.Any()) continue; // Who knows
+                    if (g.Key == null) continue;
                     if (g.Count() >= 2) {
                         
                         stringBuilder.AppendLine($"- **`{g.Key.Name}`**");
@@ -311,7 +329,7 @@ public class Changelog : Window {
                 }
             }
 
-            var newTweaks = changelogs.Where(c => c.IsNewTweak && c.Tweak != null && ShouldShowTweak(c.Tweak)).OrderBy(c => c.Tweak.Name);
+            var newTweaks = changelogs.Where(c => c.IsNewTweak && c.Tweak != null && ShouldShowTweak(c.Tweak)).OrderBy(c => c.Tweak?.Name).ToArray();
             if (newTweaks.Any()) {
                 if (ImGui.TreeNodeEx($"New Tweaks##{version}", ImGuiTreeNodeFlags.DefaultOpen)) {
                     foreach (var c in newTweaks) {
@@ -343,16 +361,19 @@ public class Changelog : Window {
                             ImGui.Unindent();
                             ImGui.TreePop();
                         }
+                        
+                        ImGui.EndGroup();
                     }
                     ImGui.TreePop();
                 }
             }
 
-            var tweakChanges = changelogs.Where(c => c.Tweak != null && c.IsNewTweak == false && ShouldShowTweak(c.Tweak)).GroupBy(c => c.Tweak);
+            var tweakChanges = changelogs.Where(c => c.Tweak != null && c.IsNewTweak == false && ShouldShowTweak(c.Tweak)).GroupBy(c => c.Tweak).ToArray();
             if (tweakChanges.Any()) {
                 if (ImGui.TreeNodeEx($"Tweak Changes##{version}", ImGuiTreeNodeFlags.DefaultOpen)) {
-                    foreach (var group in tweakChanges.OrderBy(g => g.Key.Name)) {
+                    foreach (var group in tweakChanges.OrderBy(g => g.Key?.Name)) {
                         var tweak = group.Key;
+                        if (tweak == null) continue;
 
                         var xBefore = ImGui.GetCursorPosX();
                         

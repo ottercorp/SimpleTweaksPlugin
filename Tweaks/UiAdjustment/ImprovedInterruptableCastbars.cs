@@ -5,7 +5,7 @@ using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -21,19 +21,19 @@ public unsafe class ImprovedInterruptableCastbars : UiAdjustments.SubTweak{
     private uint InterjectImageNodeId => CustomNodes.Get(this, "Interject");
     private uint HeadGrazeImageNodeId => CustomNodes.Get(this, "HeadGraze");
 
-    private Config TweakConfig { get; set; } = null!;
+    [TweakConfig] private Config TweakConfig { get; set; } = null!;
 
-    private class Config : TweakConfig {
+    public class Config : TweakConfig {
         public NodePosition Position = NodePosition.TopLeft;
     }
 
-    private enum NodePosition {
+    public enum NodePosition {
         Left,
         Right,
         TopLeft,
     }
 
-    private void DrawConfig() {
+    protected void DrawConfig() {
         ImGui.TextUnformatted("Select which direction relative to Cast Bar to show interrupt icon");
         
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 3.0f);
@@ -55,7 +55,7 @@ public unsafe class ImprovedInterruptableCastbars : UiAdjustments.SubTweak{
 
     [AddonPostRequestedUpdate("_TargetInfoCastBar", "_TargetInfo", "_FocusTargetInfo")]
     private void OnAddonRequestedUpdate(AddonArgs args) {
-        var addon = (AtkUnitBase*) args.Addon;
+        var addon = (AtkUnitBase*) args.Addon.Address;
         
         switch (args.AddonName) {
             case "_TargetInfoCastBar" when addon->IsVisible:
@@ -96,13 +96,13 @@ public unsafe class ImprovedInterruptableCastbars : UiAdjustments.SubTweak{
         if (interject is null || headGraze is null) return;
         
         if (target as IBattleChara is { IsCasting: true, IsCastInterruptible: true } && castBarVisible) {
-            switch (Service.ClientState.LocalPlayer) {
-                case { ClassJob.GameData.Role: 1, Level: >= 18 }: // Tank
+            switch (Service.Objects.LocalPlayer) {
+                case { ClassJob.Value.Role: 1, Level: >= 18 }: // Tank
                     interject->ToggleVisibility(true);
                     headGraze->ToggleVisibility(false);
                     break;
     
-                case { ClassJob.GameData.UIPriority: >= 30 and <= 39, Level: >= 24 }: // Physical Ranged
+                case { ClassJob.Value.UIPriority: >= 30 and <= 39, Level: >= 24 }: // Physical Ranged
                     interject->ToggleVisibility(false);
                     headGraze->ToggleVisibility(true);
                     break;
@@ -118,7 +118,7 @@ public unsafe class ImprovedInterruptableCastbars : UiAdjustments.SubTweak{
         var imageNode = UiHelper.MakeImageNode(nodeId, new UiHelper.PartInfo(0, 0, 36, 36));
         imageNode->NodeFlags = NodeFlags.AnchorLeft | NodeFlags.AnchorTop | NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.EmitsEvents;
         imageNode->WrapMode = 1;
-        imageNode->Flags = (byte) ImageNodeFlags.AutoFit;
+        imageNode->Flags = ImageNodeFlags.AutoFit;
         
         imageNode->LoadIconTexture((uint)icon, 0);
         imageNode->ToggleVisibility(true);

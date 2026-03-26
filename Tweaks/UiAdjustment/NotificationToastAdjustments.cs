@@ -6,7 +6,7 @@ using Dalamud.Game.Gui.Toast;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.Tweaks.UiAdjustment;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -14,7 +14,7 @@ using SimpleTweaksPlugin.Utility;
 namespace SimpleTweaksPlugin {
     public partial class UiAdjustmentsConfig {
         public bool ShouldSerializeNotificationToastAdjustments() => NotificationToastAdjustments != null;
-        public NotificationToastAdjustments.Configs NotificationToastAdjustments = null;
+        public NotificationToastAdjustments.Configs? NotificationToastAdjustments = null;
     }
 }
 
@@ -24,10 +24,10 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
     [TweakAuthor("Aireil")]
     public unsafe class NotificationToastAdjustments : UiAdjustments.SubTweak {
         public class Configs : TweakConfig {
-            public bool Hide = false;
-            public bool ShowInCombat = false;
-            public int OffsetXPosition = 0;
-            public int OffsetYPosition = 0;
+            public bool Hide;
+            public bool ShowInCombat;
+            public int OffsetXPosition;
+            public int OffsetYPosition;
             public float Scale = 1;
             public readonly List<string> Exceptions = new List<string>();
         }
@@ -145,7 +145,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             if (toastUnitBase == null) return null;
             if (toastUnitBase->UldManager.NodeList == null || toastUnitBase->UldManager.NodeListCount < 4) return null;
 
-            return toastUnitBase->UldManager.NodeList[0];
+            return toastUnitBase->RootNode;
         }
 
         private static void SetOffsetPosition(AtkResNode* node, float offsetX, float offsetY, float scale) {

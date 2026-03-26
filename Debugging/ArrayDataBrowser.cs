@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Numerics;
-using Dalamud.Interface.Utility.Raii;
 using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.AtkArray;
 using SimpleTweaksPlugin.AtkArray.NumberArrays;
 
@@ -54,7 +53,7 @@ public unsafe class ArrayDataBrowser : DebugHelper {
     public static bool ContainsValue(StringArrayData* array, string value) {
         for (var i = 0; i < array->AtkArrayData.Size; i++) {
             var strPtr = array->StringArray[i];
-            if (strPtr != null) {
+            if (strPtr.Value != null) {
                 try {
                     var str = MemoryHelper.ReadSeStringNullTerminated(new IntPtr(strPtr));
                     if (str.TextValue.ToLower().Contains(value.ToLower())) return true;
@@ -69,7 +68,7 @@ public unsafe class ArrayDataBrowser : DebugHelper {
 
     private string searchValue = string.Empty;
 
-    public static void DrawArrayDataTable(NumberArrayData* array, NumberArray arrayHelper = null) {
+    public static void DrawArrayDataTable(NumberArrayData* array, NumberArray? arrayHelper = null) {
 
         if (arrayHelper != null) {
             DebugManager.PrintOutObject(arrayHelper, (ulong) array);
@@ -265,11 +264,11 @@ public unsafe class ArrayDataBrowser : DebugHelper {
 
                         for (var i = 0; i < array->AtkArrayData.Size; i++) {
                             ImGui.TableNextColumn();
-                            ImGui.Text($"{i.ToString().PadLeft(array->AtkArrayData.Size.ToString().Length, '0')}");
+                            DebugManager.ClickToCopyText($"{i.ToString().PadLeft(array->AtkArrayData.Size.ToString().Length, '0')}", $"{(ulong) &array->StringArray[i]:X}");
                             ImGui.TableNextColumn();
 
                             var strPtr = array->StringArray[i];
-                            if (strPtr == null) {
+                            if (strPtr.Value == null) {
                                 ImGui.TextColored(new Vector4(1, 0, 0, 1), "string is null");
                             } else {
                                 try {

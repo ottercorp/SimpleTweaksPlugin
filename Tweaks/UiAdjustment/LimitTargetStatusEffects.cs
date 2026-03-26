@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.Tweaks.UiAdjustment;
 using System;
 using System.Collections.Generic;
@@ -20,7 +20,7 @@ using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 namespace SimpleTweaksPlugin {
     public partial class UiAdjustmentsConfig {
         public bool ShouldSerializeLimitTargetStatusEffects() => LimitTargetStatusEffects != null;
-        public LimitTargetStatusEffects.Configs LimitTargetStatusEffects = null;
+        public LimitTargetStatusEffects.Configs? LimitTargetStatusEffects = null;
     }
 }
 
@@ -46,7 +46,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         private readonly ushort[] removedStatus = new ushort[60 * 2];
         private uint removedStatusIndex;
         private readonly HashSet<ushort> filteredStatus = new();
-        private static Dictionary<ushort, Lumina.Excel.GeneratedSheets.Status> statusSheet;
+        private static Dictionary<ushort, Lumina.Excel.Sheets.Status> statusSheet;
         private readonly TargetSystem* targetSystem = TargetSystem.Instance();
 
         private delegate long UpdateTargetStatusDelegate(void* agentHud, void* numberArray, void* stringArray, StatusManager* statusManager, GameObject* target, void* isLocalPlayerAndRollPlaying);
@@ -58,7 +58,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         private HookWrapper<UpdateFocusTargetDelegate> updateFocusTargetHook;
 
         protected void DrawConfig(ref bool hasChanged) {
-            statusSheet ??= Service.Data.GetExcelSheet<Lumina.Excel.GeneratedSheets.Status>()?.ToDictionary(row => (ushort)row.RowId, row => row);
+            statusSheet ??= Service.Data.GetExcelSheet<Lumina.Excel.Sheets.Status>().ToDictionary(row => (ushort)row.RowId, row => row);
 
             ImGui.Text("Limiting:");
             ImGui.SetNextItemWidth(100 * ImGui.GetIO().FontGlobalScale);
@@ -121,11 +121,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                     ImGui.TableNextColumn();
                     var statusIconTex = Service.TextureProvider.GetFromGameIcon(new GameIconLookup(statusSheet[statusId].Icon)).GetWrapOrEmpty();
                     var scale = (25 * ImGuiHelpers.GlobalScale) / statusIconTex.Height;
-                    ImGui.Image(statusIconTex.ImGuiHandle, new Vector2(statusIconTex.Width * scale, statusIconTex.Height * scale));
+                    ImGui.Image(statusIconTex.Handle, new Vector2(statusIconTex.Width * scale, statusIconTex.Height * scale));
 
                     ImGui.TableNextColumn();
                     ImGui.AlignTextToFramePadding();
-                    ImGui.Text(statusSheet[statusId].Name);
+                    ImGui.Text(statusSheet[statusId].Name.ExtractText());
                     ImGui.TableNextColumn();
                     ImGui.PushFont(UiBuilder.IconFont);
                     if (ImGui.Button(FontAwesomeIcon.Trash.ToIconString() + "##" + statusId)) {
@@ -185,13 +185,13 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 }
 
                 if (localPlayer == null) {
-                    localPlayer = (GameObject*)Service.ClientState.LocalPlayer?.Address;
+                    localPlayer = (GameObject*) (Service.Objects.LocalPlayer?.Address ?? 0);
                     if (localPlayer == null || localPlayer->EntityId == target->EntityId || (Config.FilterOnlyInCombat && !((Character*)localPlayer)->InCombat) || Service.ClientState.IsPvP) {
                         break;
                     }
                 }
 
-                if (status.SourceId == localPlayer->EntityId) {
+                if (status.SourceObject.ObjectId == localPlayer->EntityId) {
                     continue;
                 }
 
@@ -336,7 +336,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                         continue;
                     }
 
-                    var name = $"#{id} {row.Name.RawString}";
+                    var name = $"#{id} {row.Name.ExtractText()}";
                     if (isSearching && !name.Contains(statusSearch, StringComparison.CurrentCultureIgnoreCase)) {
                         continue;
                     }
@@ -385,11 +385,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                     ImGui.TableNextColumn();
                     var statusIconTex = Service.TextureProvider.GetFromGameIcon(new GameIconLookup(statusSheet[statusId].Icon)).GetWrapOrEmpty();
                     var scale = (25 * ImGuiHelpers.GlobalScale) / statusIconTex.Height;
-                    ImGui.Image(statusIconTex.ImGuiHandle, new Vector2(statusIconTex.Width * scale, statusIconTex.Height * scale));
+                    ImGui.Image(statusIconTex.Handle, new Vector2(statusIconTex.Width * scale, statusIconTex.Height * scale));
 
                     ImGui.TableNextColumn();
                     ImGui.AlignTextToFramePadding();
-                    ImGui.Text(statusSheet[statusId].Name);
+                    ImGui.Text(statusSheet[statusId].Name.ExtractText());
                 }
 
                 ImGui.EndTable();

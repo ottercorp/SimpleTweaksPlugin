@@ -2,8 +2,8 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Keys;
-using ImGuiNET;
-using SimpleTweaksPlugin.Sheets;
+using Dalamud.Bindings.ImGui;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Utility;
 
 namespace SimpleTweaksPlugin.Tweaks.Tooltips.Hotkeys;
@@ -13,7 +13,7 @@ public class ViewOnTeamcraft : ItemHotkey {
         public bool ForceBrowser;
     }
 
-    public new HotkeyConfig Config => base.Config as HotkeyConfig;
+    public new HotkeyConfig Config => base.Config as HotkeyConfig ?? throw new Exception("Invalid HotkeyConfig");
 
     protected override string Name => "View on Teamcraft";
     protected override VirtualKey[] DefaultKeyCombo => [VirtualKey.CONTROL, VirtualKey.T];
@@ -25,7 +25,7 @@ public class ViewOnTeamcraft : ItemHotkey {
         if (ImGui.Checkbox("Browser Only", ref Config.ForceBrowser)) SaveConfig();
     }
 
-    public override void OnTriggered(ExtendedItem item) {
+    public override void OnTriggered(Item item) {
         if (teamcraftLocalFailed || Config.ForceBrowser) {
             Common.OpenBrowser($"https://ffxivteamcraft.com/db/en/item/{item.RowId}");
             return;

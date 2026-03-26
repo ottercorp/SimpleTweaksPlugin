@@ -1,5 +1,5 @@
 ﻿using FFXIVClientStructs.FFXIV.Client.System.Framework;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Tweaks.AbstractTweaks;
 using SimpleTweaksPlugin.TweakSystem;
 
@@ -24,6 +24,6 @@ public unsafe class MainCommandCommand : CommandTweak {
             }
         }
 
-        Service.Chat.PrintError($"'{arguments}' is not a valid 'Main Command'.");
+        if (ShowCommandErrors) Service.Chat.PrintError($"'{arguments}' is not a valid 'Main Command'.");
     }
 }

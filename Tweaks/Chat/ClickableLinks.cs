@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
@@ -13,7 +14,6 @@ namespace SimpleTweaksPlugin.Tweaks.Chat;
 [TweakDescription("Parses links posted in chat and allows them to be clicked.")]
 class ClickableLinks : ChatTweaks.SubTweak {
     protected override void Enable() {
-        urlLinkPayload = PluginInterface.AddChatLinkHandler((uint)LinkHandlerId.OpenUrlLink, UrlLinkHandle);
         Service.Chat.ChatMessage += OnChatMessage;
         base.Enable();
     }
@@ -26,12 +26,13 @@ class ClickableLinks : ChatTweaks.SubTweak {
     protected override void Disable() {
         if (!Enabled) return;
         Service.Chat.ChatMessage -= OnChatMessage;
-        PluginInterface.RemoveChatLinkHandler((uint)LinkHandlerId.OpenUrlLink);
+        Service.Chat.RemoveChatLinkHandler(urlLinkPayload.CommandId);
         base.Disable();
     }
 
     private readonly Regex urlRegex = new Regex(@"(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?", RegexOptions.Compiled);
 
+    [LinkHandler(LinkHandlerId.OpenUrlLink, nameof(UrlLinkHandle))]
     private DalamudLinkPayload urlLinkPayload;
 
     private static bool IsBattleType(XivChatType type) {

@@ -5,7 +5,7 @@ using Dalamud.Interface.Utility;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.ExtraPayloads;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -26,7 +26,7 @@ public unsafe class CustomTimestampFormat : ChatTweaks.SubTweak {
 
     private delegate byte* ApplyTextFormatDelegate(RaptureTextModule* raptureTextModule, uint addonTextId, int value);
 
-    [TweakHook, Signature("E8 ?? ?? ?? ?? 41 8D 55 0B", DetourName = nameof(FormatTextDetour))]
+    [TweakHook, Signature("E9 ?? ?? ?? ?? 7D 20", DetourName = nameof(FormatTextDetour))]
     private HookWrapper<ApplyTextFormatDelegate>? applyTextFormatHook;
 
     public Configs Config { get; private set; }
@@ -78,7 +78,7 @@ public unsafe class CustomTimestampFormat : ChatTweaks.SubTweak {
                     seStr.Append(new ColorPayload(Config.Color));
                     seStr.Append((Config.UseServerTime ? time.DateTime : time.LocalDateTime).ToString(Config.Format));
                     seStr.Append(new ColorEndPayload());
-                    var bytes = seStr.Encode();
+                    var bytes = seStr.EncodeWithNullTerminator();
                     if (bytes.Length == 0 || bytes[0] == 0) {
                         str->SetString(string.Empty);
                     } else {

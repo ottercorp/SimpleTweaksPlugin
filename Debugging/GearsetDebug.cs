@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Text;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.Utility;
 
 namespace SimpleTweaksPlugin.Debugging; 

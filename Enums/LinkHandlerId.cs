@@ -6,4 +6,6 @@ public enum LinkHandlerId : uint {
     CraftingActionInfoIdentifier,
     TrackGachaItemsIdentifier,
     TrackFadedRollsIdentifier,
+    TrackOutfitsIdentifier,
+    ImprovedFontSizesIdentifier
 }

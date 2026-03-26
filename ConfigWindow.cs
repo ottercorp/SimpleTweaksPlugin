@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Interface.Internal;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
+using SimpleTweaksPlugin.Utility;
 
 namespace SimpleTweaksPlugin;
 
@@ -63,8 +63,8 @@ public class ConfigWindow : SimpleWindow {
                 if (hat != null) {
                     var dl2 = IsFocused ? ImGui.GetForegroundDrawList() : ImGui.GetBackgroundDrawList();
                     var hatPos = ImGui.GetWindowPos() - hat.Size * new Vector2(0.35f, 0.35f);
-                    dl.AddImage(hat.ImGuiHandle, hatPos, hatPos + hat.Size, Vector2.Zero, Vector2.One, 0xAAFFFFFF);
-                    dl2.AddImage(hat.ImGuiHandle, hatPos, hatPos + hat.Size, Vector2.Zero, Vector2.One, 0xAAFFFFFF);
+                    dl.AddImage(hat.Handle, hatPos, hatPos + hat.Size, Vector2.Zero, Vector2.One, 0xAAFFFFFF);
+                    dl2.AddImage(hat.Handle, hatPos, hatPos + hat.Size, Vector2.Zero, Vector2.One, 0xAAFFFFFF);
                 }
 
                 break;
@@ -83,35 +83,38 @@ public class ConfigWindow : SimpleWindow {
                 return;
         }
 
+        textures.RemoveAll(t => t == null);
         if (textures.Count == 0) return;
 
-        var width = textures.Max(s => s.Size.X);
-        var height = textures.Max(s => s.Size.Y);
+        var width = textures.Max(s => s?.Size.X ?? 0);
+        var height = textures.Max(s => s?.Size.Y ?? 0);
         var size = new Vector2(width, height) / 3 * ImGuiHelpers.GlobalScale;
         var center = ImGui.GetWindowPos() + ((ImGui.GetWindowSize() / 2) * Vector2.UnitX) + (ImGui.GetWindowSize() * Vector2.UnitY);
         var p = center - (size * Vector2.UnitX / 2) - (size * Vector2.UnitY * 0.85f);
 
         for (var i = 0; i < Math.Ceiling((ImGui.GetWindowSize() / 2).X) + 1; i++) {
             var texture = textures[i % textures.Count];
-            if (texture == null || texture.ImGuiHandle == IntPtr.Zero) continue;
+            if (texture == null || texture.Handle == IntPtr.Zero) continue;
             if (i != 0) {
                 var p1 = p - (size * Vector2.UnitX) * i;
-                dl.AddImage(texture.ImGuiHandle, p1, p1 + size, Vector2.Zero, Vector2.One, 0x40FFFFFF);
+                dl.AddImage(texture.Handle, p1, p1 + size, Vector2.Zero, Vector2.One, 0x40FFFFFF);
 
                 var p2 = p + (size * Vector2.UnitX) * i;
-                dl.AddImage(texture.ImGuiHandle, p2, p2 + size, Vector2.Zero, Vector2.One, 0x40FFFFFF);
+                dl.AddImage(texture.Handle, p2, p2 + size, Vector2.Zero, Vector2.One, 0x40FFFFFF);
             } else {
-                dl.AddImage(texture.ImGuiHandle, p, p + size, Vector2.Zero, Vector2.One, 0x40FFFFFF);
+                dl.AddImage(texture.Handle, p, p + size, Vector2.Zero, Vector2.One, 0x40FFFFFF);
             }
         }
     }
 
     public override void Draw() {
         base.Draw();
+        #if !TEST
         FestiveDecorations();
-
+        #endif
         var config = SimpleTweaksPlugin.Plugin.PluginConfig;
 
+#if !TEST
         if (config.AnalyticsOptOut == false && config.MetricsIdentifier?.Length != 64) {
             ImGui.SetWindowFontScale(1.25f);
             ImGui.Text("Simple Tweaks Statistics Collection");
@@ -157,41 +160,23 @@ public class ConfigWindow : SimpleWindow {
 
             return;
         }
-
-        if (!SimpleTweaksPlugin.Plugin.PluginConfig.DismissedUpdateNotice) {
-            ImGui.SetWindowFontScale(1.25f);
-            ImGui.Text("Simple Tweaks Dawntrail Update");
-            ImGui.SetWindowFontScale(1f);
-            ImGui.Separator();
-
-            ImGui.TextWrapped("" + 
-                              "Simple Tweaks has been updated to support Dawntrail, but not all tweaks are ready. " + 
-                              "Please DO NOT post issues on the github telling me that a tweak has not been updated. I know. " + 
-                              "If you want a tweak to be considered for priority, please make a comment on the Simple Tweaks " + 
-                              "thread on the Dalamud discord. I will get the other tweaks updated in time.\n\n" + 
-                              "Thank you for your patience.");
-
-            ImGui.Dummy(new Vector2(20) * ImGuiHelpers.GlobalScale);
-
-            using (ImRaii.PushColor(ImGuiCol.Button, new Vector4(0.2f, 0.7f, 0.3f, 0.8f)))
-            using (ImRaii.PushColor(ImGuiCol.ButtonActive, new Vector4(0.2f, 0.7f, 0.3f, 1f)))
-            using (ImRaii.PushColor(ImGuiCol.ButtonHovered, new Vector4(0.2f, 0.7f, 0.3f, 0.9f))) {
-                if (ImGui.Button("Continue", new Vector2(ImGui.GetContentRegionAvail().X, 40 * ImGuiHelpers.GlobalScale))) {
-                    SimpleTweaksPlugin.Plugin.PluginConfig.DismissedUpdateNotice = true;
-                }
-            }
-
-            ImGui.Spacing();
-            ImGui.Separator();
-
-            if (ImGui.Button("Open Changelog")) {
-                SimpleTweaksPlugin.Plugin.ChangelogWindow.IsOpen = true;
-            }
-
-            return;
-        }
-
+        
         SimpleTweaksPlugin.Plugin.PluginConfig.DrawConfigUI();
+        
+#else
+        if (ImGui.BeginTabBar("testBar")) {
+            if (ImGui.BeginTabItem("Test Runner")) {
+                TestUtil.Draw();
+                ImGui.EndTabItem();
+            }
+            if (ImGui.BeginTabItem("Config")) {
+                SimpleTweaksPlugin.Plugin.PluginConfig.DrawConfigUI();
+                ImGui.EndTabItem();
+            }
+            ImGui.EndTabBar();
+        }
+        
+#endif
     }
 
     public override void OnClose() {

@@ -1,8 +1,8 @@
 ﻿using System;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
+using FFXIVClientStructs.FFXIV.Client.UI.Shell;
 using SimpleTweaksPlugin.Tweaks.AbstractTweaks;
 using SimpleTweaksPlugin.TweakSystem;
 
@@ -16,7 +16,7 @@ public unsafe class CharaCardCommand : CommandTweak {
 
     protected override void OnCommand(string arguments) {
         if (string.IsNullOrWhiteSpace(arguments)) {
-            Service.Chat.PrintError($"/playerplate <t>");
+            Service.Chat.PrintError($"/{CustomOrDefaultCommand} <t>");
             return;
         }
 
@@ -35,7 +35,7 @@ public unsafe class CharaCardCommand : CommandTweak {
         if (resolve != null && resolve->ObjectKind == ObjectKind.Pc && resolve->SubKind == 4) {
             AgentCharaCard.Instance()->OpenCharaCard(resolve);
         } else {
-            Service.Chat.PrintError($"{arguments} is not a player.");
+            if (ShowCommandErrors) Service.Chat.PrintError($"{arguments} is not a player.");
         }
     }
 }

@@ -6,7 +6,7 @@ using System.Text;
 using Dalamud;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.Debugging;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -19,6 +19,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 [TweakAutoConfig]
 [TweakReleaseVersion("1.10.2.0")]
 [Changelog("1.10.3.0", "Fixed issue causing custom separators to be lost when logging in.")]
+[Changelog("1.10.9.0", "Fixed flytext number separator not working.")]
 public unsafe class AddNumberSeparators : UiAdjustments.SubTweak {
     public class Configs : TweakConfig {
         public bool FlyText = true;
@@ -37,11 +38,8 @@ public unsafe class AddNumberSeparators : UiAdjustments.SubTweak {
         hasChanged |= ImGui.Checkbox("Add separators to ability costs in tooltips", ref Config.AbilityTooltip);
 
         var custom = Config.CustomSeparator?.ToString() ?? string.Empty;
-        if (ImGui.InputText("Custom separator", ref custom, 1, ImGuiInputTextFlags.CallbackAlways, cb => {
-                cb->SelectionStart = 0;
-                cb->SelectionEnd = 1;
-                return 0;
-            })) {
+        
+        if (ImGui.InputText("Custom separator", ref custom, 1, ImGuiInputTextFlags.CallbackAlways, SelectChar)) {
             hasChanged = true;
             Config.CustomSeparator = string.IsNullOrEmpty(custom) || !char.IsAscii(custom[0]) || char.IsControl(custom[0]) ? null : custom[0];
             SetSeparatorDetour();
@@ -50,14 +48,20 @@ public unsafe class AddNumberSeparators : UiAdjustments.SubTweak {
         if (hasChanged) ConfigureInstructions();
     }
 
+    private int SelectChar(scoped ref ImGuiInputTextCallbackData data) {
+        data.SelectionStart = 0;
+        data.SelectionEnd = 1;
+        return 0;
+    }
+
     private static class Signatures {
         internal const string ShowFlyText = "E8 ?? ?? ?? ?? FF C7 41 D1 C7";
-        internal const string SprintfNumber = "E8 ?? ?? ?? ?? EB 68 48 8B 03";
-        internal const string FlyTextStringify = " 45 33 C0 C6 44 24 ?? ?? 8B D7 E8 ?? ?? ?? ?? 41 8B CF";
-        internal const string HotbarManaStringify = "45 33 C0 48 8B CE 44 88 64 24 ?? 42 8B 54 B8 ?? E8 ?? ?? ?? ?? EB 21";
+        internal const string SprintfNumber = "E8 ?? ?? ?? ?? EB 6B 48 8B 03";
+        internal const string FlyTextStringify = "45 33 C0 C6 44 24 ?? ?? 41 8B D7 E8 ?? ?? ?? ?? 48 8B 5E";
+        internal const string HotbarManaStringify = "45 33 C0 C6 44 24 ?? ?? ?? ?? ?? ?? E8 ?? ?? ?? ?? EB";
         internal const string PartyListStringify = "45 33 C0 C6 44 24 20 00 41 8B D6 E8 ?? ?? ?? ?? 49 8B";
         internal const string Separator = "44 0F B6 05 ?? ?? ?? ?? 45 84 C0 74 36 F6 87";
-        internal const string SetSeparatorCharacter = "E8 ?? ?? ?? ?? 48 8B 4F 18 48 8B 01 FF 50 18 48 8B C8";
+        internal const string SetSeparatorCharacter = "E8 ?? ?? ?? ?? 49 8B 4E 18 48 8B 01 FF 50 18";
     }
 
     private Dictionary<nint, byte[]> OldBytes { get; } = new();
@@ -116,16 +120,18 @@ public unsafe class AddNumberSeparators : UiAdjustments.SubTweak {
     }
 
     internal void ConfigureInstructions() {
-        ConfigureInstruction(Signatures.FlyTextStringify, Config.FlyText);
-        ConfigureInstruction(Signatures.HotbarManaStringify, Config.AbilityCost);
-        ConfigureInstruction(Signatures.PartyListStringify, Config.PartyList);
+        ConfigureInstruction("Fly Text", Signatures.FlyTextStringify, Config.FlyText);
+        ConfigureInstruction("Hotbar Resource Cost", Signatures.HotbarManaStringify, Config.AbilityCost);
+        ConfigureInstruction("Party List HP", Signatures.PartyListStringify, Config.PartyList);
     }
 
-    private void ConfigureInstruction(string sig, bool enabled) {
+    private void ConfigureInstruction(string name, string sig, bool enabled) {
         if (!Service.SigScanner.TryScanText(sig, out var ptr)) {
+            SimpleLog.Error($"Couldn't find signature {sig} for {name}");
+            Plugin.Error(this, new Exception($"Signature '{sig}' for '{name}' not found."), true);
             return;
-        }
 
+        }
         if (enabled) {
             ReplaceBytes(ptr);
         } else {
@@ -175,7 +181,7 @@ public unsafe class AddNumberSeparators : UiAdjustments.SubTweak {
 
             // only touch text nodes with a string starting with a digit
             var stringPtr = text->NodeText.StringPtr;
-            if (stringPtr == null || !char.IsDigit((char)*stringPtr)) {
+            if (stringPtr.Value == null || !char.IsDigit((char)*stringPtr.Value)) {
                 return;
             }
 
@@ -234,7 +240,7 @@ public unsafe class AddNumberSeparators : UiAdjustments.SubTweak {
 
         var nfi = (NumberFormatInfo)NumberFormatInfo.CurrentInfo.Clone();
         if (Config.CustomSeparator != null) {
-            nfi.NumberGroupSeparator = Config.CustomSeparator.ToString();
+            nfi.NumberGroupSeparator = Config.CustomSeparator.ToString() ?? ",";
         }
 
         var str = number.ToString("N0", nfi);

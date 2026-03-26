@@ -8,8 +8,8 @@ using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using ImGuiNET;
-using Lumina.Excel.GeneratedSheets;
+using Dalamud.Bindings.ImGui;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.ExtraPayloads;
 using SimpleTweaksPlugin.Utility;
@@ -34,7 +34,7 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
         public bool OwnLine;
     }
 
-    public Configs Config { get; private set; }
+    [TweakConfig] public Configs Config { get; private set; }
 
     protected override void Setup() {
         AddChangelog("1.8.7.0", "Added option to display FC tags on a separate line to character name.");
@@ -50,6 +50,8 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
     }
 
     private void NamePlateGuiOnOnDataUpdate(INamePlateUpdateContext context, IReadOnlyList<INamePlateUpdateHandler> handlers) {
+        var localPlayer = Service.Objects.LocalPlayer;
+        if (localPlayer == null) return;
         foreach (var h in handlers) {
             if (h.PlayerCharacter == null) continue;
 
@@ -59,8 +61,8 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
                 string companyTag = string.Empty;
                 if (battleChara->Character.HomeWorld != battleChara->Character.CurrentWorld) {
                     // Wanderer
-                    var w = Service.Data.Excel.GetSheet<World>()?.GetRow(battleChara->Character.HomeWorld);
-                    if (w == null || w.DataCenter.Row == Service.ClientState.LocalPlayer?.CurrentWorld?.GameData?.DataCenter?.Row) {
+                    var w = Service.Data.Excel.GetSheet<World>().GetRowOrDefault(battleChara->Character.HomeWorld);
+                    if (w == null || w.Value.RowId == 0 || w.Value.DataCenter.RowId == localPlayer.CurrentWorld.Value.DataCenter.RowId) {
                         customization = Config.WandererCustomization;
                     } else {
                         customization = Config.TravellerCustomization;
@@ -113,9 +115,9 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
                                             break;
                                         }
                                         case "<homeworld>": {
-                                            var world = Service.Data.Excel.GetSheet<World>().GetRow(battleChara->Character.HomeWorld);
+                                            var world = Service.Data.Excel.GetSheet<World>().GetRowOrDefault(battleChara->Character.HomeWorld);
 
-                                            payloads.Add(new TextPayload(world?.Name ?? $"UnknownWorld#{battleChara->Character.HomeWorld}"));
+                                            payloads.Add(new TextPayload(world?.Name.ExtractText() ?? $"UnknownWorld#{battleChara->Character.HomeWorld}"));
                                             break;
                                         }
                                         case "<level>": {
@@ -330,8 +332,8 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
             ImGui.TableSetupColumn(LocString("Replacement"), ImGuiTableColumnFlags.NoClip);
             ImGui.TableHeadersRow();
 
-            string deleteKey = null;
-            string renameKey = null;
+            string? deleteKey = null;
+            string? renameKey = null;
 
             foreach (var fc in Config.FcCustomizations.OrderBy(k => k.Key)) {
                 var k = fc.Key;

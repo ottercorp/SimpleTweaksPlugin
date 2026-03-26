@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
@@ -8,7 +7,8 @@ using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
+using FFXIVClientStructs.FFXIV.Client.System.Input;
 using SimpleTweaksPlugin.Debugging;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -20,6 +20,7 @@ namespace SimpleTweaksPlugin.Tweaks;
 [TweakName("Screenshot Improvements")]
 [TweakDescription("Allows taking higher resolution screenshots, Hiding Dalamud & Game UIs and removing the copyright notice from screenshots.")]
 [TweakAuthor("NotNite")]
+[Changelog("1.10.6.0", "Fixed 'Remove Copyright Text' option.")]
 public unsafe class HighResScreenshots : Tweak {
     private nint copyrightShaderAddress;
 
@@ -36,21 +37,17 @@ public unsafe class HighResScreenshots : Tweak {
         
         public bool UseReShade;
         public VirtualKey ReShadeMainKey = VirtualKey.SNAPSHOT;
-        public bool ReShadeCtrl = false;
-        public bool ReShadeShift = false;
-        public bool ReShadeAlt = false;
+        public bool ReShadeCtrl;
+        public bool ReShadeShift;
+        public bool ReShadeAlt;
     }
 
     public Configs Config { get; private set; }
-
-    private delegate byte IsInputIDClickedDelegate(nint a1, int a2);
-
-    private HookWrapper<IsInputIDClickedDelegate> isInputIDClickedHook;
     
-    private delegate byte ReShadeKeyTest(byte* a1, uint a2, byte a3, byte a4, byte a5, byte a6);
-    private HookWrapper<ReShadeKeyTest> reShadeKeyTestHook;
+    [TweakHook(typeof(InputData), nameof(InputData.IsInputIdPressed), nameof(IsInputIdPressedDetour))]
+    private HookWrapper<InputData.Delegates.IsInputIdPressed> isInputIdPressedHook;
 
-    private bool updatingReShadeKeybind = false;
+    private bool updatingReShadeKeybind;
     
     protected void DrawConfig(ref bool hasChanged) {
         ImGui.TextWrapped(
@@ -115,7 +112,7 @@ public unsafe class HighResScreenshots : Tweak {
             ImGui.Indent();
             ImGui.Indent();
 
-            ImGui.TextWrapped("Take a screenshot using your FFXIV screenshot keybind.\nReShade will be used to take the screenshot instead.");
+            ImGui.TextWrapped("Match your Current Keybind below to your ReShade screenshot keybind.\nWhile this option is enabled and configured, use your regular FFXIV screenshot key to take high-resolution screenshots.");
             ImGui.Spacing();
             var keybindText = new List<string>();
             if (Config.ReShadeCtrl) keybindText.Add("CTRL");
@@ -125,19 +122,15 @@ public unsafe class HighResScreenshots : Tweak {
             
             ImGui.Text($"Current Keybind: {string.Join(" + ", keybindText)}");
             if (updatingReShadeKeybind) {
-                var keyDown = Service.KeyState.GetValidVirtualKeys().FirstOrDefault(k => k is not (VirtualKey.CONTROL or VirtualKey.SHIFT or VirtualKey.MENU) && Service.KeyState[k], VirtualKey.NO_KEY);
-                if (keyDown != VirtualKey.NO_KEY) {
+                if (ImGui.Button("Cancel Keybind Change")) {
                     updatingReShadeKeybind = false;
-                    Config.ReShadeMainKey = keyDown;
-                    Config.ReShadeAlt = ImGui.GetIO().KeyAlt;
-                    Config.ReShadeShift = ImGui.GetIO().KeyShift;
-                    Config.ReShadeCtrl = ImGui.GetIO().KeyCtrl;
-                } else {
-                    ImGui.TextColored(ImGuiColors.DalamudOrange, "Take a screenshot with ReShade to update the keybind.");
+                    Service.NativeKeyState.OnKeystroke -= OnKeystroke;
                 }
             } else {
                 if (ImGui.Button("Update Keybind")) {
                     updatingReShadeKeybind = true;
+                    Service.NativeKeyState.OnKeystroke += OnKeystroke;
+                    
                 }
             }
             
@@ -146,6 +139,22 @@ public unsafe class HighResScreenshots : Tweak {
         }
     }
 
+    private void OnKeystroke(VirtualKey key, bool down, ref NativeKeyState.KeyHandleType handleType) {
+        if (!updatingReShadeKeybind) {
+            Service.NativeKeyState.OnKeystroke -= OnKeystroke;
+            return;
+        }
+
+        if (key is VirtualKey.MENU or VirtualKey.CONTROL or VirtualKey.SHIFT or VirtualKey.LMENU or VirtualKey.RMENU or VirtualKey.LCONTROL or VirtualKey.RCONTROL or VirtualKey.RSHIFT or VirtualKey.LSHIFT) return;
+        
+        Config.ReShadeMainKey = key;
+        Config.ReShadeAlt = NativeKeyState.IsKeyDown(VirtualKey.MENU);
+        Config.ReShadeShift = NativeKeyState.IsKeyDown(VirtualKey.SHIFT);
+        Config.ReShadeCtrl = NativeKeyState.IsKeyDown(VirtualKey.CONTROL);
+        updatingReShadeKeybind = false;
+
+    }
+    
     protected override void Setup() {
         AddChangelogNewTweak("1.8.2.0");
         AddChangelog("1.8.3.0", "Added option to hide dalamud UI for screenshot.");
@@ -157,16 +166,20 @@ public unsafe class HighResScreenshots : Tweak {
     }
 
     protected override void Enable() {
-        Config = LoadConfig<Configs>() ?? new Configs();
-
-        if (!Service.SigScanner.TryScanText("48 8B 57 ?? 45 33 C9 48 8B 06 45 33 C0 48 8B CE 48 8B 52 ?? FF 50 ?? 48 8B 06 4C 8D 4C 24", out copyrightShaderAddress)) {
-            copyrightShaderAddress = 0;
+        if (!Enum.TryParse(nameof(InputId.KEY_SCREENSHOT), out screenshotButton)) {
+            throw new Exception("KEY_SCREENSHOT not found.");
         }
-
-        isInputIDClickedHook ??=
-            Common.Hook<IsInputIDClickedDelegate>("E9 ?? ?? ?? ?? 83 7F ?? ?? 0F 8F ?? ?? ?? ?? BA ?? ?? ?? ?? 48 8B CB", IsInputIDClickedDetour);
-        isInputIDClickedHook?.Enable();
-
+        
+        Config = LoadConfig<Configs>() ?? new Configs();
+        if (!Service.SigScanner.TryScanText("48 8B 57 ?? 45 33 C9 ?? ?? ?? 45 33 C0", out copyrightShaderAddress)) {
+            #if TEST
+            throw new Exception("Failed to get CopyrightShaderAddress");
+            #else
+            SimpleLog.Warning("Failed to get CopyrightShaderAddress");
+            copyrightShaderAddress = 0;
+            #endif
+        }
+        
         base.Enable();
     }
 
@@ -175,18 +188,18 @@ public unsafe class HighResScreenshots : Tweak {
     private uint oldHeight;
     private bool isRunning;
 
-    const int ScreenshotButton = 546;
-    public bool originalUiVisibility;
-    byte[] originalCopyrightBytes = null;
+    private InputId screenshotButton;
+    private bool originalUiVisibility;
+    private byte[]? originalCopyrightBytes;
     // IsInputIDClicked is called from Client::UI::UIInputModule.CheckScreenshotState, which is polled
     // We change the res when the button is pressed and tell it to take a screenshot the next time it is polled
-    private byte IsInputIDClickedDetour(nint a1, int a2) {
-        if (a2 == ScreenshotButton && Config.UseReShade && Framework.Instance()->WindowInactive) return 0;
+    private bool IsInputIdPressedDetour(InputData* a1, InputId a2) {
+        if (a2 == screenshotButton && Config.UseReShade && Framework.Instance()->WindowInactive) return false;
         
-        var orig = isInputIDClickedHook.Original(a1, a2);
+        var orig = isInputIdPressedHook.Original(a1, a2);
         if (AgentModule.Instance()->GetAgentByInternalId(AgentId.Configkey)->IsAgentActive()) return orig;
 
-        if (orig == 1 && a2 == ScreenshotButton && !shouldPress && !isRunning) {
+        if (orig && a2 == screenshotButton && !shouldPress && !isRunning) {
             isRunning = true;
             var device = Device.Instance();
             oldWidth = device->Width;
@@ -208,8 +221,6 @@ public unsafe class HighResScreenshots : Tweak {
                 }
             }
             
-            
-
             if (Config.HideGameUi) {
                 var raptureAtkModule = Framework.Instance()->GetUIModule()->GetRaptureAtkModule();
                 originalUiVisibility = !raptureAtkModule->RaptureAtkUnitManager.Flags.HasFlag(AtkUnitManagerFlags.UiHidden);
@@ -223,14 +234,14 @@ public unsafe class HighResScreenshots : Tweak {
                 shouldPress = true;
             }, delay: TimeSpan.FromSeconds(Config.Delay));
 
-            return 0;
+            return false;
         }
 
-        if (a2 == ScreenshotButton && shouldPress) {
+        if (a2 == screenshotButton && shouldPress) {
             shouldPress = false;
             
             if (Config.RemoveCopyright && copyrightShaderAddress != 0 && originalCopyrightBytes == null) {
-                originalCopyrightBytes = ReplaceRaw(copyrightShaderAddress, new byte[] { 0xEB, 0x54 });
+                originalCopyrightBytes = ReplaceRaw(copyrightShaderAddress, [0xEB, 0x54]);
             }
             
             // Reset the res back to normal after the screenshot is taken
@@ -272,13 +283,13 @@ public unsafe class HighResScreenshots : Tweak {
                     SendInput.KeyUp(Config.ReShadeMainKey);
                 }, delayTicks: 1);
                 
-                return 0;
+                return false;
             }
 
-            return 1;
+            return true;
         }
 
-        if (isRunning && a2 == ScreenshotButton) return 0;
+        if (isRunning && a2 == screenshotButton) return false;
         return orig;
     }
 
@@ -292,9 +303,8 @@ public unsafe class HighResScreenshots : Tweak {
     }
 
     protected override void Disable() {
+        Service.NativeKeyState.OnKeystroke -= OnKeystroke;
         UIDebug.FreeExclusiveDraw();
         SaveConfig(Config);
-        isInputIDClickedHook?.Disable();
-        base.Disable();
     }
 }

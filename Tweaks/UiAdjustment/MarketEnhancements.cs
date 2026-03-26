@@ -6,7 +6,7 @@ using Dalamud.Game.Text;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 
@@ -30,12 +30,12 @@ public unsafe class MarketEnhancements : UiAdjustments.SubTweak {
         public Vector4 LazyTaxColour = new(1, 0, 0, 1);
     }
 
-    public MarketEnhancementsConfig Config { get; private set; }
+    [TweakConfig] public MarketEnhancementsConfig Config { get; private set; }
 
     private delegate void UpdateResultDelegate(AtkUnitBase* addonItemSearchResult, uint a2, ulong* a3, void* a4);
 
     private UpdateResultDelegate updateResultOriginal;
-    [Signature("40 57 48 83 EC 30 8B FA")] private nint updateResult;
+    [Signature("48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC 30 8B DA 49 8B C1")] private nint updateResult;
 
     private delegate void* ListSetup(void* a1, AtkUnitBase* a2, nint a3);
 
@@ -84,17 +84,17 @@ public unsafe class MarketEnhancements : UiAdjustments.SubTweak {
             if (agent == null) return;
 
             if (npcPriceId != agent->ResultItemId) {
-                var item = Service.Data.Excel.GetSheet<Item>()?.GetRow(agent->ResultItemId);
+                var item = Service.Data.Excel.GetSheet<Item>().GetRowOrDefault(agent->ResultItemId);
                 if (item == null) return;
                 npcPriceId = agent->ResultItemId;
                 npcBuyPrice = 0;
-                npcSellPrice = item.PriceLow;
-                if (item.ItemUICategory.Row is 58) {
+                npcSellPrice = item.Value.PriceLow;
+                if (item.Value.ItemUICategory.RowId is 58) {
                     npcSellPrice += (uint)MathF.Ceiling(npcSellPrice * 0.1f);
                 }
 
-                var gilShopItem = Service.Data.Excel.GetSheet<GilShopItem>()?.Where(a => a.Item.Row == agent->ResultItemId).ToList();
-                if (gilShopItem is { Count: > 0 }) npcBuyPrice = item.PriceMid;
+                var gilShopItem = Service.Data.Excel.GetSubrowSheet<GilShopItem>().Flatten().Where(a => a.Item.RowId == agent->ResultItemId).ToList();
+                if (gilShopItem is { Count: > 0 }) npcBuyPrice = item.Value.PriceMid;
             }
 
             for (var i = 0; i < 12 && i < component->ListLength; i++) {
@@ -110,7 +110,7 @@ public unsafe class MarketEnhancements : UiAdjustments.SubTweak {
                     continue;
                 }
 
-                if (singlePriceNode->NodeText.StringPtr[0] == 0x20 || totalTextNode->NodeText.StringPtr[0] == 0x20) continue;
+                if (singlePriceNode->NodeText.StringPtr.Value[0] == 0x20 || totalTextNode->NodeText.StringPtr.Value[0] == 0x20) continue;
 
                 var priceString = Common.ReadSeString(singlePriceNode->NodeText).TextValue.Replace($"{(char)SeIconChar.Gil}", "").Replace($",", "").Replace(" ", "").Replace($".", "");
 
@@ -129,13 +129,13 @@ public unsafe class MarketEnhancements : UiAdjustments.SubTweak {
                     singlePriceNode->EdgeColor.G = (byte)(Config.LazyTaxColour.Y * 255f);
                     singlePriceNode->EdgeColor.B = (byte)(Config.LazyTaxColour.Z * 255f);
                     singlePriceNode->EdgeColor.A = (byte)(Config.LazyTaxColour.W * 255f);
-                    singlePriceNode->TextFlags |= (byte)TextFlags.Edge;
+                    singlePriceNode->TextFlags |= TextFlags.Edge;
                 } else if (Config.HighlightNpcSellProfit && npcSellPrice > 0 && realCostPerItem < sellValue) {
                     singlePriceNode->EdgeColor.R = (byte)(Config.NpcSellProfitColour.X * 255f);
                     singlePriceNode->EdgeColor.G = (byte)(Config.NpcSellProfitColour.Y * 255f);
                     singlePriceNode->EdgeColor.B = (byte)(Config.NpcSellProfitColour.Z * 255f);
                     singlePriceNode->EdgeColor.A = (byte)(Config.NpcSellProfitColour.W * 255f);
-                    singlePriceNode->TextFlags |= (byte)TextFlags.Edge;
+                    singlePriceNode->TextFlags |= TextFlags.Edge;
                 } else {
                     singlePriceNode->EdgeColor.R = 0;
                     singlePriceNode->EdgeColor.G = 0;

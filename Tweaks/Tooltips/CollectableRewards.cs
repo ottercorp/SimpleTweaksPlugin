@@ -6,7 +6,7 @@ using Dalamud.Game.Text.SeStringHandling;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
 using static SimpleTweaksPlugin.Tweaks.TooltipTweaks.ItemTooltipField;
 
@@ -51,7 +51,7 @@ public class CollectableRewards : TooltipTweaks.SubTweak {
 
     private class CollectableCachedDetails {
         public sbyte? JobTableIndex;
-        public string JobName;
+        public string? JobName;
         public int LevelMin;
         public int LevelMax;
         public int ScripRewardType;
@@ -72,64 +72,67 @@ public class CollectableRewards : TooltipTweaks.SubTweak {
         }
 
         var craftingJobExpArrayIndex = Service.Data.Excel.GetSheet<ClassJob>()!
-            .Where(job => job.DohDolJobIndex >= 0 && job.ItemSoulCrystal.Row != 0)
+            .Where(job => job.ClassJobCategory.RowId == 33)
             .ToDictionary(job => job.DohDolJobIndex, job => job.ExpArrayIndex);
 
         var gatheringJobExpArrayIndex = Service.Data.Excel.GetSheet<ClassJob>()!
-            .Where(job => job.DohDolJobIndex >= 0 && job.ItemSoulCrystal.Row == 0)
+            .Where(job => job.ClassJobCategory.RowId == 32)
             .ToDictionary(job => job.DohDolJobIndex, job => job.ExpArrayIndex);
 
         jobShortName = Service.Data.Excel.GetSheet<ClassJob>()!.Where(job => job.DohDolJobIndex >= 0)
             .Select(job => job.Abbreviation.ToString())
             .ToList();
 
-        Dictionary<uint, (sbyte, string)> rowToJobInfo = new();
+        Dictionary<uint, (sbyte, string?)> rowToJobInfo = new();
 
         // Cache the list of collectable items we support
-        foreach (var collectable in Service.Data.Excel.GetSheet<CollectablesShopItem>()!) {
-            if (collectable.Item.Row == 0) continue;
+        foreach (var collectableCollection in Service.Data.Excel.GetSubrowSheet<CollectablesShopItem>()) {
+            foreach (var collectable in collectableCollection) {
+                if (collectable.Item.RowId == 0) continue;
 
-            if (collectable.CollectablesShopRefine?.Value == null || collectable.CollectablesShopRewardScrip?.Value == null) continue;
+                if (collectable.CollectablesShopRefine.RowId == 0 || collectable.CollectablesShopRewardScrip.RowId == 0) continue;
 
-            if (!rowToJobInfo.TryGetValue(collectable.RowId, out var jobInfo)) {
-                jobInfo = rowIdToJob.Select((ids, index) => (ids, index))
-                    .Where(entry => entry.ids.Contains(collectable.RowId))
-                    .Select(entry => (
-                        entry.index < 8
-                            ? craftingJobExpArrayIndex[(sbyte)entry.index]
-                            : gatheringJobExpArrayIndex[(sbyte)(entry.index - 8)], jobShortName[entry.index]))
-                    .FirstOrDefault((0, null));
-                if (jobInfo.Item2 is null) continue;
-                rowToJobInfo.Add(collectable.RowId, jobInfo);
+                if (!rowToJobInfo.TryGetValue(collectable.RowId, out var jobInfo)) {
+                    jobInfo = rowIdToJob.Select((ids, index) => (ids, index))
+                        .Where(entry => entry.ids.Contains(collectable.RowId))
+                        .Select(entry => (
+                            entry.index < 8
+                                ? craftingJobExpArrayIndex[(sbyte)entry.index]
+                                : gatheringJobExpArrayIndex[(sbyte)(entry.index - 8)], jobShortName[entry.index]))
+                        .FirstOrDefault();
+                    if (jobInfo.Item2 is null) continue;
+                    rowToJobInfo.Add(collectable.RowId, jobInfo);
+                }
+
+                // Only handle collectable delivery items for which we matched a job
+                if (jobInfo.Item1 < 0) continue;
+
+                collectableCache.TryAdd(collectable.Item.RowId, new Lazy<CollectableCachedDetails>(() => new CollectableCachedDetails {
+                    JobTableIndex = jobInfo.Item1,
+                    JobName = jobInfo.Item2,
+                    LevelMin = collectable.LevelMin,
+                    LevelMax = collectable.LevelMax,
+                    ScripRewardType = collectable.CollectablesShopRewardScrip.Value.Currency,
+                    Rewards = [
+                        new CollectableReward {
+                            QualityRequired = collectable.CollectablesShopRefine.Value.LowCollectability,
+                            ScriptRewardCount = collectable.CollectablesShopRewardScrip.Value.LowReward,
+                            Experience = collectable.CollectablesShopRewardScrip.Value.ExpRatioLow * experiencePerLevel[collectable.LevelMax] / 1000,
+                        },
+                        new CollectableReward {
+                            QualityRequired = collectable.CollectablesShopRefine.Value.MidCollectability,
+                            ScriptRewardCount = collectable.CollectablesShopRewardScrip.Value.MidReward,
+                            Experience = collectable.CollectablesShopRewardScrip.Value.ExpRatioMid * experiencePerLevel[collectable.LevelMax] / 1000,
+                        },
+                        new CollectableReward {
+                            QualityRequired = collectable.CollectablesShopRefine.Value.HighCollectability,
+                            ScriptRewardCount = collectable.CollectablesShopRewardScrip.Value.HighReward,
+                            Experience = collectable.CollectablesShopRewardScrip.Value.ExpRatioHigh * experiencePerLevel[collectable.LevelMax] / 1000,
+                        }
+                    ],
+                }, System.Threading.LazyThreadSafetyMode.ExecutionAndPublication));
             }
-
-            // Only handle collectable delivery items for which we matched a job
-            if (jobInfo.Item1 < 0) continue;
-
-            collectableCache.TryAdd(collectable.Item.Row, new Lazy<CollectableCachedDetails>(() => new CollectableCachedDetails {
-                JobTableIndex = jobInfo.Item1,
-                JobName = jobInfo.Item2,
-                LevelMin = collectable.LevelMin,
-                LevelMax = collectable.LevelMax,
-                ScripRewardType = collectable.CollectablesShopRewardScrip.Value.Currency,
-                Rewards = [
-                    new CollectableReward {
-                        QualityRequired = collectable.CollectablesShopRefine.Value.LowCollectability,
-                        ScriptRewardCount = collectable.CollectablesShopRewardScrip.Value.LowReward,
-                        Experience = collectable.CollectablesShopRewardScrip.Value.ExpRatioLow * experiencePerLevel[collectable.LevelMax] / 1000,
-                    },
-                    new CollectableReward {
-                        QualityRequired = collectable.CollectablesShopRefine.Value.MidCollectability,
-                        ScriptRewardCount = collectable.CollectablesShopRewardScrip.Value.MidReward,
-                        Experience = collectable.CollectablesShopRewardScrip.Value.ExpRatioMid * experiencePerLevel[collectable.LevelMax] / 1000,
-                    },
-                    new CollectableReward {
-                        QualityRequired = collectable.CollectablesShopRefine.Value.HighCollectability,
-                        ScriptRewardCount = collectable.CollectablesShopRewardScrip.Value.HighReward,
-                        Experience = collectable.CollectablesShopRewardScrip.Value.ExpRatioHigh * experiencePerLevel[collectable.LevelMax] / 1000,
-                    }
-                ],
-            }, System.Threading.LazyThreadSafetyMode.ExecutionAndPublication));
+            
         }
     }
 
@@ -192,11 +195,11 @@ public class CollectableRewards : TooltipTweaks.SubTweak {
             // The container is a proper inventory type, a real item with a collectability.
             // We show only the relevant reward.
 
-            if (Item.Spiritbond < itemDetails.Rewards[0].QualityRequired) {
+            if (Item.SpiritbondOrCollectability < itemDetails.Rewards[0].QualityRequired) {
                 description.AddUiForeground($"      Minimum quality of {itemDetails.Rewards[0].QualityRequired} has not been reached.", 16);
-            } else if (Item.Spiritbond < itemDetails.Rewards[1].QualityRequired) {
+            } else if (Item.SpiritbondOrCollectability < itemDetails.Rewards[1].QualityRequired) {
                 AddItemRewardToDescription(itemDetails.Rewards[0], scripType, scripUiColour, description);
-            } else if (Item.Spiritbond < itemDetails.Rewards[2].QualityRequired) {
+            } else if (Item.SpiritbondOrCollectability < itemDetails.Rewards[2].QualityRequired) {
                 AddItemRewardToDescription(itemDetails.Rewards[1], scripType, scripUiColour, description);
             } else {
                 AddItemRewardToDescription(itemDetails.Rewards[2], scripType, scripUiColour, description);

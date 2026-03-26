@@ -1,11 +1,10 @@
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Interface.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
-using System;
 using System.Numerics;
 using Dalamud.Interface.Utility.Raii;
 
@@ -45,8 +44,8 @@ internal unsafe class CastingTextVisibility : UiAdjustments.SubTweak
         public Vector4 FocusEdgeColor = new(115 / 255f, 85 / 255f, 15 / 255f, 1);
         public Vector4 FocusBackgroundColor = new(0);
         public int FocusFontSize = 14;
-        public int FocusBackgroundWidthPadding = 0;
-        public int FocusBackgroundHeightPadding = 0;
+        public int FocusBackgroundWidthPadding;
+        public int FocusBackgroundHeightPadding;
         public Vector2 FocusPosition = Vector2.One;
         public bool FocusRightAlign = true;
 
@@ -54,8 +53,8 @@ internal unsafe class CastingTextVisibility : UiAdjustments.SubTweak
         public Vector4 TargetEdgeColor = new(157 / 255f, 131 / 255f, 91 / 255f, 1);
         public Vector4 TargetBackgroundColor = new(0);
         public int TargetFontSize = 14;
-        public int TargetBackgroundWidthPadding = 0;
-        public int TargetBackgroundHeightPadding = 0;
+        public int TargetBackgroundWidthPadding;
+        public int TargetBackgroundHeightPadding;
         public Vector2 TargetPosition = Vector2.One;
         public bool TargetRightAlign = true;
     }
@@ -133,7 +132,7 @@ internal unsafe class CastingTextVisibility : UiAdjustments.SubTweak
     [AddonPostRequestedUpdate("_TargetInfo", "_FocusTargetInfo", "_TargetInfoCastBar")]
     private void OnAddonRequestedUpdate(AddonArgs args)
     {
-        var addon = (AtkUnitBase*)args.Addon;
+        var addon = (AtkUnitBase*)args.Addon.Address;
         switch (args.AddonName)
         {
             case "_FocusTargetInfo" when addon->IsVisible:
@@ -208,17 +207,17 @@ internal unsafe class CastingTextVisibility : UiAdjustments.SubTweak
         textNode->FontSize = (byte)fontSize;
     }
 
-    private void ResetTextNodes()
-    {
-        var fui = Common.GetUnitBase("_FocusTargetInfo", 1);
-        var tui = Common.GetUnitBase("_TargetInfo", 1);
-        var stui = Common.GetUnitBase("_TargetInfoCastBar", 1);
-        var ftext = Common.GetNodeByID<AtkTextNode>(&fui->UldManager, focusTargetTextNodeId);
-        var ttext = Common.GetNodeByID<AtkTextNode>(&tui->UldManager, targetTextNodeId);
-        var sttext = Common.GetNodeByID<AtkTextNode>(&stui->UldManager, splitTargetTextNodeId);
-        if (ftext != null) ftext->ToggleVisibility(true);
-        if (ttext != null) ttext->ToggleVisibility(true);
-        if (sttext != null) sttext->ToggleVisibility(true);
+    private void ResetTextNodes() {
+        void Reset(string addonName, uint nodeId) {
+            var addon = Common.GetUnitBase(addonName);
+            if (addon == null) return;
+            var node = Common.GetNodeByID<AtkTextNode>(&addon->UldManager, nodeId);
+            if (node != null) node->ToggleVisibility(true);
+        }
+        
+        Reset("_FocusTargetInfo", focusTargetTextNodeId);
+        Reset("_TargetInfo", targetTextNodeId);
+        Reset("_TargetInfoCastBar", splitTargetTextNodeId);
     }
 
     private void UpdateFocusTargetNodes(AtkTextNode* textNode, AtkImageNode* imageNode) =>
@@ -227,9 +226,8 @@ internal unsafe class CastingTextVisibility : UiAdjustments.SubTweak
     private void UpdateTargetNodes(AtkTextNode* textNode, AtkImageNode* imageNode) =>
         UpdateCustomNodes(imageNode, textNode, Config.TargetFontSize, Config.TargetBackgroundHeightPadding, Config.TargetBackgroundWidthPadding, Config.TargetBackgroundColor, Config.TargetRightAlign, Config.TargetPosition);
 
-    private void ResizeAndAlignTextNode(AtkTextNode* textNode, bool rightAlign, Vector2 position)
-    {
-        textNode->TextFlags = (byte)(TextFlags.Edge);
+    private void ResizeAndAlignTextNode(AtkTextNode* textNode, bool rightAlign, Vector2 position) {
+        textNode->TextFlags = TextFlags.Edge;
         // anything not TopLeft / Left aligned seems to get a width and height of 0   
         // set to left align to resize node
         textNode->AlignmentType = AlignmentType.TopLeft;

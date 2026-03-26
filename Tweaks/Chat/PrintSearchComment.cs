@@ -29,16 +29,15 @@ public class PrintSearchComment : ChatTweaks.SubTweak {
                 var builder = new Lumina.Text.SeStringBuilder()
                     .PushColorType(45)
                     .Append("Search Info from <")
-                    .PushLinkCharacter(character.Name.TextValue, character.HomeWorld.Id)
+                    .PushLinkCharacter(character.Name.TextValue, character.HomeWorld.RowId)
                     .Append(character.Name.TextValue)
                     .PopLink()
                     .Append(">")
                     .PopColorType()
                     .Append("\r")
-                    .Append(searchInfo)
-                    .ToArray();
+                    .Append(searchInfo);
 
-                Service.Chat.Print(SeString.Parse(builder));
+                Service.Chat.Print(builder.GetViewAsSpan());
             }
         } catch (Exception ex) {
             SimpleLog.Error(ex, $"Error in {GetType().Name} hook");

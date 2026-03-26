@@ -4,7 +4,6 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 using Dalamud.Plugin;
-using FFXIVClientStructs.Interop;
 
 namespace SimpleTweaksPlugin.TweakSystem; 
 
@@ -26,7 +25,12 @@ public class TweakLoadContext : AssemblyLoadContext {
         handledAssemblies = new Dictionary<string, Assembly>() {
             ["SimpleTweaksPlugin"] = typeof(SimpleTweaksPlugin).Assembly,
             ["FFXIVClientStructs"] = typeof(FFXIVClientStructs.ThisAssembly).Assembly,
+            ["InteropGenerator.Runtime"] = typeof(InteropGenerator.Runtime.CStringPointer).Assembly,
             ["Dalamud"] = typeof(IDalamudPluginInterface).Assembly,
+            ["Dalamud.Bindings.ImGui"] = typeof(Dalamud.Bindings.ImGui.ImGui).Assembly,
+            ["Dalamud.Bindings.ImPlot"] = typeof(Dalamud.Bindings.ImPlot.ImPlot).Assembly,
+            ["Lumina"] = typeof(Lumina.GameData).Assembly,
+            ["Lumina.Excel"] = typeof(Lumina.Excel.Sheets.Achievement).Assembly,
         };
     }
     

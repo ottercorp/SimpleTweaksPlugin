@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.Utility;
 using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
@@ -18,7 +17,7 @@ public unsafe class AddonDebug : DebugHelper {
 
     private delegate void* FireCallbackDelegate(AtkUnitBase* atkUnitBase, int valueCount, AtkValue* atkValues, byte updateVisibility);
     private HookWrapper<FireCallbackDelegate> fireCallbackHook;
-    private bool enabled = false;
+    private bool enabled;
 
     public delegate void* OnSetupDelegate(AtkUnitBase* atkUnitBase, int valueCount, AtkValue* atkValues);
     private static Dictionary<string, SetupHook> setupHooks = new();
@@ -73,7 +72,7 @@ public unsafe class AddonDebug : DebugHelper {
                         }
                         case ValueType.String8:
                         case ValueType.String: {
-                            atkValueList.Add(Marshal.PtrToStringUTF8(new IntPtr(a->String)));
+                            atkValueList.Add(Marshal.PtrToStringUTF8(new IntPtr(a->String)) ?? string.Empty);
                             break;
                         }
                         case ValueType.UInt: {
@@ -271,7 +270,7 @@ public unsafe class AddonDebug : DebugHelper {
 
                         var addr = (ulong) l.UpdateItemCallback;
                         if (addr > 0) {
-                            var baseAddr = (ulong) Process.GetCurrentProcess().MainModule.BaseAddress;
+                            var baseAddr = (ulong) (Process.GetCurrentProcess().MainModule?.BaseAddress ?? throw new Exception("Failed to get BaseAddress"));
                             var offset = addr - baseAddr;
                             ImGui.SameLine();
                             DebugManager.ClickToCopyText($"ffxiv_dx11.exe+{offset:X}");
@@ -368,8 +367,9 @@ public unsafe class AddonDebug : DebugHelper {
                         atkValueList.Add(a->Int);
                         break;
                     }
-                    case ValueType.String: {
-                        atkValueList.Add(Marshal.PtrToStringUTF8(new IntPtr(a->String)));
+                    case ValueType.String:
+                    {
+                        atkValueList.Add(Marshal.PtrToStringUTF8(new IntPtr(a->String)) ?? string.Empty);
                         break;
                     }
                     case ValueType.UInt: {

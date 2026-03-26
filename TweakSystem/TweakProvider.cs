@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using SimpleTweaksPlugin.Utility;
 
 namespace SimpleTweaksPlugin.TweakSystem; 
 
 public class TweakProvider : IDisposable {
 
-    public bool IsDisposed { get; protected set; } = false;
+    public bool IsDisposed { get; protected set; }
     public List<BaseTweak> Tweaks { get; } = new();
 
     public Assembly Assembly { get; init; } = null!;
@@ -30,6 +31,7 @@ public class TweakProvider : IDisposable {
 
                 tweak.InterfaceSetup(SimpleTweaksPlugin.Plugin, Service.PluginInterface, SimpleTweaksPlugin.Plugin.PluginConfig, this);
                 if (tweak.CanLoad) {
+                    
                     var blacklistKey = tweak.Key;
                     if (tweak.Version > 1) blacklistKey += $"::{tweak.Version}";
                     if (SimpleTweaksPlugin.Plugin.PluginConfig.BlacklistedTweaks.Contains(blacklistKey)) {
@@ -40,6 +42,18 @@ public class TweakProvider : IDisposable {
                         continue;
                     }
 
+                    if (tweak.GetType().TryGetAttribute<RequiredClientStructsVersionAttribute>(out var csAttr)) {
+                        if (csAttr.MinVersion > Common.ClientStructsVersion || csAttr.MaxVersion < Common.ClientStructsVersion) {
+                            SimpleLog.Log($"Skipping tweak due to client structs version: {tweak.Key}");
+                            var blTweak = new BlacklistedTweak(tweak.Key, tweak.Name, "Disabled due to an unsupported version of FFXIVClientStructs.\nIt will automatically be re-enabled when Dalamud updates to a supported version.");
+                            blTweak.InterfaceSetup(SimpleTweaksPlugin.Plugin, Service.PluginInterface, SimpleTweaksPlugin.Plugin.PluginConfig, this);
+                            Tweaks.Add(blTweak);
+                            continue;
+                        }
+                    }
+
+                    tweak.AddChangelogs();
+                    #if !TEST
                     if (tweak is not IDisabledTweak) {
                         tweak.SetupInternal();
                         if (tweak.Ready && (SimpleTweaksPlugin.Plugin.PluginConfig.EnabledTweaks.Contains(tweak.Key) || tweak is SubTweakManager {AlwaysEnabled: true})) {
@@ -51,6 +65,7 @@ public class TweakProvider : IDisposable {
                             }
                         }
                     }
+                    #endif
 
                     Tweaks.Add(tweak);
                 }

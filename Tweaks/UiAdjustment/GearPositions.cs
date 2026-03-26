@@ -7,6 +7,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 [Changelog("1.8.1.1", "Fixed widget display when using standard UI quality.")]
 [Changelog("1.9.0.0", "Improved gamepad navigation on Character window.")]
 [Changelog("1.9.1.0", "Further improved gamepad navigation on Character window.")]
+[Changelog("1.10.11.1", "Fixed incorrect ordering of equipment.")]
 [TweakAutoConfig]
 [TweakName("Adjust Equipment Positions")]
 [TweakDescription("Repositions equipment positions in character menu and inspect to improve appearance.")]
@@ -26,11 +27,11 @@ public unsafe class GearPositions : UiAdjustments.SubTweak {
     [AddonPostSetup("CharacterInspect")]
     private void InspectOnSetup(AtkUnitBase* atkUnitBase) {
         if (TweakConfig.SoulstoneAboveOffhand) {
-            MoveNode(atkUnitBase, 47, 262, -119);
-            MoveNode(atkUnitBase, 61, 262, -119);
+            MoveNode(atkUnitBase, 54, 262, -119);
+            MoveNode(atkUnitBase, 68, 262, -119);
         } else {
-            ShiftUp(atkUnitBase, 36, 262, -119, 42, 43, 44, 45, 46, 47);
-            ShiftUp(atkUnitBase, 50, 262, -119, 56, 57, 58, 59, 60, 61);
+            ShiftUp(atkUnitBase, 43, 262, -119, 49, 50, 51, 52, 53, 54);
+            ShiftUp(atkUnitBase, 57, 262, -119, 63, 64, 65, 66, 67, 68);
         }
     }
 

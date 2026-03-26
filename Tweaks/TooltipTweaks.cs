@@ -3,26 +3,27 @@ using System.Linq;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 
 namespace SimpleTweaksPlugin.Tweaks;
 
-public class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
+public unsafe class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
     public override bool AlwaysEnabled => true;
 
     [TweakCategory(TweakCategory.Tooltip)]
     public abstract class SubTweak : BaseTweak {
         public override string Key => $"{nameof(TooltipTweaks)}@{base.Key}";
-        public virtual unsafe void OnActionTooltip(AtkUnitBase* addonActionDetail, HoveredActionDetail action) { }
-        public virtual unsafe void OnGenerateItemTooltip(NumberArrayData* numberArrayData, StringArrayData* stringArrayData) { }
-        public virtual unsafe void OnGenerateActionTooltip(NumberArrayData* numberArrayData, StringArrayData* stringArrayData) { }
+        public virtual void OnActionTooltip(AtkUnitBase* addonActionDetail, HoveredActionDetail action) { }
+        public virtual void OnGenerateItemTooltip(NumberArrayData* numberArrayData, StringArrayData* stringArrayData) { }
+        public virtual void OnGenerateActionTooltip(NumberArrayData* numberArrayData, StringArrayData* stringArrayData) { }
 
-        protected static unsafe SeString GetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ItemTooltipField field) => GetTooltipString(stringArrayData, (int)field);
-        protected static unsafe SeString GetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ActionTooltipField field) => GetTooltipString(stringArrayData, (int)field);
+        protected static SeString? GetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ItemTooltipField field) => GetTooltipString(stringArrayData, (int)field);
+        protected static SeString? GetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ActionTooltipField field) => GetTooltipString(stringArrayData, (int)field);
 
-        protected static unsafe SeString GetTooltipString(StringArrayData* stringArrayData, int field) {
+        protected static SeString? GetTooltipString(StringArrayData* stringArrayData, int field) {
             try {
                 if (stringArrayData->AtkArrayData.Size <= field)
                     throw new IndexOutOfRangeException($"Attempted to get Index#{field} ({field}) but size is only {stringArrayData->AtkArrayData.Size}");
@@ -35,18 +36,16 @@ public class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
             }
         }
 
-        protected static unsafe void SetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ItemTooltipField field, SeString seString) {
+        protected static void SetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ItemTooltipField field, SeString seString) {
             seString ??= new SeString();
-            var bytes = seString.Encode().ToList();
-            bytes.Add(0);
-            stringArrayData->SetValue((int)field, bytes.ToArray(), false, true, false);
+            var bytes = seString.EncodeWithNullTerminator();
+            stringArrayData->SetValue((int)field, bytes, false);
         }
 
-        protected static unsafe void SetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ActionTooltipField field, SeString seString) {
+        protected static void SetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ActionTooltipField field, SeString seString) {
             seString ??= new SeString();
-            var bytes = seString.Encode().ToList();
-            bytes.Add(0);
-            stringArrayData->SetValue((int)field, bytes.ToArray(), false, true, false);
+            var bytes = seString.EncodeWithNullTerminator();
+            stringArrayData->SetValue((int)field, bytes, false);
         }
 
         protected static InventoryItem Item => HoveredItem;
@@ -54,27 +53,26 @@ public class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
         protected static uint LoadedItem => LastLoadedItem;
     }
 
-    private unsafe delegate IntPtr ActionTooltipDelegate(AtkUnitBase* a1, void* a2, ulong a3);
-
+    private delegate IntPtr ActionTooltipDelegate(AtkUnitBase* a1, void* a2, ulong a3);
+    
     private HookWrapper<ActionTooltipDelegate> actionTooltipHook;
 
-    private unsafe delegate byte ItemHoveredDelegate(IntPtr a1, IntPtr* a2, int* containerId, ushort* slotId, IntPtr a5, uint slotIdInt, IntPtr a7);
+    private delegate byte ItemHoveredDelegate(IntPtr a1, IntPtr* a2, int* containerId, ushort* slotId, IntPtr a5, uint slotIdInt, IntPtr a7);
 
     private HookWrapper<ItemHoveredDelegate> itemHoveredHook;
+    
+    [TweakHook(typeof(AgentActionDetail), nameof(AgentActionDetail.HandleActionHover), nameof(ActionHoveredDetour))]
+    private HookWrapper<AgentActionDetail.Delegates.HandleActionHover> actionHoveredHook;
 
-    private delegate void ActionHoveredDelegate(ulong a1, int a2, uint a3, int a4, byte a5);
-
-    private HookWrapper<ActionHoveredDelegate> actionHoveredHook;
-
-    private unsafe delegate void* GenerateItemTooltip(AtkUnitBase* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData);
+    private delegate void* GenerateItemTooltip(AtkUnitBase* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData);
 
     private HookWrapper<GenerateItemTooltip> generateItemTooltipHook;
 
-    private unsafe delegate void* GenerateActionTooltip(AtkUnitBase* addonActionDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData);
+    private delegate void* GenerateActionTooltip(AtkUnitBase* addonActionDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData);
 
     private HookWrapper<GenerateActionTooltip> generateActionTooltipHook;
 
-    private unsafe delegate void* GetItemRowDelegate(uint itemId);
+    private delegate void* GetItemRowDelegate(uint itemId);
 
     private HookWrapper<GetItemRowDelegate> getItemRowHook;
 
@@ -84,19 +82,17 @@ public class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
         base.Setup();
     }
 
-    protected override unsafe void Enable() {
+    protected override void Enable() {
         if (!Ready) return;
-
-        itemHoveredHook ??= Common.Hook<ItemHoveredDelegate>("E8 ?? ?? ?? ?? 84 C0 0F 84 ?? ?? ?? ?? 48 89 9C 24 ?? ?? ?? ?? 48 89 B4 24", ItemHoveredDetour);
-        actionTooltipHook ??= Common.Hook<ActionTooltipDelegate>("48 89 5C 24 ?? 55 56 57 41 56 41 57 48 83 EC ?? 48 8B 9A", ActionTooltipDetour);
-        actionHoveredHook ??= Common.Hook<ActionHoveredDelegate>("E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 83 F8 ?? 75 ?? BA ?? ?? ?? ?? E8 ?? ?? ?? ?? 49 8D 4F ?? 48 8B F8", ActionHoveredDetour);
+        
+        itemHoveredHook ??= Common.Hook<ItemHoveredDelegate>("E8 ?? ?? ?? ?? 84 C0 0F 84 ?? ?? ?? ?? 48 89 9C 24 ?? ?? ?? ?? 4C 89 A4 24", ItemHoveredDetour);
+        actionTooltipHook ??= Common.Hook<ActionTooltipDelegate>("48 89 5C 24 ?? 55 56 57 41 54 41 56 48 83 EC 30 48 8B 9A", ActionTooltipDetour);
         generateItemTooltipHook ??= Common.Hook<GenerateItemTooltip>("48 89 5C 24 ?? 55 56 57 41 54 41 55 41 56 41 57 48 83 EC ?? 48 8B 42 ?? 4C 8B EA", GenerateItemTooltipDetour);
-        generateActionTooltipHook ??= Common.Hook<GenerateActionTooltip>("E8 ?? ?? ?? ?? 48 8B 43 ?? 48 8B 9F", GenerateActionTooltipDetour);
+        generateActionTooltipHook ??= Common.Hook<GenerateActionTooltip>("E8 ?? ?? ?? ?? 48 8B 43 28 48 8B AF", GenerateActionTooltipDetour);
         getItemRowHook ??= Common.Hook<GetItemRowDelegate>("E8 ?? ?? ?? ?? 4C 8B F8 48 85 C0 0F 84 ?? ?? ?? ?? 48 8B D0 48 8D 0D", GetItemRowDetour);
 
         itemHoveredHook?.Enable();
         actionTooltipHook?.Enable();
-        actionHoveredHook?.Enable();
         generateItemTooltipHook?.Enable();
         generateActionTooltipHook?.Enable();
         getItemRowHook?.Enable();
@@ -104,31 +100,31 @@ public class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
         base.Enable();
     }
 
-    private unsafe void* GetItemRowDetour(uint itemId) {
+    private void* GetItemRowDetour(uint itemId) {
         LastLoadedItem = itemId;
         return getItemRowHook.Original(itemId);
     }
 
     public class HoveredActionDetail {
-        public int Category;
+        public ActionKind Category;
         public uint Id;
-        public int Unknown3;
-        public byte Unknown4;
+        public int Flag;
+        public bool IsLovmActionDetail;
     }
 
     public static readonly HoveredActionDetail HoveredAction = new HoveredActionDetail();
 
     public static uint LastLoadedItem { get; private set; }
 
-    private void ActionHoveredDetour(ulong a1, int a2, uint a3, int a4, byte a5) {
-        HoveredAction.Category = a2;
-        HoveredAction.Id = a3;
-        HoveredAction.Unknown3 = a4;
-        HoveredAction.Unknown4 = a5;
-        actionHoveredHook?.Original(a1, a2, a3, a4, a5);
+    private void ActionHoveredDetour(AgentActionDetail* agent, ActionKind actionKind, uint actionId, int flag, bool isLovmActionDetail, int a6, int a7) {
+        HoveredAction.Category = actionKind;
+        HoveredAction.Id = actionId;
+        HoveredAction.Flag = flag;
+        HoveredAction.IsLovmActionDetail = isLovmActionDetail;
+        actionHoveredHook?.Original(agent, actionKind, actionId, flag, isLovmActionDetail, a6, a7);
     }
 
-    private unsafe IntPtr ActionTooltipDetour(AtkUnitBase* addon, void* a2, ulong a3) {
+    private IntPtr ActionTooltipDetour(AtkUnitBase* addon, void* a2, ulong a3) {
         var retVal = actionTooltipHook.Original(addon, a2, a3);
         try {
             foreach (var t in SubTweaks.Where(t => t.Enabled)) {
@@ -149,7 +145,7 @@ public class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
 
     public static InventoryItem HoveredItem { get; private set; }
 
-    private unsafe byte ItemHoveredDetour(IntPtr a1, IntPtr* a2, int* containerid, ushort* slotid, IntPtr a5, uint slotidint, IntPtr a7) {
+    private byte ItemHoveredDetour(IntPtr a1, IntPtr* a2, int* containerid, ushort* slotid, IntPtr a5, uint slotidint, IntPtr a7) {
         var returnValue = itemHoveredHook.Original(a1, a2, containerid, slotid, a5, slotidint, a7);
         HoveredItem = *(InventoryItem*)(a7);
         return returnValue;
@@ -158,7 +154,6 @@ public class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
     protected override void Disable() {
         itemHoveredHook?.Disable();
         actionTooltipHook?.Disable();
-        actionHoveredHook?.Disable();
         generateItemTooltipHook?.Disable();
         generateActionTooltipHook?.Disable();
         getItemRowHook?.Disable();
@@ -167,14 +162,13 @@ public class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
     public override void Dispose() {
         itemHoveredHook?.Dispose();
         actionTooltipHook?.Dispose();
-        actionHoveredHook?.Dispose();
         generateItemTooltipHook?.Dispose();
         generateActionTooltipHook?.Dispose();
         getItemRowHook?.Dispose();
         base.Dispose();
     }
 
-    public unsafe void* GenerateItemTooltipDetour(AtkUnitBase* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData) {
+    public void* GenerateItemTooltipDetour(AtkUnitBase* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData) {
         try {
             foreach (var t in SubTweaks.Where(t => t.Enabled)) {
                 if (t is not TooltipTweaks.SubTweak st) continue;
@@ -191,7 +185,7 @@ public class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
         return generateItemTooltipHook.Original(addonItemDetail, numberArrayData, stringArrayData);
     }
 
-    public unsafe void* GenerateActionTooltipDetour(AtkUnitBase* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData) {
+    public void* GenerateActionTooltipDetour(AtkUnitBase* addonItemDetail, NumberArrayData* numberArrayData, StringArrayData* stringArrayData) {
         try {
             foreach (var t in SubTweaks.Where(t => t.Enabled)) {
                 if (t is not TooltipTweaks.SubTweak st) continue;

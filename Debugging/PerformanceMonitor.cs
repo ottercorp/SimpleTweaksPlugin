@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Dalamud.Utility;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 
 namespace SimpleTweaksPlugin.Debugging; 
 
@@ -11,7 +11,7 @@ public class PerformanceMonitor : DebugHelper {
 
     public class PerformanceLogger : IDisposable {
         private string? runKey;
-        public PerformanceLogger(string key = null, [CallerMemberName] string callerMemberName = null, [CallerFilePath] string callerFileName = null) {
+        public PerformanceLogger(string? key = null, [CallerMemberName] string? callerMemberName = null, [CallerFilePath] string? callerFileName = null) {
             var k = key;
             if (k == null && (callerFileName == null || callerMemberName == null)) return;
             k ??= $"{callerFileName}::{callerMemberName}";
@@ -27,14 +27,14 @@ public class PerformanceMonitor : DebugHelper {
         }
     }
 
-    public static PerformanceLogger Run(string key = null, [CallerMemberName] string callerMemberName = null, [CallerFilePath] string callerFileName = null) {
+    public static PerformanceLogger Run(string? key = null, [CallerMemberName] string? callerMemberName = null, [CallerFilePath] string? callerFileName = null) {
         var k = key;
         if (k == null && (callerFileName == null || callerMemberName == null)) return new PerformanceLogger();
         k ??= $"{callerFileName}::{callerMemberName}";
         return new PerformanceLogger(k);
     }
     
-    public static bool DoFrameworkMonitor = false;
+    public static bool DoFrameworkMonitor;
 
     private enum DisplayType {
         Ticks,
@@ -131,7 +131,7 @@ public class PerformanceMonitor : DebugHelper {
 
         public long Average { get; private set; } = -1;
 
-        public long Count { get; private set; } = 0;
+        public long Count { get; private set; }
         public double HitsPerSecond => started.ElapsedTicks == 0 ? 0 : Count / started.Elapsed.TotalSeconds;
 
         public double AveragePerSecond => HitsPerSecond * Average;
@@ -174,7 +174,7 @@ public class PerformanceMonitor : DebugHelper {
 
     private static readonly Dictionary<string, PerformanceLog> Logs = new();
 
-    public static void Begin(string key = null, [CallerMemberName] string callerMemberName = null, [CallerFilePath] string callerFileName = null) {
+    public static void Begin(string? key = null, [CallerMemberName] string? callerMemberName = null, [CallerFilePath] string? callerFileName = null) {
         var k = key;
         if (k == null && (callerFileName == null || callerMemberName == null)) return;
         k ??= $"{callerFileName}::{callerMemberName}";
@@ -182,7 +182,7 @@ public class PerformanceMonitor : DebugHelper {
         Logs[k].Begin();
     }
 
-    public static void End(string key = null, [CallerMemberName] string callerMemberName = null, [CallerFilePath] string callerFileName = null) {
+    public static void End(string? key = null, [CallerMemberName] string? callerMemberName = null, [CallerFilePath] string? callerFileName = null) {
         var k = key;
         if (k == null && (callerFileName == null || callerMemberName == null)) return;
         k ??= $"{callerFileName}::{callerMemberName}";

@@ -3,8 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
-using ImGuiNET;
-using Lumina.Excel.GeneratedSheets;
+using Dalamud.Interface.Colors;
+using Dalamud.Interface.Utility.Raii;
+using FFXIVClientStructs.FFXIV.Client.UI;
+using Dalamud.Bindings.ImGui;
+using FFXIVClientStructs.FFXIV.Component.GUI;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Enums;
 
 namespace SimpleTweaksPlugin.Utility; 
@@ -81,8 +85,8 @@ public static class ImGuiExt {
         return changed;
     }
 
-    private static List<UIColor> uniqueSortedUiForeground = null;
-    private static List<UIColor> uniqueSortedUiGlow = null;
+    private static List<UIColor> uniqueSortedUiForeground;
+    private static List<UIColor> uniqueSortedUiGlow;
 
     private static void BuildUiColorLists() {
         uniqueSortedUiForeground = new List<UIColor>();
@@ -90,19 +94,20 @@ public static class ImGuiExt {
         var s = Service.Data.Excel.GetSheet<UIColor>();
         if (s == null) return;
         foreach (var c in s) {
-            if (uniqueSortedUiForeground.All(u => u.UIForeground != c.UIForeground)) {
+            if (uniqueSortedUiForeground.All(u => u.Dark != c.Dark)) {
                 uniqueSortedUiForeground.Add(c);
             }
-            if (uniqueSortedUiGlow.All(u => u.UIGlow != c.UIGlow)) {
+            if (uniqueSortedUiGlow.All(u => u.Light != c.Light)) {
                 uniqueSortedUiGlow.Add(c);
             }
         }
 
         uniqueSortedUiForeground.Sort((a, b) => {
-            var aRgb = Common.UiColorToVector4(a.UIForeground);
-            var bRgb = Common.UiColorToVector4(b.UIForeground);
-            ImGui.ColorConvertRGBtoHSV(aRgb.X, aRgb.Y, aRgb.Z, out var aH, out var aS, out var aV);
-            ImGui.ColorConvertRGBtoHSV(bRgb.X, bRgb.Y, bRgb.Z, out var bH, out var bS, out var bV);
+            var aRgb = Common.UiColorToVector4(a.Dark);
+            var bRgb = Common.UiColorToVector4(b.Dark);
+            float aH = 0f, aS = 0f, aV = 0f, bH = 0f, bS = 0f, bV = 0f;
+            ImGui.ColorConvertRGBtoHSV(aRgb.X, aRgb.Y, aRgb.Z, ref aH, ref aS, ref aV);
+            ImGui.ColorConvertRGBtoHSV(bRgb.X, bRgb.Y, bRgb.Z, ref bH, ref bS, ref bV);
             if (aH < bH) return -1;
             if (aH > bH) return 1;
             if (aS < bS) return -1;
@@ -113,10 +118,11 @@ public static class ImGuiExt {
         });
 
         uniqueSortedUiGlow.Sort((a, b) => {
-            var aRgb = Common.UiColorToVector4(a.UIGlow);
-            var bRgb = Common.UiColorToVector4(b.UIGlow);
-            ImGui.ColorConvertRGBtoHSV(aRgb.X, aRgb.Y, aRgb.Z, out var aH, out var aS, out var aV);
-            ImGui.ColorConvertRGBtoHSV(bRgb.X, bRgb.Y, bRgb.Z, out var bH, out var bS, out var bV);
+            var aRgb = Common.UiColorToVector4(a.Light);
+            var bRgb = Common.UiColorToVector4(b.Light);
+            float aH = 0f, aS = 0f, aV = 0f, bH = 0f, bS = 0f, bV = 0f;
+            ImGui.ColorConvertRGBtoHSV(aRgb.X, aRgb.Y, aRgb.Z, ref aH, ref aS, ref aV);
+            ImGui.ColorConvertRGBtoHSV(bRgb.X, bRgb.Y, bRgb.Z, ref bH, ref bS, ref bV);
             if (aH < bH) return -1;
             if (aH > bH) return 1;
             if (aS < bS) return -1;
@@ -140,31 +146,24 @@ public static class ImGuiExt {
         var glowOnly = mode == ColorPickerMode.GlowOnly;
 
         var colorSheet = Service.Data.Excel.GetSheet<UIColor>();
-        if (colorSheet == null) {
-            var i = (int)colourKey;
-            if (ImGui.InputInt(label, ref i)) {
-                if (i >= ushort.MinValue && i <= ushort.MaxValue) {
-                    colourKey = (ushort)i;
-                    return true;
-                }
+
+        if (!colorSheet.TryGetRow(colourKey, out var currentColor)) {
+            if (!colorSheet.TryGetRow(0, out currentColor)) {
+                return false;
             }
-            return false;
         }
 
-        var currentColor = colorSheet.GetRow(colourKey);
-        if (currentColor == null) currentColor = colorSheet.GetRow(0)!;
-        if (currentColor == null) return false;
         var id = ImGui.GetID(label);
 
         ImGui.SetNextItemWidth(24 * ImGui.GetIO().FontGlobalScale);
 
-        ImGui.PushStyleColor(ImGuiCol.FrameBg, Common.UiColorToVector4(glowOnly ? currentColor.UIGlow : currentColor.UIForeground));
-        ImGui.PushStyleColor(ImGuiCol.FrameBgHovered, Common.UiColorToVector4(glowOnly ? currentColor.UIGlow : currentColor.UIForeground));
-        ImGui.PushStyleColor(ImGuiCol.FrameBgActive, Common.UiColorToVector4(glowOnly ? currentColor.UIGlow : currentColor.UIForeground));
+        ImGui.PushStyleColor(ImGuiCol.FrameBg, Common.UiColorToVector4(glowOnly ? currentColor.Light : currentColor.Dark));
+        ImGui.PushStyleColor(ImGuiCol.FrameBgHovered, Common.UiColorToVector4(glowOnly ? currentColor.Light : currentColor.Dark));
+        ImGui.PushStyleColor(ImGuiCol.FrameBgActive, Common.UiColorToVector4(glowOnly ? currentColor.Light : currentColor.Dark));
 
         if (mode == ColorPickerMode.ForegroundAndGlow) {
             ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 4);
-            ImGui.PushStyleColor(ImGuiCol.Border, Common.UiColorToVector4(currentColor.UIGlow));
+            ImGui.PushStyleColor(ImGuiCol.Border, Common.UiColorToVector4(currentColor.Light));
         }
 
         var comboOpen = ImGui.BeginCombo($"{label}##combo", string.Empty, ImGuiComboFlags.NoArrowButton);
@@ -189,7 +188,7 @@ public static class ImGuiExt {
             for (var i = 0; i < cl.Count; i++) {
                 var c = cl[i];
                 if (i != 0 && i % sqrt != 0) ImGui.SameLine();
-                if (ImGui.ColorButton($"##ColorPick_{i}_{c.RowId}", Common.UiColorToVector4(glowOnly ? c.UIGlow : c.UIForeground), ImGuiColorEditFlags.NoTooltip)) {
+                if (ImGui.ColorButton($"##ColorPick_{i}_{c.RowId}", Common.UiColorToVector4(glowOnly ? c.Light : c.Dark), ImGuiColorEditFlags.NoTooltip)) {
                     colourKey = (ushort)c.RowId;
                     modified = true;
                     ImGui.CloseCurrentPopup();
@@ -240,4 +239,37 @@ public static class ImGuiExt {
         }
     }
 
+    public static bool ModifierFlagEditor(ref AtkEventData.AtkMouseData.ModifierFlag tweakConfigPanModifier, bool allowNone = false) {
+        var e = false;
+        using (ImRaii.Group()) {
+            var btnSize = new Vector2(ImGui.GetTextLineHeightWithSpacing() * 2, ImGui.GetTextLineHeightWithSpacing()) + ImGui.GetStyle().FramePadding * 2;
+            using (ImRaii.PushColor(ImGuiCol.Button, Vector4.Zero)) {
+                using (ImRaii.PushColor(ImGuiCol.Text, tweakConfigPanModifier.HasFlag(AtkEventData.AtkMouseData.ModifierFlag.Shift) ? ImGuiColors.HealerGreen : ImGuiColors.DPSRed)) {
+                    if (ImGui.Button($"SHIFT", btnSize)) {
+                        tweakConfigPanModifier ^= AtkEventData.AtkMouseData.ModifierFlag.Shift;
+                        if (!allowNone && tweakConfigPanModifier == 0) tweakConfigPanModifier = AtkEventData.AtkMouseData.ModifierFlag.Shift;
+                        e = true;
+                    }
+                }
+                ImGui.SameLine();
+                using (ImRaii.PushColor(ImGuiCol.Text, tweakConfigPanModifier.HasFlag(AtkEventData.AtkMouseData.ModifierFlag.Ctrl) ? ImGuiColors.HealerGreen : ImGuiColors.DPSRed)) {
+                    if (ImGui.Button("CTRL", btnSize)) {
+                        tweakConfigPanModifier ^= AtkEventData.AtkMouseData.ModifierFlag.Ctrl;
+                        if (!allowNone && tweakConfigPanModifier == 0) tweakConfigPanModifier = AtkEventData.AtkMouseData.ModifierFlag.Ctrl;
+                        e = true;
+                    }
+                }
+                ImGui.SameLine();
+                using (ImRaii.PushColor(ImGuiCol.Text, tweakConfigPanModifier.HasFlag(AtkEventData.AtkMouseData.ModifierFlag.Alt) ? ImGuiColors.HealerGreen : ImGuiColors.DPSRed)) {
+                    if (ImGui.Button("ALT", btnSize)) {
+                        tweakConfigPanModifier ^= AtkEventData.AtkMouseData.ModifierFlag.Alt;
+                        if (!allowNone && tweakConfigPanModifier == 0) tweakConfigPanModifier = AtkEventData.AtkMouseData.ModifierFlag.Alt;
+                        e = true;
+                    }
+                }
+            }
+        }
+
+        return e;
+    }
 }

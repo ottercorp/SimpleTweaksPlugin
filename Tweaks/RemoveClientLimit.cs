@@ -62,7 +62,7 @@ public class RemoveClientLimit : Tweak {
                 NativeMethods.CloseHandle(Handle);
             }
 
-            private static readonly Dictionary<byte, string> RawTypeMap = new();
+            private static readonly Dictionary<byte, string?> RawTypeMap = new();
 
             private string? name, typeStr;
             private HandleType? type;
@@ -82,7 +82,7 @@ public class RemoveClientLimit : Tweak {
             }
 
             private void InitType() {
-                if (RawTypeMap.TryGetValue(RawType, out var value)) {
+                if (RawTypeMap.TryGetValue(RawType, out var value) && value != null) {
                     typeStr = value;
                     type = HandleTypeFromString(typeStr);
                 } else
@@ -124,7 +124,7 @@ public class RemoveClientLimit : Tweak {
                         }
                     }
 
-                    type = HandleTypeFromString(typeStr);
+                    type = HandleTypeFromString(typeStr ?? throw new Exception("Invalid Type String"));
 
                     // Query the object name
                     if (typeStr != null && GrantedAccess != 0x0012019f && GrantedAccess != 0x00120189 && GrantedAccess != 0x120089) // don't query some objects that could get stuck

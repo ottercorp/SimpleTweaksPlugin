@@ -9,14 +9,14 @@ using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility;
-using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
-using Lumina.Excel.GeneratedSheets;
+using Dalamud.Bindings.ImGui;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 
@@ -36,6 +36,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 [Changelog("1.8.8.2", "Fixed positioning of gil display moving when scale is anything other than 100%")]
 [Changelog("1.9.0.0", "Added an option to disable tooltips.")]
 [Changelog("1.9.0.0", "Fixed currency window positioning breaking when resizing game window.")]
+[Changelog("1.10.8.1", "Added option to Grand Company seals to display current grand company.")]
 public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
     public class Config : TweakConfig {
         public Direction DisplayDirection = Direction.Up;
@@ -47,7 +48,7 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
         public bool DisableEvents;
     }
     
-    public class CurrencyEntry {
+    public record CurrencyEntry {
         public bool Enabled = true;
         public uint ItemId;
         public int IconId;
@@ -57,6 +58,22 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
         public float HorizontalSpacing;
         public bool UseCustomPosition;
         public Vector2 CustomPosition;
+        public bool AutoAdjustGrandCompany;
+
+        public CurrencyEntry GetAdjusted() {
+            if (AutoAdjustGrandCompany && ItemId is 20 or 21 or 22) {
+                var gc = PlayerState.Instance()->GrandCompany;
+                if (gc is 0 or > 3) gc = PlayerState.Instance()->StartTown;
+                if (gc is 0 or > 3) return this;
+                return this with {
+                    ItemId = 19U + gc,
+                    IconId = 65003 + gc,
+                    Name = Service.Data.GetExcelSheet<Item>().GetRow(19U + gc).Name.ExtractText()
+                };
+            }
+
+            return this;
+        }
     }
 
     public enum Direction {
@@ -66,9 +83,9 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
         Down,
     }
 
-    private Config TweakConfig { get; set; } = null!;
+    [TweakConfig] private Config TweakConfig { get; set; } = null!;
     
-    private void DrawConfig() {
+    protected void DrawConfig() {
         DrawDirectionComboBox();
         
         DrawGridConfig();
@@ -282,7 +299,7 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
         
         // Make all counter nodes first, because if a icon node overlaps it even slightly it'll hide itself.
         foreach (uint index in Enumerable.Range(0, TweakConfig.Currencies.Count)) {
-            var currencyInfo = TweakConfig.Currencies[(int) index];
+            var currencyInfo = TweakConfig.Currencies[(int)index].GetAdjusted();
             if (currencyInfo.Enabled == false) continue;
             
             if (currencyInfo.UseCustomPosition) {
@@ -301,7 +318,7 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
         gridIndex = 0;
         foreach (uint index in Enumerable.Range(0, TweakConfig.Currencies.Count))
         {
-            var currencyInfo = TweakConfig.Currencies[(int) index];
+            var currencyInfo = TweakConfig.Currencies[(int) index].GetAdjusted();
             if (currencyInfo.Enabled == false) continue;   
             if (currencyInfo.UseCustomPosition) {
                 TryMakeIconNode(ImageBaseId + index, baseIconPosition + currencyInfo.CustomPosition, currencyInfo.IconId, currencyInfo.HqItem, currencyInfo.Name);
@@ -411,8 +428,8 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
     private void UpdateSearch() {
         if (searchString != string.Empty) {
             searchedItems = Service.Data.GetExcelSheet<Item>()!
-                .OrderBy(item => item.ItemSortCategory.Row)
-                .Where(item => item.Name.ToDalamudString().TextValue.Contains(searchString, StringComparison.CurrentCultureIgnoreCase))
+                .OrderBy(item => item.ItemSortCategory.RowId)
+                .Where(item => item.Name.ExtractText().Contains(searchString, StringComparison.CurrentCultureIgnoreCase))
                 .Where(item => {
                     if (collectibleItemSearch) return item.IsCollectable;
                     if (hqItemSearch) return item.CanBeHq;
@@ -458,7 +475,7 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
                         TweakConfig.Currencies.Add(new CurrencyEntry {
                             IconId = item.Icon,
                             ItemId = hqItemSearch ? 1_000_000 + item.RowId : collectibleItemSearch ? 500_000 + item.RowId : item.RowId,
-                            Name = item.Name.ToDalamudString() + (hqItemSearch ? " HQ" : string.Empty) + (collectibleItemSearch ? $" {(char)SeIconChar.Collectible}" : string.Empty),
+                            Name = item.Name.ExtractText() + (hqItemSearch ? " HQ" : string.Empty) + (collectibleItemSearch ? $" {(char)SeIconChar.Collectible}" : string.Empty),
                             HqItem = hqItemSearch,
                             CollectibleItem = collectibleItemSearch
                         });
@@ -467,10 +484,10 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
                     }
                     ImGui.SameLine();
                     
-                    ImGui.Image(icon.ImGuiHandle, new Vector2(23.0f, 23.0f));
+                    ImGui.Image(icon.Handle, new Vector2(23.0f, 23.0f));
                     ImGui.SameLine();
                     
-                    ImGui.TextUnformatted($"{item.RowId:D6} - {item.Name.ToDalamudString()}");
+                    ImGui.TextUnformatted($"{item.RowId:D6} - {item.Name.ExtractText()}");
                 }
             }
         }
@@ -486,7 +503,7 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
     
     private void DrawCurrencies() {
         ImGui.TextUnformatted("Items being displayed:\n");
-        
+        var shownAutoGc = false;
         foreach (var index in Enumerable.Range(0, TweakConfig.Currencies.Count)) {
             var currency = TweakConfig.Currencies[index];
             if (ImGui.Checkbox($"##enableCurrency{index}", ref currency.Enabled)) {
@@ -550,7 +567,7 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
             }).GetWrapOrDefault();
             
             if (icon is not null) {
-                ImGui.Image(icon.ImGuiHandle, new Vector2(23.0f, 23.0f));
+                ImGui.Image(icon.Handle, new Vector2(23.0f, 23.0f));
                 ImGui.SameLine();
             }
             if (currency.UseCustomPosition) {
@@ -564,6 +581,18 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
             }
             
             ImGui.TextUnformatted(currency.Name);
+            if (!shownAutoGc && currency.ItemId is 20 or 21 or 22) {
+                shownAutoGc = true;
+                ImGui.SameLine();
+                if (ImGui.Checkbox("Automatically Select Grand Company", ref currency.AutoAdjustGrandCompany)) {
+                    FreeAllNodes();
+                    SaveConfig(TweakConfig);
+                }
+                if (ImGui.IsItemHovered()) {
+                    ImGui.SetTooltip("If enabled, grand company seals will be automatically adjusted to show your current grand company.");
+                }
+            }
+            
             ImGui.EndDisabled();
         }
     }
@@ -635,7 +664,7 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
         var imageNode = UiHelper.MakeImageNode(nodeId, new UiHelper.PartInfo(0, 0, 36, 36));
         imageNode->AtkResNode.NodeFlags = NodeFlags.AnchorTop | NodeFlags.AnchorLeft | NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.EmitsEvents;
         imageNode->WrapMode = 1;
-        imageNode->Flags = (byte) ImageNodeFlags.AutoFit;
+        imageNode->Flags = ImageNodeFlags.AutoFit;
 
         imageNode->LoadIconTexture((uint)(hqIcon ? icon + 1_000_000 : icon), 0);
         imageNode->AtkResNode.ToggleVisibility(true);
