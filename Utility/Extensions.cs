@@ -12,14 +12,12 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.System.String;
-using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
 using FFXIVClientStructs.STD;
 using Lumina.Excel;
 using SimpleTweaksPlugin.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace SimpleTweaksPlugin.Utility; 
 
@@ -178,14 +176,14 @@ public static class Extensions {
     
     public unsafe static string ValueString(this AtkValue v) {
         return v.Type switch {
-            ValueType.Int => $"{v.Int}",
-            ValueType.String => Marshal.PtrToStringUTF8(new IntPtr(v.String)),
-            ValueType.UInt => $"{v.UInt}",
-            ValueType.Bool => $"{v.Byte != 0}",
-            ValueType.Float => $"{v.Float}",
-            ValueType.Vector => "[Vector]",
-            ValueType.ManagedString => Marshal.PtrToStringUTF8(new IntPtr(v.String))?.TrimEnd('\0') ?? string.Empty,
-            ValueType.ManagedVector => "[Managed Vector]",
+            AtkValueType.Int => $"{v.Int}",
+            AtkValueType.String => Marshal.PtrToStringUTF8(new IntPtr(v.String)),
+            AtkValueType.UInt => $"{v.UInt}",
+            AtkValueType.Bool => $"{v.Byte != 0}",
+            AtkValueType.Float => $"{v.Float}",
+            AtkValueType.Vector => "[Vector]",
+            AtkValueType.ManagedString => Marshal.PtrToStringUTF8(new IntPtr(v.String))?.TrimEnd('\0') ?? string.Empty,
+            AtkValueType.ManagedVector => "[Managed Vector]",
             _ => $"Unknown Type: {v.Type}"
         } ?? string.Empty;
     }
@@ -211,11 +209,11 @@ public static class Extensions {
         return attribute != null;
     }
 
-    public static bool IsPressed(this AtkEventData.AtkMouseData.ModifierFlag modifierFlag) {
+    public static bool IsPressed(this ModifierFlag modifierFlag) {
         return 
-            Service.KeyState[VirtualKey.SHIFT] == modifierFlag.HasFlag(AtkEventData.AtkMouseData.ModifierFlag.Shift) &&
-            Service.KeyState[VirtualKey.MENU] == modifierFlag.HasFlag(AtkEventData.AtkMouseData.ModifierFlag.Alt) &&
-            Service.KeyState[VirtualKey.CONTROL] == modifierFlag.HasFlag(AtkEventData.AtkMouseData.ModifierFlag.Ctrl);
+            Service.KeyState[VirtualKey.SHIFT] == modifierFlag.HasFlag(ModifierFlag.Shift) &&
+            Service.KeyState[VirtualKey.MENU] == modifierFlag.HasFlag(ModifierFlag.Alt) &&
+            Service.KeyState[VirtualKey.CONTROL] == modifierFlag.HasFlag(ModifierFlag.Ctrl);
     }
 
 

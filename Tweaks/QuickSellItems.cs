@@ -1,15 +1,14 @@
 using System;
-using System.Linq;
 using System.Numerics;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Dalamud.Bindings.ImGui;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace SimpleTweaksPlugin.Tweaks;
 
@@ -107,7 +106,7 @@ public unsafe class QuickSellItems : Tweak {
 
                 for (var i = 0; i < agent->ContextItemCount; i++) {
                     var contextItemParam = agent->EventParams[agent->ContexItemStartIndex + i];
-                    if (contextItemParam.Type != ValueType.String) continue;
+                    if (contextItemParam.Type != AtkValueType.String) continue;
                     var contextItemName = contextItemParam.ValueString();
 
                     if (contextItemName != sellText) continue;

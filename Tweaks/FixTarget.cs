@@ -1,9 +1,8 @@
 using System.Numerics;
-using System.Text;
 using System.Text.RegularExpressions;
 using Dalamud.Game;
+using Dalamud.Game.Chat;
 using Dalamud.Game.Text;
-using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.ClientState.Objects.Types;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -35,16 +34,17 @@ public class FixTarget : Tweak {
         Service.Chat.CheckMessageHandled -= OnChatMessage;
     }
 
-    private unsafe void OnChatMessage(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled) {
+    // private unsafe void OnChatMessage(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled) {
+    private unsafe void OnChatMessage(IHandleableChatMessage message) {
         if (regex == null) return;
-        if (type != XivChatType.ErrorMessage) return;
+        if (message.LogKind != XivChatType.ErrorMessage) return;
         if (Common.LastCommand == null || Common.LastCommand->StringPtr.Value == null) return;
         var lastCommandStr = Common.LastCommand->ToString();
         if (lastCommandStr.Equals("/target") || lastCommandStr.Equals("/ziel") || lastCommandStr.Equals("/cibler")) {
             // Clear target
             Service.Targets.Target = null;
             Service.Targets.SoftTarget = null;
-            isHandled = true;
+            message.PreventOriginal();
             return;
         }
 
@@ -52,7 +52,7 @@ public class FixTarget : Tweak {
             return;
         }
 
-        var match = regex.Match(message.TextValue);
+        var match = regex.Match(message.Message.TextValue);
         if (!match.Success) return;
         var searchName = match.Groups[1].Value.ToLowerInvariant();
 
@@ -75,7 +75,7 @@ public class FixTarget : Tweak {
         }
 
         if (closestMatch == null) return;
-        isHandled = true;
+        message.PreventOriginal();
         
         Service.Targets.Target = closestMatch;
     }

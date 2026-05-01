@@ -9,25 +9,18 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Game.Text.SeStringHandling;
-using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.IoC;
 using Dalamud.Networking.Http;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.Attributes;
-using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using FFXIVClientStructs.FFXIV.Client.UI.Shell;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
-using KamiToolKit;
-using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Debugging;
-using SimpleTweaksPlugin.Enums;
 using Action = System.Action;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace SimpleTweaksPlugin.Utility;
 
@@ -134,6 +127,7 @@ public unsafe class Common {
     public static HookWrapper<T> Hook<T>(string signature, T detour, int addressOffset = 0) where T : Delegate {
         var addr = Service.SigScanner.ScanText(signature);
         var h = ImNotGonnaCallItThat.HookFromAddress(addr + addressOffset, detour);
+        
         var wh = new HookWrapper<T>(h);
         HookList.Add(wh);
         return wh;
@@ -174,23 +168,23 @@ public unsafe class Common {
                 var v = values[i];
                 switch (v) {
                     case uint uintValue:
-                        atkValues[i].Type = ValueType.UInt;
+                        atkValues[i].Type = AtkValueType.UInt;
                         atkValues[i].UInt = uintValue;
                         break;
                     case int intValue:
-                        atkValues[i].Type = ValueType.Int;
+                        atkValues[i].Type = AtkValueType.Int;
                         atkValues[i].Int = intValue;
                         break;
                     case float floatValue:
-                        atkValues[i].Type = ValueType.Float;
+                        atkValues[i].Type = AtkValueType.Float;
                         atkValues[i].Float = floatValue;
                         break;
                     case bool boolValue:
-                        atkValues[i].Type = ValueType.Bool;
+                        atkValues[i].Type = AtkValueType.Bool;
                         atkValues[i].Byte = (byte)(boolValue ? 1 : 0);
                         break;
                     case string stringValue: {
-                        atkValues[i].Type = ValueType.String;
+                        atkValues[i].Type = AtkValueType.String;
                         var stringBytes = Encoding.UTF8.GetBytes(stringValue);
                         var stringAlloc = Marshal.AllocHGlobal(stringBytes.Length + 1);
                         Marshal.Copy(stringBytes, 0, stringAlloc, stringBytes.Length);
@@ -216,7 +210,7 @@ public unsafe class Common {
             unitBase->FireCallback((uint)values.Length, atkValues);
         } finally {
             for (var i = 0; i < values.Length; i++) {
-                if (atkValues[i].Type == ValueType.String) {
+                if (atkValues[i].Type == AtkValueType.String) {
                     Marshal.FreeHGlobal(new IntPtr(atkValues[i].String));
                 }
             }
@@ -243,7 +237,7 @@ public unsafe class Common {
             return eventObject;
         } finally {
             for (var i = 0; i < eventParams.Length; i++) {
-                if (atkValues[i].Type == ValueType.String) {
+                if (atkValues[i].Type == AtkValueType.String) {
                     Marshal.FreeHGlobal(new IntPtr(atkValues[i].String));
                 }
             }
@@ -394,7 +388,7 @@ public unsafe class Common {
         if (_lockedCursorType != AtkCursor.CursorType.Arrow) {
             var cursor = AtkStage.Instance()->AtkCursor;
             if (cursor.Type != _lockedCursorType) {
-                AtkStage.Instance()->AtkCursor.SetCursorType(_lockedCursorType, 1);
+                AtkStage.Instance()->AtkCursor.SetCursorType(_lockedCursorType, true);
             }
 
             return null;

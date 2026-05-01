@@ -5,18 +5,15 @@ using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Dalamud.Hooking;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.Attributes;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.Utility;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace SimpleTweaksPlugin.Debugging;
 
@@ -104,7 +101,7 @@ public unsafe class AgentDebug : DebugHelper {
         public class EventCall {
             public ulong EventType;
             public List<object> AtkValues = new();
-            public List<ValueType> AtkValueTypes = new();
+            public List<AtkValueType> AtkValueTypes = new();
             public void* UnknownPointer;
             public ulong UnknownPointerData;
         }

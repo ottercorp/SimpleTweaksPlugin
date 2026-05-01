@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.System.Input;
-using FFXIVClientStructs.FFXIV.Client.System.Input.SoftKeyboards;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;

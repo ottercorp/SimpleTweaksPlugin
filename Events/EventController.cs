@@ -8,8 +8,6 @@ using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.Attributes;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using JetBrains.Annotations;
-using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Debugging;
 using SimpleTweaksPlugin.TweakSystem;
 
@@ -289,7 +287,7 @@ public static unsafe class EventController {
         }
     }
 
-    private static void HandleTerritoryChanged(ushort newTerritory) {
+    private static void HandleTerritoryChanged(uint newTerritory) {
         foreach (var tcSubscriber in TerritoryChangedSubscribers) {
             tcSubscriber.Invoke(newTerritory);
         }

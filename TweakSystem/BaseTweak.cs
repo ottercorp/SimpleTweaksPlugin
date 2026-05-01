@@ -708,7 +708,7 @@ public abstract class BaseTweak {
 #endif
                 }
 
-                var hook = createMethod.Invoke(null, [address.Value, detour, false]);
+                var hook = createMethod.Invoke(null, [address.Value, detour, false, GetType().Assembly]);
 
                 var wrapperCtor = field.FieldType.GetConstructor([hookType]);
                 if (wrapperCtor == null) {

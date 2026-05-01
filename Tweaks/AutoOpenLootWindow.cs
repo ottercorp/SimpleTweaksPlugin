@@ -1,8 +1,7 @@
 ﻿using System;
 using Dalamud.Game;
+using Dalamud.Game.Chat;
 using Dalamud.Game.ClientState.Conditions;
-using Dalamud.Game.Text;
-using Dalamud.Game.Text.SeStringHandling;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -16,10 +15,11 @@ public unsafe class AutoOpenLootWindow : Tweak {
         Service.Chat.CheckMessageHandled += HandleChat;
     }
 
-    private void HandleChat(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled) {
+    // private void HandleChat(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled) {
+    private void HandleChat(IHandleableChatMessage message) {
         try {
-            if ((ushort)type != 2105) return;
-            if (message.TextValue == Service.ClientState.ClientLanguage switch {
+            if ((ushort)message.LogKind != 2105) return;
+            if (message.Message.TextValue == Service.ClientState.ClientLanguage switch {
                     ClientLanguage.German => "Bitte um das Beutegut würfeln.",
                     ClientLanguage.French => "Veuillez lancer les dés pour le butin.",
                     ClientLanguage.Japanese => "ロットを行ってください。",

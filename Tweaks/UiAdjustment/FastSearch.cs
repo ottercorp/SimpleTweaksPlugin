@@ -11,7 +11,6 @@ using System.Runtime.InteropServices;
 using Dalamud.Utility.Signatures;
 using Dalamud.Memory;
 using System.Text;
-using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using JetBrains.Annotations;
 using Lumina.Excel.Sheets;

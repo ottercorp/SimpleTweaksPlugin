@@ -1,4 +1,5 @@
 using System.Linq;
+using Dalamud.Game.Chat;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
@@ -35,13 +36,13 @@ public unsafe class SystemConfigInGroupPose : Tweak {
 
     protected override void Enable() => Service.Chat.CheckMessageHandled += OnChatMessage;
 
-    private void OnChatMessage(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled) {
-        if (type != XivChatType.ErrorMessage) return;
+    private void OnChatMessage(IHandleableChatMessage message) {
+        if (message.LogKind != XivChatType.ErrorMessage) return;
         if (!Service.ClientState.IsGPosing) return;
-        if (commands.Contains(message.TextValue.Replace(" ", "").Replace(" ", ""))) {
+        if (commands.Contains(message.Message.TextValue.Replace(" ", "").Replace(" ", ""))) {
             var agent = AgentModule.Instance()->GetAgentByInternalId(AgentId.Config);
             agent->Show();
-            isHandled = true;
+            message.PreventOriginal();
         }
     }
 

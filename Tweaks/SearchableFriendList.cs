@@ -1,18 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Keys;
-using Dalamud.Interface.Utility;
-using Dalamud.Interface.Utility.Raii;
-using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using Dalamud.Bindings.ImGui;
-using Dalamud.Game.Text.SeStringHandling;
-using Dalamud.Game.Text.SeStringHandling.Payloads;
-using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using SimpleTweaksPlugin.Debugging;
 using SimpleTweaksPlugin.Events;
@@ -121,7 +113,7 @@ public unsafe class SearchableFriendList : Tweak {
                 ReFilter();
             },
             OnFocused = () => searchHint.IsVisible = false, 
-            OnUnfocused = () => searchHint.IsVisible = string.IsNullOrWhiteSpace(searchInput.String)
+            OnUnfocused = () => searchHint.IsVisible = searchInput.String.IsEmpty
         };
 
 

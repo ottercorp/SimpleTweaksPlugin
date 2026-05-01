@@ -6,7 +6,6 @@ using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 
@@ -64,7 +63,7 @@ public unsafe class CustomDefaultQuantity : Tweak {
         if (atkUnitBase->AtkValuesCount < 7) return;
 
         var textValue = atkUnitBase->AtkValues + 6;
-        if (textValue->Type != ValueType.String) return;
+        if (textValue->Type != AtkValueType.String) return;
         var text = Common.ReadSeString(textValue->String)?.TextValue;
         if (string.IsNullOrEmpty(text)) return;
 
@@ -75,7 +74,7 @@ public unsafe class CustomDefaultQuantity : Tweak {
         var maxValue = atkUnitBase->AtkValues + 3;
         var defaultValue = atkUnitBase->AtkValues + 4;
 
-        if (minValue->Type != ValueType.UInt || maxValue->Type != ValueType.UInt || defaultValue->Type != ValueType.UInt) return;
+        if (minValue->Type != AtkValueType.UInt || maxValue->Type != AtkValueType.UInt || defaultValue->Type != AtkValueType.UInt) return;
 
         var min = minValue->UInt;
         var max = maxValue->UInt;

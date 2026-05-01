@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Dalamud.Game.Addon.Events;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -119,7 +120,7 @@ public unsafe class CharacterClassSwitcher : Tweak {
 
         if (eventType == AtkEventType.MouseClick && eventParam == 0x53542000) {
             // Open Desynthesis Skill Window
-            args.AtkEventType = (byte)AtkEventType.ButtonClick;
+            args.AtkEventType = AddonEventType.ButtonClick;
             args.EventParam = 22;
             return;
         }

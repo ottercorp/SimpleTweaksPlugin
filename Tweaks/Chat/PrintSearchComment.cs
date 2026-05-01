@@ -25,7 +25,7 @@ public class PrintSearchComment : ChatTweaks.SubTweak {
             var obj = Service.Objects.SearchById(entityId);
             if (obj == null || !obj.IsValid()) {
                 SimpleLog.Debug("Unable to find EntityID.");
-            } else if (searchInfo.Payloads.Count > 0 && obj is IPlayerCharacter { ObjectKind: ObjectKind.Player } character) {
+            } else if (searchInfo.Payloads.Count > 0 && obj is IPlayerCharacter { ObjectKind: ObjectKind.Pc } character) {
                 var builder = new Lumina.Text.SeStringBuilder()
                     .PushColorType(45)
                     .Append("Search Info from <")

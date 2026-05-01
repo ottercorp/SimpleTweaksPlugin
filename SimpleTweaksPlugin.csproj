@@ -1,6 +1,6 @@
-<Project Sdk="Dalamud.NET.Sdk/14.0.1">
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
     <PropertyGroup>
-        <Version>1.14.0.3</Version>
+        <Version>1.14.1.0</Version>
         <Configurations>Debug;Release;DebugSteamDeck;CustomCS;Test</Configurations>
         <NoWarn>CS0649,CS0414,CS8618</NoWarn>
         <AppendPlatformToOutputPath>false</AppendPlatformToOutputPath>
@@ -20,5 +20,6 @@
         <None Update="Decorations\**" CopyToOutputDirectory="Always"/>
         <None Remove="lib\**" />
         <Compile Remove="lib\**" />
+        <Compile Remove="Tweaks\SearchableFriendList.cs" />
 	</ItemGroup>
 </Project>

@@ -1,17 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Dalamud.Game.Text;
-using Dalamud.Game.Text.SeStringHandling;
-using Dalamud.Utility;
-using Dalamud.Utility.Signatures;
-using FFXIVClientStructs.FFXIV.Component.GUI;
-using FFXIVClientStructs.FFXIV.Client.UI;
-using FFXIVClientStructs.Interop;
-using Lumina.Data;
-using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
-using SimpleTweaksPlugin.Utility;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 

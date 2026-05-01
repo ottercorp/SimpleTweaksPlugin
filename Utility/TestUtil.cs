@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,10 +8,7 @@ using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.Text;
 using Dalamud.Interface.Colors;
-using Dalamud.Interface.Style;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Utility.Signatures;
-using FFXIVClientStructs.FFXIV.Application.Network.WorkDefinitions;
 using SimpleTweaksPlugin.TweakSystem;
 
 namespace SimpleTweaksPlugin.Utility;

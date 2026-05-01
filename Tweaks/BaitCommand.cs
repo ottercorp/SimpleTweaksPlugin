@@ -20,11 +20,6 @@ public unsafe class BaitCommand : CommandTweak {
     private static readonly Dictionary<string, uint> Bait = Service.Data.GetExcelSheet<Item>()!
         .Where(i => i.ItemSearchCategory.RowId == 30)
         .ToDictionary(b => b.Name.ToString().ToLower(), b => b.RowId);
-    
-    private delegate byte ExecuteCommandDelegate(int id, int unk1, uint baitId, int unk2, int unk3);
-    
-    [Signature("E8 ?? ?? ?? ?? 8D 46 0A")]
-    private ExecuteCommandDelegate executeCommand;
 
     protected override void OnCommand(string args) {
         if (!Bait.TryGetValue(args.ToLower(), out var bait) || bait == 0) {
@@ -54,6 +49,6 @@ public unsafe class BaitCommand : CommandTweak {
             return;
         }
 
-        executeCommand(701, 4, bait, 0, 0);
+        GameMain.ExecuteCommand(701, 4, (int) bait, 0, 0);
     }
 }

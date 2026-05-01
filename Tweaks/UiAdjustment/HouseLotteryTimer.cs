@@ -4,7 +4,6 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 
@@ -40,10 +39,10 @@ public unsafe class HouseLotteryTimer : UiAdjustments.SubTweak {
         try {
             var atkValue = (AtkValue*)refreshArgs.AtkValues;
             for (var i = 0; i < refreshArgs.AtkValueCount; i++, atkValue++) {
-                if (atkValue->Type != ValueType.Int) continue;
+                if (atkValue->Type != AtkValueType.Int) continue;
                 if (atkValue->Int != 18) continue;
                 atkValue++;
-                if (atkValue->String.Value == null || atkValue->Type != ValueType.String8) break;
+                if (atkValue->String.Value == null || atkValue->Type != AtkValueType.String8) break;
                 var lotteryPeriod = GetLotteryTimeInfo();
                 var displayString = Common.ReadString(atkValue->String);
                 if (string.IsNullOrEmpty(displayString)) break;

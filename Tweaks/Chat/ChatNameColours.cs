@@ -9,6 +9,7 @@ using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Game.Chat;
 using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.ExtraPayloads;
 using SimpleTweaksPlugin.TweakSystem;
@@ -19,6 +20,11 @@ namespace SimpleTweaksPlugin.Tweaks.Chat;
 
 [TweakName("Chat Name Colours")]
 [TweakDescription("Gives players a random colour in chat, or set the name manually.")]
+[Changelog("1.8.8.1", "Fixed Chat2 exploding with new colour system. Tweak will still not work in Chat2, but it will not explode.")]
+[Changelog("1.8.8.0", "Fixed colour display when in party.")]
+[Changelog("1.8.8.0", "Extended range of possible colours.")]
+[Changelog("1.8.9.0", "Added option to give all undefined characters the same colour.")]
+[Changelog("1.8.9.0", "Added per channel configuration for colouring sender name and/or names in messages.")]
 public class ChatNameColours : ChatTweaks.SubTweak {
     public class ForcedColour {
         public ushort ColourKey; // Legacy
@@ -103,16 +109,12 @@ public class ChatNameColours : ChatTweaks.SubTweak {
     }
     
     protected override void Setup() {
-        AddChangelog("1.8.8.1", "Fixed Chat2 exploding with new colour system. Tweak will still not work in Chat2, but it will not explode.");
-        AddChangelog("1.8.8.0", "Fixed colour display when in party.");
-        AddChangelog("1.8.8.0", "Extended range of possible colours.");
-        AddChangelog("1.8.9.0", "Added option to give all undefined characters the same colour.");
-        AddChangelog("1.8.9.0", "Added per channel configuration for colouring sender name and/or names in messages.");
+
 
         Region GetRegion(byte regionId, string name) => new() {
                 Name = name, 
                 DataCentres = Service.Data.Excel.GetSheet<WorldDCGroupType>()
-                    .Where(dc => dc.Region == regionId)
+                    .Where(dc => dc.Region.RowId == regionId)
                     .Select(dc => new Region.DataCentre {
                         Name = dc.Name.ExtractText(), 
                         Worlds = Service.Data.Excel.GetSheet<World>().Where(w => 
@@ -392,7 +394,9 @@ public class ChatNameColours : ChatTweaks.SubTweak {
 
     private readonly ushort[] nameColours = [9, 25, 32, 35, 37, 39, 41, 42, 45, 48, 52, 56, 57, 65, 500, 502, 504, 506, 508, 517, 522, 524, 527, 541, 573];
 
-    private void Parse(ref SeString seString) {
+    private bool TryParse(SeString seString, out SeString newStr) {
+        newStr = seString;
+        
         var hasName = false;
         var newPayloads = new List<Payload>();
         PlayerPayload? waitingBegin = null;
@@ -438,19 +442,32 @@ public class ChatNameColours : ChatTweaks.SubTweak {
         }
 
         if (hasName) {
-            seString = new SeString(newPayloads);
+            newStr = new SeString(newPayloads);
+            return true;
         }
+        
+        return false;
     }
-
-    private void HandleChatMessage(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled) {
-        if (Config.ChannelConfigs.TryGetValue(type, out var channelConfig) && channelConfig != null) {
-            if (chatTypes.Contains(type)) {
-                if (channelConfig.Sender) Parse(ref sender);
-                if (channelConfig.Message) Parse(ref message);
+    
+    private void HandleChatMessage(IHandleableChatMessage message) {
+        if (Config.ChannelConfigs.TryGetValue(message.LogKind, out var channelConfig)) {
+            if (chatTypes.Contains(message.LogKind)) {
+                if (channelConfig.Sender && TryParse(message.Sender, out var newSender)) {
+                    message.Sender = newSender;
+                }
+                
+                if (channelConfig.Message && TryParse(message.Message, out var newMessage)) {
+                    message.Message = newMessage;
+                }
             }
-        } else if (chatTypes.Contains(type)) {
-            if (Config.DefaultChannelConfig?.Sender == true) Parse(ref sender);
-            if (Config.DefaultChannelConfig?.Message == true) Parse(ref message);
+        } else if (chatTypes.Contains(message.LogKind)) {
+            if (Config.DefaultChannelConfig?.Sender == true && TryParse(message.Sender, out var newSender)) {
+                message.Sender = newSender;
+            }
+            
+            if (Config.DefaultChannelConfig?.Message == true && TryParse(message.Message, out var newMessage)) {
+                message.Message = newMessage;
+            }
         }
     }
 

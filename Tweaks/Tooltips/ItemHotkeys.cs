@@ -4,7 +4,6 @@ using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Text;
-using Dalamud.Game.ClientState.Keys;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
