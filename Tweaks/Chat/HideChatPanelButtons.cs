@@ -11,7 +11,7 @@ public unsafe class HideChatPanelButtons : ChatTweaks.SubTweak {
     private readonly string[] panels = ["ChatLogPanel_1", "ChatLogPanel_2", "ChatLogPanel_3"];
     protected override void Enable() => ToggleButtons(false);
 
-    [TerritoryChanged] private void TerritoryChange(ushort territory) => ToggleButtons(false);
+    [TerritoryChanged] private void TerritoryChange(uint territory) => ToggleButtons(false);
 
     private void ToggleButtons(AtkUnitBase* atkUnitBase, bool visible) {
         if (atkUnitBase == null) return;

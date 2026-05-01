@@ -43,7 +43,7 @@ public unsafe class EchoPartyFinder : ChatTweaks.SubTweak {
     }
     
     [TerritoryChanged]
-    private void OnTerritoryChanged(ushort territoryId) {
+    private void OnTerritoryChanged(uint territoryId) {
         if (territoryId != targetTerritoryId) return;
         if (TweakConfig.ShowUponEnteringInstance) PrintListing();
     }

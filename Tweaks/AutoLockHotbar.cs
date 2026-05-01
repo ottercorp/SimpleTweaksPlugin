@@ -38,7 +38,7 @@ public unsafe class AutoLockHotbar : Tweak {
     }
 
     [TerritoryChanged]
-    private void OnTerritoryChanged(ushort _) {
+    private void OnTerritoryChanged(uint _) {
         if (Config.ZoneChange) SetLock(true);
     }
 
