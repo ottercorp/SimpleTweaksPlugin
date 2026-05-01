@@ -20,7 +20,6 @@ namespace SimpleTweaksPlugin.Tweaks;
 [TweakCategory(TweakCategory.UI, TweakCategory.QoL)]
 public unsafe class SearchableFriendList : Tweak {
     private TextInputNode searchInput;
-    private TextNode searchHint;
     
     public class Configs : TweakConfig {
         [TweakConfigOption("Ignore selected filter group")]
@@ -100,11 +99,6 @@ public unsafe class SearchableFriendList : Tweak {
     }
 
     protected override void Enable() {
-        searchHint = new TextNode() {
-            IsVisible = true, 
-            Position = new Vector2(10, 6), 
-            String = "Search..."
-        };
         
         searchInput = new TextInputNode() {
             IsVisible = true, 
@@ -112,18 +106,12 @@ public unsafe class SearchableFriendList : Tweak {
                 searchString = str.ExtractText();
                 ReFilter();
             },
-            OnFocused = () => searchHint.IsVisible = false, 
-            OnUnfocused = () => searchHint.IsVisible = searchInput.String.IsEmpty
+            PlaceholderString = "Search..."
         };
-
-
-        searchHint.AttachNode(searchInput);
         
         if (Common.GetUnitBase(out AddonFriendList* friendList, "FriendList")) {
             SetupFiendList(friendList);
         }
-        
-        // PluginInterface.UiBuilder.Draw += DrawSearchUi;
     }
 
     [AddonPostSetup("FriendList")]
@@ -152,8 +140,7 @@ public unsafe class SearchableFriendList : Tweak {
     }
 
     protected override void Disable() {
-        searchHint?.Dispose();
-        searchInput?.Dispose();
+        searchInput.Dispose();
     }
 
     protected override void AfterDisable() {
