@@ -56,7 +56,7 @@ public unsafe class Common {
         LastCommandAddress = Service.SigScanner.GetStaticAddressFromSig("4C 8D 05 ?? ?? ?? ?? 49 8B D4 48 8B C8 E8 ?? ?? ?? ?? 83 EB 06");
         LastCommand = (Utf8String*)(LastCommandAddress);
 
-        updateCursorHook = Hook<AtkModuleUpdateCursor>("48 89 74 24 ?? 48 89 7C 24 ?? 41 56 48 83 EC 20 4C 8B F1 E8 ?? ?? ?? ?? 49 8B CE", UpdateCursorDetour);
+        updateCursorHook = Hook<AtkUnitManager.Delegates.UpdateCursor>(AtkUnitManager.Addresses.UpdateCursor.Value, UpdateCursorDetour);
         updateCursorHook?.Enable();
     }
 
@@ -378,23 +378,20 @@ public unsafe class Common {
         return (T*)GetAgent(attr.Id);
     }
 
-    private delegate void* AtkModuleUpdateCursor(RaptureAtkModule* module);
-
-    private static HookWrapper<AtkModuleUpdateCursor> updateCursorHook;
-
+    private static HookWrapper<AtkUnitManager.Delegates.UpdateCursor> updateCursorHook;
     private static AtkCursor.CursorType _lockedCursorType = AtkCursor.CursorType.Arrow;
 
-    private static void* UpdateCursorDetour(RaptureAtkModule* module) {
+    private static void UpdateCursorDetour(AtkUnitManager* module) {
         if (_lockedCursorType != AtkCursor.CursorType.Arrow) {
             var cursor = AtkStage.Instance()->AtkCursor;
             if (cursor.Type != _lockedCursorType) {
                 AtkStage.Instance()->AtkCursor.SetCursorType(_lockedCursorType, true);
             }
 
-            return null;
+            return;
         }
 
-        return updateCursorHook.Original(module);
+        updateCursorHook.Original(module);
     }
 
     public static void ForceMouseCursor(AtkCursor.CursorType cursorType) {
