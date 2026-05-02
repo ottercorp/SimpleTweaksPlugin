@@ -12,35 +12,32 @@ namespace SimpleTweaksPlugin.Tweaks;
 [TweakDescription("Allow using specific Icon IDs when using '/macroicon # id' inside of a macro.")]
 [TweakReleaseVersion("1.8.3.0")]
 public unsafe class ExtendedMacroIcon : Tweak {
-    private delegate ulong SetupMacroIconDelegate(RaptureMacroModule* macroModule, UIModule* uiModule, byte* outCategory, int* outId, uint macroPage, uint macroIndex, void* a7);
+    
+    [TweakHook(typeof(RaptureMacroModule), nameof(RaptureMacroModule.TryResolveMacroIcon), nameof(SetupMacroIconDetour))]
+    private HookWrapper<RaptureMacroModule.Delegates.TryResolveMacroIcon> setupMacroIconHook;
 
-    [TweakHook, Signature("E8 ?? ?? ?? ?? 0F B6 BB ?? ?? ?? ?? 8B B3", DetourName = nameof(SetupMacroIconDetour))]
-    private HookWrapper<SetupMacroIconDelegate> setupMacroIconHook;
+    [TweakHook(typeof(RaptureHotbarModule.HotbarSlot), nameof(RaptureHotbarModule.HotbarSlot.GetIconIdForSlot), nameof(GetIconIdDetour))]
+    private HookWrapper<RaptureHotbarModule.HotbarSlot.Delegates.GetIconIdForSlot> getIconIdHook;
 
-    private delegate ulong GetIconIdDelegate(void* a1, ulong a2, ulong a3);
-
-    [TweakHook, Signature("E8 ?? ?? ?? ?? 85 C0 89 83 ?? ?? ?? ?? 0F 94 C0", DetourName = nameof(GetIconIdDetour))]
-    private HookWrapper<GetIconIdDelegate> getIconIdHook;
-
-    private const byte IconCategory = 0xFF;
+    private const RaptureHotbarModule.HotbarSlotType IconCategory = (RaptureHotbarModule.HotbarSlotType)255;
 
     [StructLayout(LayoutKind.Explicit, Size = 0x120)]
     public struct MacroIconTextCommand {
         [FieldOffset(0x00)] public ushort TextCommandId;
-        [FieldOffset(0x08)] public int Id;
+        [FieldOffset(0x08)] public uint Id;
         [FieldOffset(0x0C)] public int Category;
     }
 
-    private ulong SetupMacroIconDetour(RaptureMacroModule* macroModule, UIModule* uiModule, byte* outCategory, int* outId, uint macroPage, uint macroIndex, void* a7) {
+    private bool SetupMacroIconDetour(RaptureMacroModule* macroModule, UIModule* uiModule, RaptureHotbarModule.HotbarSlotType* outCategory, uint* outId, int macroPage, uint macroIndex, uint* a7) {
         try {
-            var macro = macroModule->GetMacro(macroPage, macroIndex);
+            var macro = macroModule->GetMacro((uint)macroPage, macroIndex);
             var shellModule = uiModule->GetRaptureShellModule();
             var result = stackalloc MacroIconTextCommand[1];
 
             if (shellModule->TryGetMacroIconCommand(macro, result) && result->TextCommandId == 207 && result->Category is 270 or 271 && result->Id > 0) {
                 *outCategory = IconCategory;
                 *outId = result->Id;
-                return 1;
+                return true;
             }
         } catch (Exception ex) {
             SimpleLog.Error(ex);
@@ -49,5 +46,5 @@ public unsafe class ExtendedMacroIcon : Tweak {
         return setupMacroIconHook.Original(macroModule, uiModule, outCategory, outId, macroPage, macroIndex, a7);
     }
 
-    private ulong GetIconIdDetour(void* a1, ulong category, ulong id) => category == IconCategory ? id : getIconIdHook.Original(a1, category, id);
+    private int GetIconIdDetour(RaptureHotbarModule.HotbarSlot* a1, RaptureHotbarModule.HotbarSlotType category, uint id) => category == IconCategory ? (int)id : getIconIdHook.Original(a1, category, id);
 }
