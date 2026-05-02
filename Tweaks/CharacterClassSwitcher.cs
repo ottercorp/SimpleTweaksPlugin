@@ -32,29 +32,30 @@ public unsafe class CharacterClassSwitcher : Tweak {
         { 34, 38 }, // SAM
         { 39, 40 }, // RPR
         { 41, 42 }, // VPR
+        { 43, 44 }, // BST
 
-        { 23, 48 }, // BRD
-        { 31, 50 }, // MCH
-        { 38, 52 }, // DNC
+        { 23, 50 }, // BRD
+        { 31, 52 }, // MCH
+        { 38, 54 }, // DNC
 
-        { 25, 58 }, // BLM
-        { 27, 60 }, // SMN
-        { 35, 62 }, // RDM
-        { 42, 64 }, // PCT
-        { 36, 66 }, // BLU
+        { 25, 60 }, // BLM
+        { 27, 62 }, // SMN
+        { 35, 64 }, // RDM
+        { 42, 66 }, // PCT
+        { 36, 68 }, // BLU
 
-        { 08, 71 }, // CRP
-        { 09, 72 }, // BSM
-        { 10, 73 }, // ARM
-        { 11, 74 }, // GSM
-        { 12, 75 }, // LTW
-        { 13, 76 }, // WVR
-        { 14, 77 }, // ALC
-        { 15, 78 }, // CUL
+        { 08, 73 }, // CRP
+        { 09, 74 }, // BSM
+        { 10, 75 }, // ARM
+        { 11, 76 }, // GSM
+        { 12, 77 }, // LTW
+        { 13, 78 }, // WVR
+        { 14, 79 }, // ALC
+        { 15, 80 }, // CUL
 
-        { 16, 84 }, // MIN
-        { 17, 86 }, // BTN
-        { 18, 88 }, // FSH
+        { 16, 86 }, // MIN
+        { 17, 88 }, // BTN
+        { 18, 90 }, // FSH
     };
 
     [AddonPostSetup("CharacterClass")]
@@ -96,13 +97,13 @@ public unsafe class CharacterClassSwitcher : Tweak {
                 }
             }
 
-            var dohIconImage = atkUnitBase->GetImageNodeById(68);
+            var dohIconImage = atkUnitBase->GetImageNodeById(70);
             if (dohIconImage != null) {
                 dohIconImage->AtkResNode.NodeFlags |= NodeFlags.EmitsEvents | NodeFlags.HasCollision | NodeFlags.RespondToMouse;
                 dohIconImage->AtkResNode.AddEvent(AtkEventType.MouseClick, 0x53542000, (AtkEventListener*)atkUnitBase, (AtkResNode*)dohIconImage, false);
             }
 
-            var dohHeaderText = atkUnitBase->GetTextNodeById(69);
+            var dohHeaderText = atkUnitBase->GetTextNodeById(71);
             if (dohHeaderText != null) {
                 dohHeaderText->AtkResNode.NodeFlags |= NodeFlags.EmitsEvents | NodeFlags.HasCollision | NodeFlags.RespondToMouse;
                 dohHeaderText->AtkResNode.AddEvent(AtkEventType.MouseClick, 0x53542000, (AtkEventListener*)atkUnitBase, (AtkResNode*)dohIconImage, false);
