@@ -10,6 +10,8 @@ public class TweakHookAttribute : Attribute {
     public Type AddressType { get; init; }
     public string AddressName { get; init; } = string.Empty;
     public string DetourName { get; init; } = string.Empty;
+
+    public bool VirtualFunction { get; init; } = false;
     
     public TweakHookAttribute() { }
 
@@ -17,5 +19,12 @@ public class TweakHookAttribute : Attribute {
         AddressType = type;
         AddressName = function;
         DetourName = detourName;
+    }
+    
+    public TweakHookAttribute(Type type, bool virtualFunction, string function, string detourName) {
+        AddressType = type;
+        AddressName = function;
+        DetourName = detourName;
+        VirtualFunction = virtualFunction;
     }
 }
