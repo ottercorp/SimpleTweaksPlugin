@@ -18,8 +18,8 @@ public class StickyShoutChat : ChatTweaks.SubTweak {
     private nint editAddress;
 
     protected override void Enable() {
-        Service.Chat.CheckMessageHandled -= ChatOnCheckMessageHandled;
-        Service.Chat.CheckMessageHandled += ChatOnCheckMessageHandled;
+        Service.Chat.ChatMessage -= ChatOnCheckMessageHandled;
+        Service.Chat.ChatMessage += ChatOnCheckMessageHandled;
         SafeMemory.Write(editAddress, (sbyte)-2);
     }
 
@@ -28,7 +28,6 @@ public class StickyShoutChat : ChatTweaks.SubTweak {
         "“/shout ” requires a valid string.",
     ];
     
-    // private unsafe void ChatOnCheckMessageHandled(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled) {
     private unsafe void ChatOnCheckMessageHandled(IHandleableChatMessage chatMessage) {
         if (chatMessage.LogKind != XivChatType.ErrorMessage) return;
         var text = chatMessage.Message.TextValue;
@@ -38,7 +37,7 @@ public class StickyShoutChat : ChatTweaks.SubTweak {
     }
 
     protected override void Disable() {
-        Service.Chat.CheckMessageHandled -= ChatOnCheckMessageHandled;
+        Service.Chat.ChatMessage -= ChatOnCheckMessageHandled;
         if (editAddress == nint.Zero) return;
         if (SafeMemory.Write(editAddress, (sbyte)5))
             editAddress = nint.Zero;
