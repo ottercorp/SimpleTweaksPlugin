@@ -1,5 +1,6 @@
 using System.Linq;
 using Dalamud;
+using Dalamud.Game.Chat;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Utility.Signatures;
@@ -17,8 +18,8 @@ public class StickyShoutChat : ChatTweaks.SubTweak {
     private nint editAddress;
 
     protected override void Enable() {
-        Service.Chat.CheckMessageHandled -= ChatOnCheckMessageHandled;
-        Service.Chat.CheckMessageHandled += ChatOnCheckMessageHandled;
+        Service.Chat.ChatMessage -= ChatOnCheckMessageHandled;
+        Service.Chat.ChatMessage += ChatOnCheckMessageHandled;
         SafeMemory.Write(editAddress, (sbyte)-2);
     }
 
@@ -27,16 +28,16 @@ public class StickyShoutChat : ChatTweaks.SubTweak {
         "“/shout ” requires a valid string.",
     ];
     
-    private unsafe void ChatOnCheckMessageHandled(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled) {
-        if (type != XivChatType.ErrorMessage) return;
-        var text = message.TextValue;
+    private unsafe void ChatOnCheckMessageHandled(IHandleableChatMessage chatMessage) {
+        if (chatMessage.LogKind != XivChatType.ErrorMessage) return;
+        var text = chatMessage.Message.TextValue;
         if (!errorMessages.Any(m => m.Equals(text))) return;
         RaptureShellModule.Instance()->ChangeChatChannel(5, 0, Utf8String.FromString(""), true);
-        isHandled = true;
+        chatMessage.PreventOriginal();
     }
 
     protected override void Disable() {
-        Service.Chat.CheckMessageHandled -= ChatOnCheckMessageHandled;
+        Service.Chat.ChatMessage -= ChatOnCheckMessageHandled;
         if (editAddress == nint.Zero) return;
         if (SafeMemory.Write(editAddress, (sbyte)5))
             editAddress = nint.Zero;

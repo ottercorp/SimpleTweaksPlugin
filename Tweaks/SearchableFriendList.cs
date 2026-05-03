@@ -1,18 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Keys;
-using Dalamud.Interface.Utility;
-using Dalamud.Interface.Utility.Raii;
-using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using Dalamud.Bindings.ImGui;
-using Dalamud.Game.Text.SeStringHandling;
-using Dalamud.Game.Text.SeStringHandling.Payloads;
-using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using SimpleTweaksPlugin.Debugging;
 using SimpleTweaksPlugin.Events;
@@ -28,7 +20,6 @@ namespace SimpleTweaksPlugin.Tweaks;
 [TweakCategory(TweakCategory.UI, TweakCategory.QoL)]
 public unsafe class SearchableFriendList : Tweak {
     private TextInputNode searchInput;
-    private TextNode searchHint;
     
     public class Configs : TweakConfig {
         [TweakConfigOption("Ignore selected filter group")]
@@ -108,11 +99,6 @@ public unsafe class SearchableFriendList : Tweak {
     }
 
     protected override void Enable() {
-        searchHint = new TextNode() {
-            IsVisible = true, 
-            Position = new Vector2(10, 6), 
-            String = "Search..."
-        };
         
         searchInput = new TextInputNode() {
             IsVisible = true, 
@@ -120,18 +106,12 @@ public unsafe class SearchableFriendList : Tweak {
                 searchString = str.ExtractText();
                 ReFilter();
             },
-            OnFocused = () => searchHint.IsVisible = false, 
-            OnUnfocused = () => searchHint.IsVisible = string.IsNullOrWhiteSpace(searchInput.String)
+            PlaceholderString = "Search..."
         };
-
-
-        searchHint.AttachNode(searchInput);
         
         if (Common.GetUnitBase(out AddonFriendList* friendList, "FriendList")) {
             SetupFiendList(friendList);
         }
-        
-        // PluginInterface.UiBuilder.Draw += DrawSearchUi;
     }
 
     [AddonPostSetup("FriendList")]
@@ -160,8 +140,7 @@ public unsafe class SearchableFriendList : Tweak {
     }
 
     protected override void Disable() {
-        searchHint?.Dispose();
-        searchInput?.Dispose();
+        searchInput.Dispose();
     }
 
     protected override void AfterDisable() {

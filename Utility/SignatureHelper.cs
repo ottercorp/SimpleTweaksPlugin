@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 
 namespace SimpleTweaksPlugin.Utility;
@@ -217,7 +218,8 @@ public static class SignatureHelper {
                         continue;
                     }
 
-                    var hook = createMethod.Invoke(null, new object[] { ptr, detour, false });
+                    
+                    var hook = createMethod.Invoke(null, new object[] { ptr, detour, false, Assembly.GetCallingAssembly() });
 
                     if (isHookWrapper) {
                         var wrapperCtor = actualType.GetConstructor(new[] { hookType });

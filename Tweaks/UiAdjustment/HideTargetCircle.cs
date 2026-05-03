@@ -13,7 +13,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 [TweakAuthor("darkarchon")]
 [TweakReleaseVersion("1.8.7.0")]
 public unsafe class HideTargetCircle : UiAdjustments.SubTweak {
-    private readonly ushort[] nonCombatTerritory = {
+    private readonly uint[] nonCombatTerritory = {
         1055, // Island Sanctuary
     };
 

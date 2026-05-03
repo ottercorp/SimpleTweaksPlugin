@@ -11,7 +11,6 @@ using Dalamud.Bindings.ImGui;
 using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace SimpleTweaksPlugin.Tweaks;
 
@@ -76,7 +75,7 @@ public unsafe class EquipFromHotbar : Tweak {
         if (sourceContainerId != 0 && destinationContainerId != 0) {
             var eis = stackalloc AtkValue[4];
             var dropOut = stackalloc byte[32];
-            for (var i = 0; i < 4; i++) eis[i].Type = ValueType.UInt;
+            for (var i = 0; i < 4; i++) eis[i].Type = AtkValueType.UInt;
             eis[0].UInt = sourceContainerId;
             eis[1].UInt = sourceSlot;
             eis[2].UInt = destinationContainerId;

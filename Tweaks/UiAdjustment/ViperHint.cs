@@ -21,7 +21,7 @@ public unsafe class ViperHint : UiAdjustments.SubTweak
     private AtkImageNode* LeftBladeImage2;
     private AtkImageNode* RightBladeImage2;
 
-    private IPlayerCharacter player => Service.ClientState.LocalPlayer;
+    private IPlayerCharacter? player => Service.Objects.LocalPlayer;
     
     [AddonPostSetup(["JobHudRDB0"])]
     private void PostSetup()

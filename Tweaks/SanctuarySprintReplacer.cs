@@ -14,7 +14,7 @@ internal unsafe class SanctuarySprintReplacer : Tweak {
     private HookWrapper<ActionManager.Delegates.UseAction> useActionHook;
 
     [TerritoryChanged]
-    public void OnTerritoryChanged(ushort territoryId) {
+    public void OnTerritoryChanged(uint territoryId) {
         useActionHook?.Disable();
         if (territoryId == 1055) useActionHook?.Enable();
     }

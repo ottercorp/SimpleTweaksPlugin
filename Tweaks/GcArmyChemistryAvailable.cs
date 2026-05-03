@@ -22,7 +22,7 @@ public unsafe class GcArmyChemistryAvailable : Tweak {
     }
 
     [TerritoryChanged]
-    public void TerritoryChanged(ushort territoryId) {
+    public void TerritoryChanged(uint territoryId) {
         Common.FrameworkUpdate -= FrameworkUpdate;
         if (Service.Data.GetExcelSheet<TerritoryType>().TryGetRow(territoryId, out var territoryType) && territoryType.TerritoryIntendedUse.RowId == 30) {
             Common.FrameworkUpdate += FrameworkUpdate;

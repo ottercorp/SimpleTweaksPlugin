@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Dalamud.Game.Chat;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
@@ -54,8 +54,9 @@ class ClickableLinks : ChatTweaks.SubTweak {
         }
     }
 
-    private void OnChatMessage(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool ishandled) {
-        if (IsBattleType(type)) {
+    // private void OnChatMessage(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool ishandled) {
+    private void OnChatMessage(IHandleableChatMessage message) {
+        if (IsBattleType(message.LogKind)) {
             return;
         }
 
@@ -63,7 +64,7 @@ class ClickableLinks : ChatTweaks.SubTweak {
         var payloads = new List<Payload>();
         var cLinkDepth = 0;
 
-        message.Payloads.ForEach(p => {
+        message.Message.Payloads.ForEach(p => {
             // Don't create links inside other links.
 
             if (p is DalamudLinkPayload) {
@@ -103,7 +104,7 @@ class ClickableLinks : ChatTweaks.SubTweak {
         });
 
         if (!isModified) return;
-        message.Payloads.Clear();
-        message.Payloads.AddRange(payloads);
+        message.Message.Payloads.Clear();
+        message.Message.Payloads.AddRange(payloads);
     }
 }

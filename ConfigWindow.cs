@@ -7,6 +7,7 @@ using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Windowing;
 using SimpleTweaksPlugin.Utility;
 
 namespace SimpleTweaksPlugin;

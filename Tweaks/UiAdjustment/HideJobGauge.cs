@@ -40,7 +40,7 @@ public unsafe class HideJobGauge : UiAdjustments.SubTweak {
 
     [FrameworkUpdate] private void FrameworkUpdate() => Update();
 
-    private readonly ushort[] nonCombatTerritory = [1055];
+    private readonly uint[] nonCombatTerritory = [1055];
 
     private bool InCombatDuty => Service.Condition.Duty() && !nonCombatTerritory.Contains(Service.ClientState.TerritoryType);
 

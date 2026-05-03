@@ -8,7 +8,6 @@ using Dalamud.Bindings.ImGui;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
-using SimpleTweaksPlugin.Utility;
 using static SimpleTweaksPlugin.Tweaks.TooltipTweaks.ItemTooltipField;
 
 namespace SimpleTweaksPlugin.Tweaks.Tooltips;

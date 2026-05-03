@@ -1,6 +1,6 @@
-<Project Sdk="Dalamud.NET.Sdk/14.0.1">
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
     <PropertyGroup>
-        <Version>1.14.0.3</Version>
+        <Version>1.14.1.1</Version>
         <Configurations>Debug;Release;DebugSteamDeck;CustomCS;Test</Configurations>
         <NoWarn>CS0649,CS0414,CS8618</NoWarn>
         <AppendPlatformToOutputPath>false</AppendPlatformToOutputPath>
@@ -10,7 +10,6 @@
         <OutDir>$(ProjectDir)bin/Debug</OutDir>
     </PropertyGroup>
 	<ItemGroup>
-        <ProjectReference Include="lib\KamiToolKit\KamiToolKit.csproj" />
         <Reference Include="JetBrains.Annotations">
             <Private>false</Private>
             <HintPath>$(DalamudLibPath)\JetBrains.Annotations.dll</HintPath>
@@ -20,5 +19,8 @@
         <None Update="Decorations\**" CopyToOutputDirectory="Always"/>
         <None Remove="lib\**" />
         <Compile Remove="lib\**" />
+	</ItemGroup>
+	<ItemGroup>
+	  <PackageReference Include="KamiToolKit" Version="1.1.7" />
 	</ItemGroup>
 </Project>

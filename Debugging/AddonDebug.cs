@@ -8,7 +8,6 @@ using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.Utility;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace SimpleTweaksPlugin.Debugging; 
 
@@ -35,7 +34,7 @@ public unsafe class AddonDebug : DebugHelper {
     public class Callback {
         public string AtkUnitBaseName = string.Empty;
         public List<object> AtkValues = new();
-        public List<ValueType> AtkValueTypes = new();
+        public List<AtkValueType> AtkValueTypes = new();
         public void* ReturnValue;
         public AtkUnitBase* AtkUnitBase;
         public byte UpdateVisibility;
@@ -44,7 +43,7 @@ public unsafe class AddonDebug : DebugHelper {
     public class SetupCall {
         public string AtkUnitBaseName = string.Empty;
         public List<object> AtkValues = new();
-        public List<ValueType> AtkValueTypes = new();
+        public List<AtkValueType> AtkValueTypes = new();
         public void* ReturnValue;
         public AtkUnitBase* AtkUnitBase;
     }
@@ -60,26 +59,26 @@ public unsafe class AddonDebug : DebugHelper {
 
         public void* SetupDetour(AtkUnitBase* atkUnitBase, int valueCount, AtkValue* atkValues) {
             var atkValueList = new List<object>();
-            var atkValueTypeList = new List<ValueType>();
+            var atkValueTypeList = new List<AtkValueType>();
             try {
                 var a = atkValues;
                 for (var i = 0; i < valueCount; i++) {
                     atkValueTypeList.Add(a->Type);
                     switch (a->Type) {
-                        case ValueType.Int: {
+                        case AtkValueType.Int: {
                             atkValueList.Add(a->Int);
                             break;
                         }
-                        case ValueType.String8:
-                        case ValueType.String: {
+                        case AtkValueType.String8:
+                        case AtkValueType.String: {
                             atkValueList.Add(Marshal.PtrToStringUTF8(new IntPtr(a->String)) ?? string.Empty);
                             break;
                         }
-                        case ValueType.UInt: {
+                        case AtkValueType.UInt: {
                             atkValueList.Add(a->UInt);
                             break;
                         }
-                        case ValueType.Bool: {
+                        case AtkValueType.Bool: {
                             atkValueList.Add(a->Byte != 0);
                             break;
                         }
@@ -357,26 +356,26 @@ public unsafe class AddonDebug : DebugHelper {
 
     private void* CallbackDetour(AtkUnitBase* atkunitbase, int valuecount, AtkValue* atkvalues, byte updateVisibility) {
         var atkValueList = new List<object>();
-        var atkValueTypeList = new List<ValueType>();
+        var atkValueTypeList = new List<AtkValueType>();
         try {
             var a = atkvalues;
             for (var i = 0; i < valuecount; i++) {
                 atkValueTypeList.Add(a->Type);
                 switch (a->Type) {
-                    case ValueType.Int: {
+                    case AtkValueType.Int: {
                         atkValueList.Add(a->Int);
                         break;
                     }
-                    case ValueType.String:
+                    case AtkValueType.String:
                     {
                         atkValueList.Add(Marshal.PtrToStringUTF8(new IntPtr(a->String)) ?? string.Empty);
                         break;
                     }
-                    case ValueType.UInt: {
+                    case AtkValueType.UInt: {
                         atkValueList.Add(a->UInt);
                         break;
                     }
-                    case ValueType.Bool: {
+                    case AtkValueType.Bool: {
                         atkValueList.Add(a->Byte != 0);
                         break;
                     }

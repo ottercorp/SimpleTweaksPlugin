@@ -1,4 +1,3 @@
-using Dalamud.Game.Addon.Events.EventDataTypes;
 using Dalamud.Game.Config;
 using Dalamud.Game.Gui.Dtr;
 using SimpleTweaksPlugin.TweakSystem;

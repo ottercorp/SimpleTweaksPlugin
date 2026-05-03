@@ -20,7 +20,6 @@ using Dalamud.Interface.ImGuiBackend.Delegates;
 using SimpleTweaksPlugin.Utility;
 using Action = System.Action;
 using AlignmentType = FFXIVClientStructs.FFXIV.Component.GUI.AlignmentType;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 #pragma warning disable 659
 
@@ -470,13 +469,13 @@ public unsafe class UIDebug : DebugHelper {
                             switch (atkValue->Type) {
                                 case 0:
                                     break;
-                                case ValueType.Int: {
+                                case AtkValueType.Int: {
                                     ImGui.Text($"{atkValue->Int}");
                                     break;
                                 }
-                                case ValueType.ManagedString:
-                                case ValueType.String8:
-                                case ValueType.String: {
+                                case AtkValueType.ManagedString:
+                                case AtkValueType.String8:
+                                case AtkValueType.String: {
                                     if (atkValue->String.Value == null) {
                                         ImGui.TextDisabled("null");
                                     } else {
@@ -486,15 +485,15 @@ public unsafe class UIDebug : DebugHelper {
 
                                     break;
                                 }
-                                case ValueType.UInt: {
+                                case AtkValueType.UInt: {
                                     ImGui.Text($"{atkValue->Int}");
                                     break;
                                 }
-                                case ValueType.Bool: {
+                                case AtkValueType.Bool: {
                                     ImGui.Text($"{atkValue->Byte != 0}");
                                     break;
                                 }
-                                case ValueType.Pointer: {
+                                case AtkValueType.Pointer: {
                                     DebugManager.PrintAddress(atkValue->Pointer);
                                     break;
                                 }

@@ -11,7 +11,6 @@ using System.Runtime.InteropServices;
 using Dalamud.Utility.Signatures;
 using Dalamud.Memory;
 using System.Text;
-using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using JetBrains.Annotations;
 using Lumina.Excel.Sheets;
@@ -32,24 +31,12 @@ public unsafe class FastSearch : UiAdjustments.SubTweak {
     }
 
     [TweakConfig] public FastSearchConfig Config { get; private set; }
+    
+    [TweakHook(typeof(AgentRecipeNote), nameof(AgentRecipeNote.SearchRecipe), nameof(RecipeNoteRecieveDetour))]
+    private readonly HookWrapper<AgentRecipeNote.Delegates.SearchRecipe> searchRecipeHook;
 
-    [Agent(AgentId.ItemSearch)]
-    [StructLayout(LayoutKind.Explicit, Size = 0x3888)]
-    public struct AgentItemSearch2 {
-        [FieldOffset(0x0000)] public AgentItemSearch AgentItemSearch;
-        [FieldOffset(0x3868)] public uint* ItemBuffer;
-        [FieldOffset(0x3870)] public uint ItemCount;
-        [FieldOffset(0x387C)] public byte IsPartialSearching;
-        [FieldOffset(0x387D)] public byte IsItemPushPending;
-    }
-
-    private delegate void RecipeNoteRecieveDelegate(AgentRecipeNote* a1, Utf8String* a2, bool a3, bool a4);
-
-    [TweakHook, Signature("40 55 56 57 48 83 EC 20 80 B9", DetourName = nameof(RecipeNoteRecieveDetour))]
-    private readonly HookWrapper<RecipeNoteRecieveDelegate> recipeNoteRecieveHook;
-
-    [TweakHook, Signature("80 B9 ?? ?? ?? ?? ?? 74 27 8B 81 ?? ?? ?? ?? 41 B8", DetourName = nameof(RecipeNoteIterateDetour))]
-    private readonly HookWrapper<System.Action> recipeNoteIterateHook = null!;
+    [TweakHook(typeof(RecipeSearchContext), true, nameof(RecipeSearchContext.Iterate), nameof(RecipeNoteIterateDetour))]
+    private readonly HookWrapper<RecipeSearchContext.Delegates.Iterate> searchIterateHook = null!;
 
     private delegate void AgentItemSearchUpdateDelegate(AgentItemSearch* a1);
 
@@ -74,25 +61,25 @@ public unsafe class FastSearch : UiAdjustments.SubTweak {
         text->SetText(Config.UseFuzzySearch ? "Fuzzy Item Search" : "Fast Item Search");
     }
 
-    private void RecipeNoteRecieveDetour(AgentRecipeNote* a1, Utf8String* a2, bool a3, bool a4) {
-        if (!a1->RecipeSearchProcessing) {
-            recipeNoteRecieveHook.Original(a1, a2, a3, a4);
+    private void RecipeNoteRecieveDetour(AgentRecipeNote* agentRecipeNote, Utf8String* a2, byte a3, bool a4) {
+        if (!agentRecipeNote->RecipeSearchProcessing) {
+            searchRecipeHook.Original(agentRecipeNote, a2, a3, a4);
 
-            RecipeSearch(a2->ToString(), &a1->SearchResults);
-            a1->SearchContext->IsComplete = true;
+            RecipeSearch(a2->ToString(), &agentRecipeNote->SearchResults);
+            agentRecipeNote->SearchContext->IsComplete = true;
         }
     }
 
     private void RecipeNoteIterateDetour() { }
 
-    private void AgentItemSearchUpdateDetour(AgentItemSearch* a1) {
-        if (((AgentItemSearch2*)a1)->IsPartialSearching != 0 && ((AgentItemSearch2*)a1)->IsItemPushPending == 0) {
-            ItemSearch(a1->StringData->SearchParam.ToString(), a1);
-            agentItemSearchPushFoundItems(a1);
+    private void AgentItemSearchUpdateDetour(AgentItemSearch* agentItemSearch) {
+        if (agentItemSearch->IsPartialSearching && !agentItemSearch->IsItemPushPending) {
+            ItemSearch(agentItemSearch->StringData->SearchParam.ToString(), agentItemSearch);
+            agentItemSearchPushFoundItems(agentItemSearch);
         }
     }
 
-    private void AgentItemSearchUpdateAtkValuesDetour(AgentItemSearch* a1, uint a2, byte* a3, bool a4) {
+    private void AgentItemSearchUpdateAtkValuesDetour(AgentItemSearch* agentItemSearch, uint a2, byte* a3, bool a4) {
         var partialString = Service.Data.GetExcelSheet<Addon>().GetRow(3136).Text.ExtractText();
         var isPartial = MemoryHelper.ReadStringNullTerminated((nint)a3).Equals(partialString, StringComparison.Ordinal);
         if (isPartial) {
@@ -102,7 +89,7 @@ public unsafe class FastSearch : UiAdjustments.SubTweak {
             }
         }
 
-        agentItemSearchUpdateAtkValuesHook.Original(a1, a2, a3, a4);
+        agentItemSearchUpdateAtkValuesHook.Original(agentItemSearch, a2, a3, a4);
     }
 
     private void RecipeSearch(string input, StdVector<uint>* output) {
@@ -125,9 +112,8 @@ public unsafe class FastSearch : UiAdjustments.SubTweak {
         var matcher = new FuzzyMatcher(input.ToLowerInvariant(), Config.UseFuzzySearch ? MatchMode.FuzzyParts : MatchMode.Simple);
         var query = marketItems.AsParallel().Select(i => (Item: i, Score: matcher.Matches(i.Name.ToDalamudString().ToString().ToLowerInvariant()))).Where(t => t.Score > 0).OrderByDescending(t => t.Score).ThenBy(t => t.Item.RowId).Select(t => t.Item.RowId);
         foreach (var item in query) {
-            var a = (AgentItemSearch2*)agent;
-            a->ItemBuffer[a->ItemCount++] = item;
-            if (a->ItemCount >= 100)
+            agent->ItemBuffer[agent->ItemCount++] = item;
+            if (agent->ItemCount >= 100)
                 break;
         }
     }

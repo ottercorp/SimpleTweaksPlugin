@@ -70,7 +70,7 @@ public unsafe class MinimapAdjustments : UiAdjustments.SubTweak {
     }
 
     [TerritoryChanged]
-    private void OnTerritoryChanged(ushort _) {
+    private void OnTerritoryChanged(uint _) {
         sw.Restart();
         Common.FrameworkUpdate -= WaitForUpdate;
         Common.FrameworkUpdate += WaitForUpdate;

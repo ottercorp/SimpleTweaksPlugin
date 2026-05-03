@@ -1,20 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using Dalamud.Game.Chat;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
-using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Lumina.Excel.Sheets;
-using SimpleTweaksPlugin.Debugging;
 using SimpleTweaksPlugin.TweakSystem;
-using SimpleTweaksPlugin.Utility;
+
 namespace SimpleTweaksPlugin.Tweaks.Chat;
 
 [TweakName("Display EXP Gain Percentage of Level")]
@@ -62,11 +58,11 @@ public unsafe partial class ExpGainLevelPercent : ChatTweaks.SubTweak {
     
     private readonly Regex expDropRegex = ExpGainedRegex();
 
-    private void OnChatMessage(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled) {
+    private void OnChatMessage(IHandleableChatMessage chatMessage) {
         // Don't modify messages if its not in the experience gain chat channel.
-        if (type != ExperienceGainedChatMessageType) return;
+        if (chatMessage.LogKind != ExperienceGainedChatMessageType) return;
         
-        var match = expDropRegex.Match(message.TextValue);
+        var match = expDropRegex.Match(chatMessage.Message.TextValue);
         if (!match.Success) return;
         
         var classJobName = match.Groups[2].ToString().Trim();
@@ -90,8 +86,7 @@ public unsafe partial class ExpGainLevelPercent : ChatTweaks.SubTweak {
         
         // Calculate gained exp percentage of next level
         var pctOfNextLevel = Math.Round((double)gainedExp / expToNext * 100.0f, 2);
-
-        // Add percentage payload to message
-        message.Payloads.Add(new TextPayload($" ({pctOfNextLevel}%)"));
+        
+        chatMessage.Message = new SeString(chatMessage.Message.Payloads.Append(new TextPayload($" ({pctOfNextLevel}%)")).ToList());
     }
 }

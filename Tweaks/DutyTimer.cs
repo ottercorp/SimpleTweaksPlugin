@@ -1,4 +1,5 @@
 using System;
+using Dalamud.Game.DutyState;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 
@@ -21,10 +22,10 @@ public class DutyTimer : Tweak {
         Service.DutyState.DutyCompleted -= OnDutyCompleted;
     }
     
-    private void OnDutyStarted(object? sender, ushort e) 
+    private void OnDutyStarted(IDutyStateEventArgs args) 
         => startTimestamp = DateTime.UtcNow;
 
-    private void OnDutyCompleted(object? sender, ushort e) 
+    private void OnDutyCompleted(IDutyStateEventArgs args) 
         => Service.Chat.Print($@"Duty Completed in: {DateTime.UtcNow - startTimestamp:hh\:mm\:ss\.ffff}");
 
     [TerritoryChanged]

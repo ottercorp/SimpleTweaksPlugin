@@ -1,6 +1,5 @@
 ﻿using System;
 using Dalamud.Game.Text;
-using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
@@ -8,6 +7,7 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Dalamud.Bindings.ImGui;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
@@ -23,13 +23,6 @@ public unsafe class ExtendedDesynthesisWindow : UiAdjustments.SubTweak {
         public bool BlockClickOnGearset;
         public bool YellowForSkillGain = true;
         public bool Delta;
-
-        public bool ShowAll;
-        public bool ShowAllExcludeNoSkill;
-        public bool ShowAllExcludeGearset;
-        public bool ShowAllDefault;
-        public bool ShowAllExcludeArmoury;
-        public int[]? ShowAllSorting;
     }
 
     private static readonly ByteColor Red = new() { A = 0xFF, R = 0xEE, G = 0x44, B = 0x44 };
@@ -44,26 +37,22 @@ public unsafe class ExtendedDesynthesisWindow : UiAdjustments.SubTweak {
         ImGui.Checkbox(LocString("BlockClickOnGearset", "Block clicking on gearset items."), ref Config.BlockClickOnGearset);
         ImGui.Checkbox(LocString("YellowForSkillGain", "Highlight potential skill gains (Yellow)"), ref Config.YellowForSkillGain);
         ImGui.Checkbox(LocString("DesynthesisDelta", "Show desynthesis delta"), ref Config.Delta);
-
-        ImGui.TextDisabled("The 'Show All Items' option is currently removed.");
     }
     
-    private delegate nint UpdateItemDelegate(nint a1, uint index, nint a3, AtkComponentBase* listItemRenderer);
+    [TweakHook(typeof(AddonSalvageItemSelector), nameof(AddonSalvageItemSelector.PopulateSalvageItemListItem), nameof(UpdateItemDetour))]
+    private readonly HookWrapper<AddonSalvageItemSelector.Delegates.PopulateSalvageItemListItem>? updateItemHook;
 
-    [TweakHook, Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC 30 49 8B 38", DetourName = nameof(UpdateItemDetour))]
-    private readonly HookWrapper<UpdateItemDelegate>? updateItemHook;
-
-    private nint UpdateItemDetour(nint a1, uint index, nint a3, AtkComponentBase* listItemRenderer) {
+    private void UpdateItemDetour(AddonSalvageItemSelector* addon, int index, AtkResNode** a3, AtkComponentListItemRenderer* listItemRenderer) {
         try {
             Update(listItemRenderer, index);
         } catch (Exception ex) {
             SimpleLog.Error(ex, "Error handling UpdateItem");
         }
 
-        return updateItemHook!.Original(a1, index, a3, listItemRenderer);
+        updateItemHook!.Original(addon, index, a3, listItemRenderer);
     }
 
-    private void Update(AtkComponentBase* listItemRenderer, uint index) {
+    private void Update(AtkComponentListItemRenderer* listItemRenderer, int index) {
         var agent = AgentSalvage.Instance();
         if (agent->ItemCount <= index) return;
 
@@ -73,12 +62,10 @@ public unsafe class ExtendedDesynthesisWindow : UiAdjustments.SubTweak {
         var itemData = Service.Data.GetExcelSheet<Item>().GetRowOrDefault(inventoryItem->ItemId);
         if (itemData == null) return;
         
-        var skillText = (AtkTextNode*)Common.GetNodeByID(listItemRenderer, CustomNodes.Get(this, "Skill"), NodeType.Text);
-        var gearSetText = (AtkTextNode*)Common.GetNodeByID(listItemRenderer, CustomNodes.Get(this, "GearSet"), NodeType.Text);
+        var skillText = (AtkTextNode*)Common.GetNodeByID(&listItemRenderer->AtkComponentButton.AtkComponentBase, CustomNodes.Get(this, "Skill"), NodeType.Text);
+        var gearSetText = (AtkTextNode*)Common.GetNodeByID(&listItemRenderer->AtkComponentButton.AtkComponentBase, CustomNodes.Get(this, "GearSet"), NodeType.Text);
 
         if (skillText == null || gearSetText == null) return;
-
-        
         
         var desynthLevel = UIState.Instance()->PlayerState.GetDesynthesisLevel(itemData.Value.ClassJobRepair.RowId);
 

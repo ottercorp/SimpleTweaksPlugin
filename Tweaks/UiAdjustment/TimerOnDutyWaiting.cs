@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using System.Text;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;

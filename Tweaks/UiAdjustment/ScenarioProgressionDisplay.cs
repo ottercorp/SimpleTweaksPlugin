@@ -8,7 +8,6 @@ using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 
@@ -93,9 +92,9 @@ public unsafe class ScenarioProgressionDisplay : UiAdjustments.SubTweak, IDisabl
         var agent = AgentScenarioTree.Instance();
         if (agent == null) return null;
         if (agent->Data == null) return null;
-        uint index = agent->Data->CompleteScenarioQuest;
+        uint index = agent->Data->MainScenarioQuestIds[3];
         if (index == 0) {
-            index = agent->Data->CurrentScenarioQuest;
+            index = agent->Data->MainScenarioQuestIds[0];
         }
 
         if (index == 0) return null;
@@ -109,7 +108,7 @@ public unsafe class ScenarioProgressionDisplay : UiAdjustments.SubTweak, IDisabl
         
         if (addon->AtkValuesCount < 8) return;
         var textValue = addon->AtkValues + 7;
-        if (textValue->Type != ValueType.String || textValue->String.Value == null) return;
+        if (textValue->Type != AtkValueType.String || textValue->String.Value == null) return;
 
         var button = addon->GetComponentButtonById(13);
         if (button == null) return;

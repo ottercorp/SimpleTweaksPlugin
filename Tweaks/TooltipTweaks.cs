@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using Dalamud.Game;
+using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -7,6 +9,7 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
+using DetailKind = FFXIVClientStructs.FFXIV.Client.Enums.DetailKind;
 
 namespace SimpleTweaksPlugin.Tweaks;
 
@@ -106,7 +109,7 @@ public unsafe class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
     }
 
     public class HoveredActionDetail {
-        public ActionKind Category;
+        public DetailKind Category;
         public uint Id;
         public int Flag;
         public bool IsLovmActionDetail;
@@ -116,7 +119,7 @@ public unsafe class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
 
     public static uint LastLoadedItem { get; private set; }
 
-    private void ActionHoveredDetour(AgentActionDetail* agent, ActionKind actionKind, uint actionId, int flag, bool isLovmActionDetail, int a6, int a7) {
+    private void ActionHoveredDetour(AgentActionDetail* agent, DetailKind actionKind, uint actionId, int flag, bool isLovmActionDetail, int a6, int a7) {
         HoveredAction.Category = actionKind;
         HoveredAction.Id = actionId;
         HoveredAction.Flag = flag;

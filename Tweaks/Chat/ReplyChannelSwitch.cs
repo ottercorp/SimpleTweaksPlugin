@@ -1,5 +1,6 @@
 ﻿using System;
 using Dalamud.Game;
+using Dalamud.Game.Chat;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using SimpleTweaksPlugin.TweakSystem;
@@ -25,11 +26,11 @@ public class ReplyChannelSwitch : ChatTweaks.SubTweak {
         Service.Chat.CheckMessageHandled += CheckMesssage;
     }
 
-    private void CheckMesssage(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled) {
-        if (type != XivChatType.ErrorMessage) return;
-        if (message.TextValue != searchString) return;
+    private void CheckMesssage(IHandleableChatMessage chatMessage) {
+        if (chatMessage.LogKind != XivChatType.ErrorMessage) return;
+        if (chatMessage.Message.TextValue != searchString) return;
         ChatHelper.SendMessage("/t <r>");
-        isHandled = true;
+        chatMessage.PreventOriginal();
     }
 
     protected override void Disable() => Service.Chat.CheckMessageHandled -= CheckMesssage;

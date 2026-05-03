@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
@@ -606,6 +607,23 @@ public abstract class BaseTweak {
         SaveConfig(config);
     }
 
+    private unsafe nint GetVirtualFunctionAddressFromAttribute(TweakHookAttribute attribute) {
+        var staticVirtualTableProperty = attribute.AddressType.GetProperty("StaticVirtualTablePointer", BindingFlags.Static | BindingFlags.Public);
+        if (staticVirtualTableProperty == null || !staticVirtualTableProperty.CanRead || !staticVirtualTableProperty.PropertyType.IsPointer || !staticVirtualTableProperty.PropertyType.HasElementType) throw new Exception($"Failed to find {attribute.AddressType}.StaticVirtualTablePointer [1]");
+        var virtualTableType = staticVirtualTableProperty.PropertyType.GetElementType();
+        if (virtualTableType == null) throw new Exception($"Failed to find {attribute.AddressType}.StaticVirtualTablePointer [2]");
+        var boxedStaticVirtualTableAddress = staticVirtualTableProperty.GetValue(null);
+        if (boxedStaticVirtualTableAddress == null) throw new Exception($"Failed to find {attribute.AddressType}.StaticVirtualTablePointer [3]");
+        var virtualFunctionField = virtualTableType.GetField(attribute.AddressName, BindingFlags.Public | BindingFlags.Instance);
+        if (virtualFunctionField == null) throw new Exception($"Failed to find {attribute.AddressType}.{attribute.AddressName} virtual function [4]");
+        var offsetAttribute = virtualFunctionField.GetCustomAttribute<FieldOffsetAttribute>();
+        if (offsetAttribute == null) throw new Exception($"Failed to find {attribute.AddressType}.{attribute.AddressName} virtual function [5]");
+        if (offsetAttribute.Value < 0) throw new Exception($"Invalid virtual table offset for {attribute.AddressType}.{attribute.AddressName} @ {offsetAttribute.Value} [6]");
+        var staticVirtualTableAddress = (void**) Pointer.Unbox(boxedStaticVirtualTableAddress);
+        staticVirtualTableAddress = (void**)((ulong)staticVirtualTableAddress + (uint)offsetAttribute.Value);
+        return (nint) staticVirtualTableAddress[0];
+    }
+    
     internal void InternalEnable() {
         Unloading = false;
         if (!signatureHelperInitialized) {
@@ -634,40 +652,62 @@ public abstract class BaseTweak {
                     continue;
 #endif
                 }
-
-                var addressesType = attribute.AddressType.GetNestedType("Addresses");
-                if (addressesType == null) {
+                
+                nint hookAddress = 0;
+                if (attribute.VirtualFunction) {
+#if TEST
+                    hookAddress = GetVirtualFunctionAddressFromAttribute(attribute);
+#else
+                    try {
+                        hookAddress = GetVirtualFunctionAddressFromAttribute(attribute);
+                        
+                        SimpleLog.Verbose($"    {attribute.AddressType.Name}.VirtualTable.{attribute.AddressName} = 0x{hookAddress:X}");
+                    } catch (Exception ex) {
+                        SimpleLog.Error(ex.Message);
+                    }
+#endif
+                } else {
+                    
+                    var addressesType = attribute.AddressType.GetNestedType("Addresses");
+                    if (addressesType == null) {
 #if TEST
                     throw new Exception($"Failed to find {attribute.AddressType}.Addresses");
 #else
-                    SimpleLog.Error($"Failed to find {attribute.AddressType}.Addresses");
-                    continue;
+                        SimpleLog.Error($"Failed to find {attribute.AddressType}.Addresses");
+                        continue;
 #endif
-                }
+                    }
+                    
 
-                var addressField = addressesType.GetField(attribute.AddressName);
+                    var addressField = addressesType.GetField(attribute.AddressName);
 
-                if (addressField == null) {
+                    if (addressField == null) {
 #if TEST
                     throw new Exception($"Failed to find {attribute.AddressType.Name}.Addresses.{attribute.AddressName}");
 #else
-                    SimpleLog.Error($"Failed to find {attribute.AddressType.Name}.Addresses.{attribute.AddressName}");
-                    continue;
+                        SimpleLog.Error($"Failed to find {attribute.AddressType.Name}.Addresses.{attribute.AddressName}");
+                        continue;
 #endif
-                }
+                    }
 
-                var addressObj = addressField.GetValue(null);
+                    var addressObj = addressField.GetValue(null);
 
-                if (addressObj is not Address address) {
+                    if (addressObj is not Address address) {
 #if TEST
                     throw new Exception($"{attribute.AddressType.Name}.Addresses.{attribute.AddressName} is not an Address?");
 #else
-                    SimpleLog.Error($"{attribute.AddressType.Name}.Addresses.{attribute.AddressName} is not an Address?");
-                    continue;
+                        SimpleLog.Error($"{attribute.AddressType.Name}.Addresses.{attribute.AddressName} is not an Address?");
+                        continue;
 #endif
+                    }
+
+                    SimpleLog.Verbose($"    {attribute.AddressType.Name}.Addresses.{attribute.AddressName} = 0x{hookAddress:X}");
+                    hookAddress = address.Value;
                 }
 
-                SimpleLog.Verbose($"    {attribute.AddressType.Name}.Addresses.{attribute.AddressName} = 0x{address.Value:X}");
+                if (hookAddress == 0) {
+                    continue;
+                }
 
                 var hookDelegateType = field.FieldType.GenericTypeArguments[0];
                 const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
@@ -708,7 +748,7 @@ public abstract class BaseTweak {
 #endif
                 }
 
-                var hook = createMethod.Invoke(null, [address.Value, detour, false]);
+                var hook = createMethod.Invoke(null, [hookAddress, detour, false, GetType().Assembly]);
 
                 var wrapperCtor = field.FieldType.GetConstructor([hookType]);
                 if (wrapperCtor == null) {

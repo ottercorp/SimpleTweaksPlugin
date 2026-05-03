@@ -92,8 +92,8 @@ public unsafe partial class ColoredDutyRoulette : UiAdjustments.SubTweak {
             var componentNode = itemRenderer.Value->Renderer->AtkDragDropInterface.ComponentNode;
             if (componentNode is null) continue;
 
-            var textNode = (AtkTextNode*)componentNode->Component->GetTextNodeById(5);
-            var levelNode = (AtkTextNode*)componentNode->Component->GetTextNodeById(18);
+            var textNode = componentNode->Component->GetTextNodeById(6);
+            var levelNode = componentNode->Component->GetTextNodeById(19);
             if (levelNode is null || textNode is null) continue;
 
             if (AgentContentsFinder.Instance()->SelectedTab is not 0) {
@@ -134,8 +134,8 @@ public unsafe partial class ColoredDutyRoulette : UiAdjustments.SubTweak {
             var componentNode = itemRenderer.Value->Renderer->AtkDragDropInterface.ComponentNode;
             if (componentNode is null) continue;
 
-            var textNode = (AtkTextNode*)componentNode->Component->GetTextNodeById(5);
-            var levelNode = (AtkTextNode*)componentNode->Component->GetTextNodeById(15);
+            var textNode = componentNode->Component->GetTextNodeById(6);
+            var levelNode = componentNode->Component->GetTextNodeById(19);
             if (levelNode is null || textNode is null) continue;
 
             textNode->TextColor = levelNode->TextColor;

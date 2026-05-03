@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Numerics;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Interface;
@@ -86,7 +85,7 @@ public unsafe class ParameterBarAdjustments : UiAdjustments.SubTweak {
     }
 
     [TerritoryChanged]
-    private void OnTerritoryChanged(ushort territoryType) {
+    private void OnTerritoryChanged(uint territoryType) {
         var territory = Service.Data.Excel.GetSheet<TerritoryType>().GetRowOrDefault(territoryType);
         if (territory == null) return;
         inPvp = territory.Value.IsPvpZone;
