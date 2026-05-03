@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -27,7 +27,7 @@ namespace SimpleTweaksPlugin.Tweaks.Chat;
 [Changelog("1.8.8.0", "Extended range of possible colours.")]
 [Changelog("1.8.9.0", "Added option to give all undefined characters the same colour.")]
 [Changelog("1.8.9.0", "Added per channel configuration for colouring sender name and/or names in messages.")]
-[Changelog(UnreleasedVersion, "Added option to reduce saturation of random names to improve readability.", Author = "Ennea")]
+[Changelog("1.14.1.2", "Added option to reduce saturation of random names to improve readability.", Author = "Ennea")]
 public class ChatNameColours : ChatTweaks.SubTweak {
     public class ForcedColour {
         public ushort ColourKey; // Legacy

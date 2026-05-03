@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
-namespace SimpleTweaksPlugin.Utility; 
+namespace SimpleTweaksPlugin.Utility;
 
 public static unsafe partial class UiHelper {
     public static void SetSize(AtkResNode* node, int? width, int? height) {
@@ -18,7 +18,7 @@ public static unsafe partial class UiHelper {
         if (y != null) node->Y = y.Value;
         node->DrawFlags |= 0x1;
     }
-        
+
     public static void SetPosition(AtkUnitBase* atkUnitBase, float? x, float? y) {
         if (atkUnitBase == null) return;
         if (x >= short.MinValue && x <= short.MaxValue) atkUnitBase->X = (short) x.Value;
@@ -26,60 +26,29 @@ public static unsafe partial class UiHelper {
     }
 
     public static void SetWindowSize(AtkUnitBase* unitBase, ushort? width, ushort? height) {
-        if (unitBase == null) return;
+        if (width == null || height == null) {
+            var size = stackalloc ushort[2];
+            unitBase->GetSize(&size[0], &size[1], false);
+            width ??= size[0];
+            height ??= size[1];
+        }
+
+        if (width < 14) throw new Exception("Invalid Width. Must be at least 14");
+
         var windowNode = unitBase->WindowNode;
-        if (windowNode == null) return;
-        if (windowNode->Component == null) return;
-        if (((AtkUldComponentInfo*) windowNode->Component->UldManager.Objects)->ComponentType != ComponentType.Window) return;
+        if (windowNode is null) return;
 
-        width ??= windowNode->AtkResNode.Width;
-        height ??= windowNode->AtkResNode.Height;
+        unitBase->WindowNode->SetWidth(width.Value);
+        unitBase->WindowNode->SetHeight(height.Value);
 
-        if (width < 64) width = 64;
-        if (height < 16) height = 16;
-
-        if (unitBase->RootNode != null) {
-            unitBase->RootNode->SetWidth((ushort)width);
-            unitBase->RootNode->SetHeight((ushort)height);
+        if (unitBase->WindowHeaderCollisionNode is not null) {
+            unitBase->WindowHeaderCollisionNode->SetWidth((ushort) (width - 14));
         }
 
-        SetSize(windowNode, width, height);  // Window
-        var n = windowNode->Component->UldManager.RootNode;
-        if (n == null) return;
-        SetSize(n, width, height);  // Collision
-        n = n->PrevSiblingNode;
-        if (n == null) return;
-        SetSize(n, (ushort)(width - 14), null); // Header Collision
-        n = n->PrevSiblingNode;
-        if (n == null) return;
-        SetSize(n, width, height); // Background
-        n = n->PrevSiblingNode;
-        if (n == null) return;
-        SetSize(n, width, height); // Focused Border
-        n = n->PrevSiblingNode;
-        if (n == null) return;
-        if (Service.GameConfig.System.GetUInt("ColorThemeType") == 3) {
-            SetSize(n, width - 8, height - 16); // Gradient
-        } else {
-            SetSize(n, width, height); // Gradient
-        }
-        n = n->PrevSiblingNode;
-        if (n == null) return;
-        SetSize(n, (ushort) (width - 5), null); // Header Node
-        n = n->ChildNode;
-        if (n == null) return;
-        SetSize(n, (ushort) (width - 20), null); // Header Seperator
-        n = n->PrevSiblingNode;
-        if (n == null) return;
-        SetPosition(n, width - 33, 6); // Close Button
-        n = n->PrevSiblingNode;
-        if (n == null) return;
-        SetPosition(n, width - 47, 8); // Gear Button
-        n = n->PrevSiblingNode;
-        if (n == null) return;
-        SetPosition(n, width - 61, 8); // Help Button
+        unitBase->SetSize(width.Value, height.Value);
 
-        windowNode->AtkResNode.DrawFlags |= 0x1;
+        unitBase->WindowNode->Component->UldManager.UpdateDrawNodeList();
+        unitBase->UpdateCollisionNodeList(false);
     }
 
     public static void ExpandNodeList(AtkComponentNode* componentNode, ushort addSize) {

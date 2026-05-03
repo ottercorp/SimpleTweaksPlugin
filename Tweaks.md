@@ -11,6 +11,11 @@
   Pressing Alt + F4 will cause the game to close safely.
 
 
+- **Armoire Tooltip for Glamour Dresser**
+
+  Show a hint on the tooltip of items stored in the glamour dresser when they could be stored in armoire.
+
+
 - **Auto Lock Action Bars**
 
   Automatically locks action bars when certain conditions are met.
@@ -39,6 +44,11 @@
 - **Character Window Job Switcher**
 
   Allow clicking on classes to switch to gearsets.
+
+
+- **Cleaner World Visit Menu**
+
+  Cleans up the world visit menu and shows your current location in order on the list.
 
 
 - **Clickable Alarm Icon**
@@ -672,11 +682,6 @@
   Changes the horizontal scale of the experience bar without affecting the text scale.
 
 
-- **Cleaner World Visit Menu**
-
-  Cleans up the world visit menu and shows your current location in order on the list.
-
-
 - **Color Duty Roulette Names**
 
   Colors Duty Roulette names to indicate their completion status
@@ -727,11 +732,6 @@
   Shows your current desynthesis level and the item's optimal level on the desynthesis item selection window.
 
   Also indicates if an item is part of a gear set, optionally preventing selection of gearset items.
-
-
-- **Fade Unavailable Actions**
-
-  Instead of darkening icons, makes them transparent when unavailable.
 
 
 - **Fast Item Search**
@@ -815,11 +815,6 @@
   Allows locking the position of almost any UI window.
 
 
-- **Loot Window Select Next Item**
-
-  Upon pressing 'Need', 'Greed', or 'Pass' automatically select the next loot item.
-
-
 - **Market Enhancements**
 
   Highlight items that could be bought from, or sold to, an NPC for a better price.
@@ -888,11 +883,6 @@
 - **Reposition Target Castbar Text**
 
   Moves the text on target castbars to make it easier to read
-
-
-- **Scenario Progression Display**
-
-  Shows the percentage of completion of the main scenario.
 
 
 - **Shield on HP Bar**

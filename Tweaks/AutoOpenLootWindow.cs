@@ -1,6 +1,4 @@
-﻿using System;
-using Dalamud.Game;
-using Dalamud.Game.Chat;
+﻿using Dalamud.Game.Chat;
 using Dalamud.Game.ClientState.Conditions;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using SimpleTweaksPlugin.TweakSystem;
@@ -12,29 +10,16 @@ namespace SimpleTweaksPlugin.Tweaks;
 [TweakDescription("Open the loot rolling window when new items are added to be rolled on.")]
 public unsafe class AutoOpenLootWindow : Tweak {
     protected override void Enable() {
-        Service.Chat.CheckMessageHandled += HandleChat;
+        Service.Chat.LogMessage += ChatOnLogMessage;
     }
 
-    // private void HandleChat(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled) {
-    private void HandleChat(IHandleableChatMessage message) {
-        try {
-            if ((ushort)message.LogKind != 2105) return;
-            if (message.Message.TextValue == Service.ClientState.ClientLanguage switch {
-                    ClientLanguage.German => "Bitte um das Beutegut würfeln.",
-                    ClientLanguage.French => "Veuillez lancer les dés pour le butin.",
-                    ClientLanguage.Japanese => "ロットを行ってください。",
-                    ClientLanguage.ChineseSimplified => "请掷骰。",
-                    _ => "Cast your lot."
-                }) {
-                if (Service.Condition.Cutscene()) {
-                    Common.FrameworkUpdate -= TryOpenAfterCutsceneFrameworkUpdate;
-                    Common.FrameworkUpdate += TryOpenAfterCutsceneFrameworkUpdate;
-                } else {
-                    TryOpenWindow();
-                }
-            }
-        } catch (Exception ex) {
-            SimpleLog.Error(ex);
+    private void ChatOnLogMessage(ILogMessage message) {
+        if (message.LogMessageId != 5194) return; // Cast your lot.
+        if (Service.Condition.Cutscene()) {
+            Common.FrameworkUpdate -= TryOpenAfterCutsceneFrameworkUpdate;
+            Common.FrameworkUpdate += TryOpenAfterCutsceneFrameworkUpdate;
+        } else {
+            TryOpenWindow();
         }
     }
 
@@ -71,7 +56,7 @@ public unsafe class AutoOpenLootWindow : Tweak {
     }
 
     protected override void Disable() {
-        Service.Chat.CheckMessageHandled -= HandleChat;
+        Service.Chat.LogMessage -= ChatOnLogMessage;
         Common.FrameworkUpdate -= TryOpenAfterCutsceneFrameworkUpdate;
     }
 }
