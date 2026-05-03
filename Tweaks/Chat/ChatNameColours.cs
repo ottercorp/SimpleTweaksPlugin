@@ -10,6 +10,8 @@ using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.Chat;
+using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.ExtraPayloads;
 using SimpleTweaksPlugin.TweakSystem;
@@ -25,6 +27,7 @@ namespace SimpleTweaksPlugin.Tweaks.Chat;
 [Changelog("1.8.8.0", "Extended range of possible colours.")]
 [Changelog("1.8.9.0", "Added option to give all undefined characters the same colour.")]
 [Changelog("1.8.9.0", "Added per channel configuration for colouring sender name and/or names in messages.")]
+[Changelog(UnreleasedVersion, "Added option to reduce saturation of random names to improve readability.", Author = "Ennea")]
 public class ChatNameColours : ChatTweaks.SubTweak {
     public class ForcedColour {
         public ushort ColourKey; // Legacy
@@ -46,6 +49,7 @@ public class ChatNameColours : ChatTweaks.SubTweak {
         public bool ApplyDefaultColour;
         public ushort DefaultColourKey = 1;
         public Vector3 DefaultColour = Vector3.One;
+        public float Saturation = 1f;
 
         public ChannelConfig? DefaultChannelConfig = new();
         public Dictionary<XivChatType, ChannelConfig> ChannelConfigs = new();
@@ -85,7 +89,7 @@ public class ChatNameColours : ChatTweaks.SubTweak {
         var key = $"{playerName}@{worldName}".GetStableHashCode();
         var hue = new Random(key).NextSingle();
         var c = new Vector3();
-        ImGui.ColorConvertHSVtoRGB(hue, 0.6f, 1, ref c.X, ref c.Y, ref c.Z);
+        ImGui.ColorConvertHSVtoRGB(hue, Config.Saturation, 1, ref c.X, ref c.Y, ref c.Z);
         return c;
     }
 
@@ -141,6 +145,15 @@ public class ChatNameColours : ChatTweaks.SubTweak {
             Config.ApplyDefaultColour = false;
         }
 
+        using (ImRaii.Disabled(!Config.RandomColours || Config.LegacyColours))
+        using (ImRaii.PushIndent()) {
+            var saturation = (int) (Config.Saturation * 100);
+            ImGui.SetNextItemWidth(150 * ImGuiHelpers.GlobalScale);
+            if (ImGui.SliderInt("Saturation for random colours", ref saturation, 0, 100, "%d%%")) {
+                Config.Saturation = Math.Clamp(saturation / 100f, 0, 1);
+            }
+        }
+        
         if (ImGui.Checkbox(LocString("ApplyDefaultColour", "Use a specific colour for unlisted players"), ref Config.ApplyDefaultColour)) {
             Config.RandomColours = false;
         }
@@ -384,7 +397,7 @@ public class ChatNameColours : ChatTweaks.SubTweak {
     }
 
     protected override void Enable() {
-        Config = LoadConfig<Configs>() ?? new Configs();
+        Config = LoadConfig<Configs>() ?? new Configs { Saturation = 0.6f }; // Lower default saturation for new installs.
 
         Service.Chat.ChatMessage += HandleChatMessage;
         base.Enable();
