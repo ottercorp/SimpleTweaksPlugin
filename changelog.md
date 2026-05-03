@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.14.1.2
+***New Tweaks***
+- **`Armoire Tooltip for Glamour Dresser`** - Show a hint on the tooltip of items stored in the glamour dresser when they could be stored in armoire.
+
+
+***Tweak Changes***
+- **`Chat Name Colours`** - Added option to reduce saturation of random names to improve readability. *(Ennea)*
+
+
 ## 1.10.12.6
 ***Tweak Changes***
 - **`Fix '/target' command`** - Add ability to clear target by providing no name.

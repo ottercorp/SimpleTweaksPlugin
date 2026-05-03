@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.Text;
@@ -15,7 +15,7 @@ namespace SimpleTweaksPlugin.Tweaks.Tooltips;
 
 [TweakName("Armoire Tooltip for Glamour Dresser")]
 [TweakDescription("Show a hint on the tooltip of items stored in the glamour dresser when they could be stored in armoire.")]
-[TweakReleaseVersion(UnreleasedVersion)]
+[TweakReleaseVersion("1.14.1.2")]
 public unsafe class ArmoireTooltipForGlamourDresser : Tweak {
     private IReadOnlySet<uint> ArmoireItems => field != null ? field : field = Service.Data.GetExcelSheet<Cabinet>().Where(r => r.Item.RowId != 0).Select(i => i.RowId).ToHashSet();
     
