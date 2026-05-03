@@ -45,9 +45,6 @@ public static class TestUtil {
     public static void Ready() {
         IsReady = true;
         StateString = "Not Started";
-        #if TEST
-        Start().ConfigureAwait(false);
-        #endif
     }
     
     public static void Draw() {
@@ -60,6 +57,21 @@ public static class TestUtil {
         using (ImRaii.Disabled(!IsRunning)) {
             if (ImGui.SmallButton("Cancel")) {
                 cancellationTokenSource.Cancel();
+            }
+        }
+
+        using (ImRaii.Disabled(IsRunning)) {
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Test 1by1")) {
+                RunTest("One by One", true, true, true).ConfigureAwait(false);
+            }
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Enable All")) {
+                RunTest("Enable All", true, false, false).ConfigureAwait(false);
+            }
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Disable All")) {
+                RunTest("Disable All", false, true, false, true).ConfigureAwait(false);
             }
         }
         ImGui.SameLine();
@@ -122,99 +134,91 @@ public static class TestUtil {
 
     private static uint throttle = 50;
     
-    public static async Task Start() {
-       
-        FileLog($"Starting Test @ {DateTime.Now}");
-
+    private static async Task DoTweak(BaseTweak tweak, bool doEnable, bool doDisable, bool runTest, bool alwaysDisable) {
+        var cts = cancellationTokenSource;
+        if (tweak is IDisabledTweak) return;
+        if (throttle > 0) await Task.Delay(TimeSpan.FromMilliseconds(throttle), cts.Token);
+        if (cts.IsCancellationRequested) return;
         try {
-            if (!IsReady) return;
-            if (IsRunning) return;
+            FileLog($"[{tweak.Key}] Starting Test");
             
-            IsRunning = true;
-            async Task RunTest(BaseTweak tweak) {
-                if (tweak is IDisabledTweak) return;
-                if (throttle > 0) await Task.Delay(TimeSpan.FromMilliseconds(throttle), cancellationTokenSource.Token);
-                if (cancellationTokenSource.IsCancellationRequested) return;
-                try {
+            if (!tweak.CanLoad) {
+                FileLog($"[{tweak.Key}] Unable to load");
+                throw new Exception("Cannot Load");
+            }
 
-                    Service.Chat.Print(new XivChatEntry()
-                    {
-                        Type = XivChatType.Echo,
-                        Message = $"[{tweak.Key}] Starting Test"
-                    });
-                    
-                    FileLog($"[{tweak.Key}] Starting Test");
-                    
-                    if (!tweak.CanLoad) {
-                        FileLog($"[{tweak.Key}] Unable to load");
-                        throw new Exception("Cannot Load");
-                    }
+            if (!tweak.Ready) {
+                FileLog($"[{tweak.Key}] Setup");
+                await Service.Framework.RunOnTick(tweak.SetupInternal, cancellationToken: cts.Token);
+            }
+            
+            if (throttle > 0) await Task.Delay(TimeSpan.FromMilliseconds(throttle), cts.Token);
+            if (cts.IsCancellationRequested) return;
 
-                    if (!tweak.Ready) {
-                        FileLog($"[{tweak.Key}] Setup");
-                        await Service.Framework.RunOnTick(tweak.SetupInternal);
-                    }
-                    
-                    if (throttle > 0) await Task.Delay(TimeSpan.FromMilliseconds(throttle), cancellationTokenSource.Token);
-                    if (cancellationTokenSource.IsCancellationRequested) return;
+            var wasEnabled = tweak.Enabled;
+            
+            if (!tweak.Enabled && doEnable) {
+                FileLog($"[{tweak.Key}] Enable Tweak");
+                StateString = $"Enabling Tweak: {tweak.Name}";
+                await Service.Framework.RunOnTick(tweak.InternalEnable, delayTicks: 1, cancellationToken: cts.Token);
+                
+                if (throttle > 0) await Task.Delay(TimeSpan.FromMilliseconds(throttle), cts.Token);
+                if (cts.IsCancellationRequested) return;
+            }
+            
+            if (tweak.Enabled) {
+                if (runTest) {
+                    FileLog($"[{tweak.Key}] Running Tests");
+                    StateString = $"Running Test: {tweak.Name}";
+                    await Service.Framework.RunOnTick(tweak.Test, delayTicks: 1, cancellationToken: cts.Token);
+                }
+                
+                if (throttle > 0) await Task.Delay(TimeSpan.FromMilliseconds(throttle), cts.Token);
+                if (cts.IsCancellationRequested) return;
 
-                    var wasEnabled = tweak.Enabled;
+                if (tweak is SubTweakManager stm) {
+                    FileLog($"[{tweak.Key}] Running Subtweak Tests");
+                    SimpleTweaksPluginConfig.RebuildTweakList();
                     
-                    if (!tweak.Enabled) {
-                        FileLog($"[{tweak.Key}] Enable Tweak");
-                        StateString = $"Enabling Tweak: {tweak.Name}";
-                        await Service.Framework.RunOnTick(tweak.InternalEnable, delayTicks: 1);
-                        
-                        if (throttle > 0) await Task.Delay(TimeSpan.FromMilliseconds(throttle), cancellationTokenSource.Token);
-                        if (cancellationTokenSource.IsCancellationRequested) return;
+                    if (throttle > 0) await Task.Delay(TimeSpan.FromMilliseconds(throttle), cts.Token);
+                    if (cts.IsCancellationRequested) return;
+                    
+                    foreach (var subTweak in stm.GetTweakList()) {
+                        await DoTweak(subTweak, doEnable, doDisable, runTest, alwaysDisable);
                     }
-                    
-                    if (tweak.Enabled) {
-                        FileLog($"[{tweak.Key}] Running Tests");
-                        StateString = $"Running Test: {tweak.Name}";
-                        await Service.Framework.RunOnTick(tweak.Test, delayTicks: 1);
-
-                        if (throttle > 0) await Task.Delay(TimeSpan.FromMilliseconds(throttle), cancellationTokenSource.Token);
-                        if (cancellationTokenSource.IsCancellationRequested) return;
-
-                        if (tweak is SubTweakManager stm) {
-                            FileLog($"[{tweak.Key}] Running Subtweak Tests");
-                            SimpleTweaksPluginConfig.RebuildTweakList();
-                            
-                            if (throttle > 0) await Task.Delay(TimeSpan.FromMilliseconds(throttle), cancellationTokenSource.Token);
-                            if (cancellationTokenSource.IsCancellationRequested) return;
-                            
-                            foreach (var subTweak in stm.GetTweakList()) {
-                                await RunTest(subTweak);
-                            }
-                        }
-                    }
-                    
-                    if (throttle > 0) await Task.Delay(TimeSpan.FromMilliseconds(throttle), cancellationTokenSource.Token);
-                    if (cancellationTokenSource.IsCancellationRequested) return;
-                    
-                    if (!wasEnabled && tweak is not SubTweakManager { AlwaysEnabled: true}) {
-                        FileLog($"[{tweak.Key}] Disable");
-                        StateString = $"Disabling Tweak: {tweak.Name}";
-                        await Service.Framework.RunOnTick(tweak.InternalDisable, delayTicks: 1);
-                    }
-                    
-                } catch (Exception ex) {
-                    FileLog($"[{tweak.Key}] Failed - {ex.Message}");
-                    var l =  Log($" - Tweak '{tweak.Name}' Failed Test [{tweak.Key}]\n\t\t{ex.Message}", ImGuiColors.DalamudRed);
-                    if (ex.Message.StartsWith("Failed to find Text signature")) {
-                        var sig = ex.Message.Split("(").Last().Split(")").First();
-                        l.AddExtra($"{sig}", ImGuiColors.DalamudYellow, () => ImGui.SetClipboardText(sig));
-                    }
-                    l.AddExtra($"{ex}", ImGuiColors.DalamudRed);
                 }
             }
             
+            if (throttle > 0) await Task.Delay(TimeSpan.FromMilliseconds(throttle), cts.Token);
+            if (cts.IsCancellationRequested) return;
             
+            if (tweak.Enabled && (!wasEnabled || alwaysDisable) && tweak is not SubTweakManager { AlwaysEnabled: true} && doDisable) {
+                FileLog($"[{tweak.Key}] Disable");
+                StateString = $"Disabling Tweak: {tweak.Name}";
+                await Service.Framework.RunOnTick(tweak.InternalDisable, delayTicks: 1, cancellationToken: cts.Token);
+            }
+            
+        } catch (Exception ex) {
+            FileLog($"[{tweak.Key}] Failed - {ex.Message}");
+            var l =  Log($" - Tweak '{tweak.Name}' Failed Test [{tweak.Key}]\n\t\t{ex.Message}", ImGuiColors.DalamudRed);
+            if (ex.Message.StartsWith("Failed to find Text signature")) {
+                var sig = ex.Message.Split("(").Last().Split(")").First();
+                l.AddExtra($"{sig}", ImGuiColors.DalamudYellow, () => ImGui.SetClipboardText(sig));
+            }
+            l.AddExtra($"{ex}", ImGuiColors.DalamudRed);
+        }
+    }
 
+    private static async Task RunTest(string name, bool enable, bool disable, bool runTest, bool alwaysDisable = false) {
+        FileLog($"Starting Test [{name}] @ {DateTime.Now}");
+        try {
+            if (!IsReady) return;
+            if (IsRunning) return;
+            await cancellationTokenSource.CancelAsync();
+            cancellationTokenSource = new CancellationTokenSource();
+            IsRunning = true;
             foreach (var tweak in SimpleTweaksPlugin.Plugin.Tweaks) {
-                await RunTest(tweak);
-
+                await DoTweak(tweak, enable, disable, runTest, alwaysDisable);
             }
             
         } catch (Exception e) {
