@@ -85,7 +85,7 @@ public class ChatNameColours : ChatTweaks.SubTweak {
         var key = $"{playerName}@{worldName}".GetStableHashCode();
         var hue = new Random(key).NextSingle();
         var c = new Vector3();
-        ImGui.ColorConvertHSVtoRGB(hue, 1, 1, ref c.X, ref c.Y, ref c.Z);
+        ImGui.ColorConvertHSVtoRGB(hue, 0.6f, 1, ref c.X, ref c.Y, ref c.Z);
         return c;
     }
 
