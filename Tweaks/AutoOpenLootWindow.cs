@@ -1,8 +1,8 @@
 ﻿using System;
-using Dalamud.Game;
 using Dalamud.Game.Chat;
 using Dalamud.Game.ClientState.Conditions;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 
@@ -11,20 +11,17 @@ namespace SimpleTweaksPlugin.Tweaks;
 [TweakName("Open loot window when items are added")]
 [TweakDescription("Open the loot rolling window when new items are added to be rolled on.")]
 public unsafe class AutoOpenLootWindow : Tweak {
+    private string castYourLot = "Cast your lot.";
+    
     protected override void Enable() {
-        Service.Chat.CheckMessageHandled += HandleChat;
+        Service.Chat.ChatMessage += HandleChat;
+        castYourLot = Service.Data.GetExcelSheet<Addon>(Service.ClientState.ClientLanguage).GetRow(5194).Text.ExtractText();
     }
-
-    // private void HandleChat(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled) {
+    
     private void HandleChat(IHandleableChatMessage message) {
         try {
             if ((ushort)message.LogKind != 2105) return;
-            if (message.Message.TextValue == Service.ClientState.ClientLanguage switch {
-                    ClientLanguage.German => "Bitte um das Beutegut würfeln.",
-                    ClientLanguage.French => "Veuillez lancer les dés pour le butin.",
-                    ClientLanguage.Japanese => "ロットを行ってください。",
-                    _ => "Cast your lot."
-                }) {
+            if (message.Message.TextValue.Equals(castYourLot)) {
                 if (Service.Condition.Cutscene()) {
                     Common.FrameworkUpdate -= TryOpenAfterCutsceneFrameworkUpdate;
                     Common.FrameworkUpdate += TryOpenAfterCutsceneFrameworkUpdate;
