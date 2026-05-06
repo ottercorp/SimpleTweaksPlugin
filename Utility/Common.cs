@@ -17,6 +17,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using FFXIVClientStructs.FFXIV.Client.UI.Shell;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
 using SimpleTweaksPlugin.Debugging;
@@ -27,9 +28,8 @@ namespace SimpleTweaksPlugin.Utility;
 public unsafe class Common {
     [PluginService] private static IGameInteropProvider ImNotGonnaCallItThat { get; set; } = null!;
 
-    private static IntPtr LastCommandAddress;
-
-    public static Utf8String* LastCommand { get; private set; }
+    private static Utf8String* _lastCommand;
+    public static string LastCommand => _lastCommand == null || _lastCommand->StringPtr.Value == null ? string.Empty : _lastCommand->ToString();
 
     public static uint ClientStructsVersion => CsVersion.Value;
     private static readonly Lazy<uint> CsVersion = new(() => (uint?)typeof(FFXIVClientStructs.ThisAssembly).Assembly.GetName().Version?.MinorRevision ?? 0U);
@@ -53,9 +53,7 @@ public unsafe class Common {
     public static void* ThrowawayOut { get; private set; } = (void*)Marshal.AllocHGlobal(1024);
 
     public static void Setup() {
-        LastCommandAddress = Service.SigScanner.GetStaticAddressFromSig("4C 8D 05 ?? ?? ?? ?? 49 8B D4 48 8B C8 E8 ?? ?? ?? ?? 83 EB 06");
-        LastCommand = (Utf8String*)(LastCommandAddress);
-
+        _lastCommand = (Utf8String*) Service.SigScanner.GetStaticAddressFromSig("4C 8D 05 ?? ?? ?? ?? 49 8B D4 48 8B C8 E8 ?? ?? ?? ?? 83 EB 06");
         updateCursorHook = Hook<AtkUnitManager.Delegates.UpdateCursor>(AtkUnitManager.Addresses.UpdateCursor.Value, UpdateCursorDetour);
         updateCursorHook?.Enable();
     }
