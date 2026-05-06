@@ -1,8 +1,9 @@
+using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game.Chat;
-using Dalamud.Game.Text;
-using Dalamud.Game.Text.SeStringHandling;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using Lumina.Excel.Sheets;
+using Lumina.Text.ReadOnly;
 using SimpleTweaksPlugin.TweakSystem;
 
 namespace SimpleTweaksPlugin.Tweaks;
@@ -12,39 +13,27 @@ namespace SimpleTweaksPlugin.Tweaks;
 [TweakName("SystemConfig in Group Pose")]
 [TweakDescription("Allows the use of the /systemconfig command while in gpose.")]
 public unsafe class SystemConfigInGroupPose : Tweak {
-    private readonly string[] commands = [
-        // EN
-        "The command “/systemconfig” is unavailable at this time.",
-        "The command “/sconfig” is unavailable at this time.",
-
-        // DE
-        "„/systemconfig“ wurde als Textkommando nicht richtig verwendet.",
-        "„/sconfig“ wurde als Textkommando nicht richtig verwendet.",
-        "„/systemkonfig“ wurde als Textkommando nicht richtig verwendet.",
-        "„/skon“ wurde als Textkommando nicht richtig verwendet.",
-
-        // FR
-        "La commande texte “/systemconfig” ne peut pas être utilisée de cette façon.",
-        "La commande texte “/sconfig” ne peut pas être utilisée de cette façon.",
-        "La commande texte “/confs” ne peut pas être utilisée de cette façon.",
-        "La commande texte “/configsys” ne peut pas être utilisée de cette façon.",
-
-        // JA
-        "そのコマンドは現在使用できません。： /systemconfig",
-        "そのコマンドは現在使用できません。： /sconfig"
-    ];
-
-    protected override void Enable() => Service.Chat.CheckMessageHandled += OnChatMessage;
-
-    private void OnChatMessage(IHandleableChatMessage message) {
-        if (message.LogKind != XivChatType.ErrorMessage) return;
-        if (!Service.ClientState.IsGPosing) return;
-        if (commands.Contains(message.Message.TextValue.Replace(" ", "").Replace(" ", ""))) {
-            var agent = AgentModule.Instance()->GetAgentByInternalId(AgentId.Config);
-            agent->Show();
-            message.PreventOriginal();
-        }
+    private const uint CommandIsUnavailableAtThisTime = 726;
+    private string[] commands = [];
+    
+    protected override void Enable() {
+        var command = Service.Data.GetExcelSheet<TextCommand>().GetRow(168);
+        List<ReadOnlySeString> commandList = [command.Command, command.ShortCommand, command.Alias, command.ShortAlias];
+        commands = commandList.Select(s => s.ExtractText().Trim()).Where(s => s is ['/', ..]).ToArray();
+        Service.Chat.LogMessage += OnLogMessage;
     }
 
-    protected override void Disable() => Service.Chat.CheckMessageHandled -= OnChatMessage;
+    private void OnLogMessage(ILogMessage message) {
+        if (message.LogMessageId != CommandIsUnavailableAtThisTime) return;
+        if (!Service.ClientState.IsGPosing) return;
+        if (message.TryGetStringParameter(0, out var command)) {
+            if (commands?.Contains(command.ExtractText().Trim()) ?? false) {
+                var agent = AgentModule.Instance()->GetAgentByInternalId(AgentId.Config);
+                agent->Show();
+                message.PreventOriginal();
+            }
+        }
+    }
+    
+    protected override void Disable() => Service.Chat.LogMessage -= OnLogMessage;
 }
