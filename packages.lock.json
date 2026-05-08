@@ -16,9 +16,9 @@
       },
       "KamiToolKit": {
         "type": "Direct",
-        "requested": "[1.1.7, )",
-        "resolved": "1.1.7",
-        "contentHash": "Frw+kzuKb9BGggOM6xGJqwmgn1r9XkPpVyy1zsPDjJ0eIqcxMKpZQeCJKS7UZTSAGq18x+JYu1sNvPga1Y6hoA==",
+        "requested": "[1.1.14, )",
+        "resolved": "1.1.14",
+        "contentHash": "F+LD9G2ER5CAub3juBZq0a5OoVrBOCgA6Te1rUkrQkeo595HBCmvYjJgvzVIExl+Gj1uv+bt3pYznhpqQTPBGA==",
         "dependencies": {
           "SixLabors.ImageSharp": "3.1.12"
         }
