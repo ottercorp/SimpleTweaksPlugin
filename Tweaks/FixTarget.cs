@@ -1,13 +1,12 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Text.RegularExpressions;
-using Dalamud.Game;
 using Dalamud.Game.Chat;
-using Dalamud.Game.Text;
 using Dalamud.Game.ClientState.Objects.Types;
+using Lumina.Excel.Sheets;
+using Lumina.Text.ReadOnly;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
-using GameObjectStruct = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 
 namespace SimpleTweaksPlugin.Tweaks;
 
@@ -17,53 +16,29 @@ namespace SimpleTweaksPlugin.Tweaks;
 [Changelog("1.8.3.0", "Fixed tweak not working in french.", Author = "Aireil")]
 [Changelog("1.10.12.6", "Add ability to clear target by providing no name.")]
 public class FixTarget : Tweak {
-    private Regex? regex;
-
-    protected override void Enable() {
-        regex = Service.ClientState.ClientLanguage switch {
-            ClientLanguage.Japanese => new Regex(@"^\d+?番目のターゲット名の指定が正しくありません。： (.+)$"),
-            ClientLanguage.German => new Regex(@"^Der Unterbefehl \[Name des Ziels\] an der \d+\. Stelle des Textkommandos \((.+)\) ist fehlerhaft\.$"),
-            ClientLanguage.French => new Regex(@"^Le \d+er? argument “nom de la cible” est incorrect \((.*?)\)\.$"),
-            ClientLanguage.English => new Regex(@"^“(.+)” is not a valid target name\.$"),
-            ClientLanguage.ChineseSimplified => new Regex(@"^“(.+)”出现问题：\d+?号指定的目标名不正确。$"),
-            _ => null
-        };
-
-        Service.Chat.CheckMessageHandled += OnChatMessage;
-    }
-
-    protected override void Disable() {
-        Service.Chat.CheckMessageHandled -= OnChatMessage;
-    }
-
-    // private unsafe void OnChatMessage(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled) {
-    private unsafe void OnChatMessage(IHandleableChatMessage message) {
-        if (regex == null) return;
-        if (message.LogKind != XivChatType.ErrorMessage) return;
-        if (Common.LastCommand == null || Common.LastCommand->StringPtr.Value == null) return;
-        var lastCommandStr = Encoding.UTF8.GetString(Common.LastCommand->StringPtr, (int)Common.LastCommand->BufUsed);
-        if (lastCommandStr.StartsWith("/target ") || lastCommandStr.StartsWith("/ziel ") || lastCommandStr.StartsWith("/cibler ") || lastCommandStr.StartsWith("/选中 ")) {
-            // Clear target
+    private ReadOnlySeString? TargetNameString => field ??= Service.Data.GetExcelSheet<Addon>().GetRow(3621).Text;
+    private IEnumerable<string> TargetCommands => field ??= Service.Data.GetExcelSheet<TextCommand>().GetRow(253).GetCommands();
+    
+    [LogMessage(3802, 3803)]
+    private void OnLogMessage(ILogMessage message) {
+        if (!TargetCommands.Contains(Common.LastCommand.FirstWord())) return;
+        if (!message.TryGetStringParameter(1, out var type)) return;
+        if (!type.Equals(TargetNameString)) return;
+        if (message.LogMessageId == 3802) {
             Service.Targets.Target = null;
             Service.Targets.SoftTarget = null;
             message.PreventOriginal();
             return;
         }
-
-        if (!(lastCommandStr.StartsWith("/target ") || lastCommandStr.StartsWith("/ziel ") || lastCommandStr.StartsWith("/cibler ") || lastCommandStr.StartsWith("/选中 "))) {
-            return;
-        }
-
-        var match = regex.Match(message.Message.TextValue);
-        if (!match.Success) return;
-        var searchName = match.Groups[1].Value.ToLowerInvariant();
-
+        
+        if (!message.TryGetStringParameter(2, out var searchNameSeString)) return;
+        var searchName = searchNameSeString.ExtractText().Trim();
         IGameObject? closestMatch = null;
         var closestDistance = float.MaxValue;
         var player = Service.Objects.LocalPlayer;
         if (player == null) return;
         foreach (var actor in Service.Objects) {
-            if (!actor.Name.TextValue.Contains(searchName, System.StringComparison.InvariantCultureIgnoreCase) || !((GameObjectStruct*)actor.Address)->GetIsTargetable()) continue;
+            if (!actor.IsTargetable || !actor.Name.TextValue.Contains(searchName, System.StringComparison.InvariantCultureIgnoreCase)) continue;
             var distance = Vector3.Distance(player.Position, actor.Position);
             if (closestMatch == null) {
                 closestMatch = actor;
@@ -78,7 +53,6 @@ public class FixTarget : Tweak {
 
         if (closestMatch == null) return;
         message.PreventOriginal();
-        
         Service.Targets.Target = closestMatch;
     }
 }

@@ -346,7 +346,7 @@ public partial class SimpleTweaksPluginConfig : IPluginConfiguration {
             if (ImGui.Button(buttonText, new Vector2(-1, ImGui.GetItemRectSize().Y))) {
                 if (plugin.ErrorList.Count == 0 && !Changelog.HasNewChangelog) {
                     Common.OpenBrowser("https://ko-fi.com/Caraxi");
-                } else if (Changelog.HasNewChangelog) {
+                } else if (plugin.ErrorList.Count == 0) {
                     plugin.ChangelogWindow.IsOpen = true;
                 } else  {
                     plugin.ShowErrorWindow = true;

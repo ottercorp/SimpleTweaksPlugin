@@ -1,4 +1,5 @@
 ﻿using System;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
@@ -9,6 +10,7 @@ namespace SimpleTweaksPlugin.Tweaks;
 
 [TweakName("Open Adventurer Plate Command")]
 [TweakDescription("Adds a command to open adventurer plates.")]
+[TweakVersion(2)]
 public unsafe class CharaCardCommand : CommandTweak {
     protected override string Command => "playerplate";
     protected override string HelpMessage => "Opens the character card for the selected character.";
@@ -23,7 +25,7 @@ public unsafe class CharaCardCommand : CommandTweak {
         var resolve = PronounModule.Instance()->ResolvePlaceholder(arguments, 0, 0);
         if (resolve == null) {
             foreach (var actor in Service.Objects) {
-                if (actor == null) continue;
+                if (actor is not IPlayerCharacter) continue;
                 if (actor.Name.TextValue.Equals(arguments, StringComparison.InvariantCultureIgnoreCase)) {
                     resolve = (GameObject*)actor.Address;
                     break;

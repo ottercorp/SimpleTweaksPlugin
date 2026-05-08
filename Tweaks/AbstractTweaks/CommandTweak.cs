@@ -22,7 +22,13 @@ public abstract class CommandTweak : Tweak {
 
     protected abstract void OnCommand(string args);
 
-    private void OnCommandInternal(string _, string args) => OnCommand(args);
+    private void OnCommandInternal(string _, string args) {
+        try {
+            OnCommand(args);
+        } catch (Exception ex) {
+            Plugin.Error(this, ex, false, "Error executing command.");
+        }
+    }
 
     private readonly List<string> registeredCommands = [];
     private string customMainCommand = string.Empty;

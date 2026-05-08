@@ -16,6 +16,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
 using FFXIVClientStructs.STD;
 using Lumina.Excel;
+using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
 
@@ -224,4 +225,12 @@ public static class Extensions {
         return v;
     }
     
+    public static IEnumerable<string> GetCommands(this TextCommand command) {
+        if (!command.Command.IsEmpty) yield return command.Command.ExtractText();
+        if (!command.Alias.IsEmpty) yield return command.Alias.ExtractText();
+        if (!command.ShortCommand.IsEmpty) yield return command.ShortCommand.ExtractText();
+        if (!command.ShortAlias.IsEmpty) yield return command.ShortAlias.ExtractText();
+    }
+
+    public static string FirstWord(this string str) => string.Concat(str.TakeWhile(t => !char.IsWhiteSpace(t)));
 }

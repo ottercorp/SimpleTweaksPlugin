@@ -9,12 +9,9 @@ namespace SimpleTweaksPlugin.Tweaks;
 [TweakName("Open loot window when items are added")]
 [TweakDescription("Open the loot rolling window when new items are added to be rolled on.")]
 public unsafe class AutoOpenLootWindow : Tweak {
-    protected override void Enable() {
-        Service.Chat.LogMessage += ChatOnLogMessage;
-    }
-
+    
+    [LogMessage(5194)]
     private void ChatOnLogMessage(ILogMessage message) {
-        if (message.LogMessageId != 5194) return; // Cast your lot.
         if (Service.Condition.Cutscene()) {
             Common.FrameworkUpdate -= TryOpenAfterCutsceneFrameworkUpdate;
             Common.FrameworkUpdate += TryOpenAfterCutsceneFrameworkUpdate;
@@ -56,7 +53,6 @@ public unsafe class AutoOpenLootWindow : Tweak {
     }
 
     protected override void Disable() {
-        Service.Chat.LogMessage -= ChatOnLogMessage;
         Common.FrameworkUpdate -= TryOpenAfterCutsceneFrameworkUpdate;
     }
 }
