@@ -10,6 +10,7 @@ namespace SimpleTweaksPlugin.Tweaks.Chat;
 [TweakName("Disable Novice Network Auto-Switch")]
 [TweakDescription("Disables automatically selecting novice network when logging in or transferring to another server.")]
 [TweakReleaseVersion("1.10.6.0")]
+[TweakVersion(2)]
 public unsafe class DisableNoviceNetworkAutoSwitch : Tweak {
     private delegate void JoinNoviceNetworkDelegate(AgentChatLog* agentChatLog, uint numMentor, uint numNewAdventurer);
 
@@ -24,10 +25,10 @@ public unsafe class DisableNoviceNetworkAutoSwitch : Tweak {
         joinNoviceNetworkHook.Original(agentChatLog, numMentor, numNewAdventurer);
     }
 
-    private void ChangeChatChannelDetour(RaptureShellModule* shellModule, int channel, uint linkshellIndex, Utf8String* target, bool setChatType) {
+    private bool ChangeChatChannelDetour(RaptureShellModule* shellModule, int channel, uint linkshellIndex, Utf8String* target, bool setChatType) {
         changeChatChannelHook.Disable();
-        if (channel == 8) return;
+        if (channel == 8) return false;
         SimpleLog.Warning($"Tweak attempted to cancel ChangeChatChannel for incorrect channel#{channel}.");
-        changeChatChannelHook.Original(shellModule, channel, linkshellIndex, target, setChatType);
+        return changeChatChannelHook.Original(shellModule, channel, linkshellIndex, target, setChatType);
     }
 }

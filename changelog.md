@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.15.0.7
+***Tweak Changes***
+- **`Display EXP Gain Percentage of Level`** - Fixed log message being hidden after Dalamud update.
+
+- **`Track Outfits`** - Fixed some key items incorrectly indicating they belong to an outfit.
+
+
+## 1.15.0.6
+***Tweak Changes***
+- **`Character Window Job Switcher`** - Fixed issue causing a loop of trying to apply a gearset that is missing its weapon when using gamepad.
+
+
+## 1.15.0.5
+***General Changes***
+- Fixed issues with some tweaks not saving their settings correctly.
+- Disabled metrics collection.
+
+***Tweak Changes***
+- **`Combo Timer`** - Fixed Dragoon's [Wheeling Thrust -> Drakesbane] combo not being correctly timed.
+
+- **`Hide Achievements Nearing Completion Notifications`** - Fixed notification window appearing for a couple frames before being hidden. *(Haselnussbomber)*
+
+- **`Scenario Progression Display`** - Fixed percentage not being displayed in some circumstances.
+
+- **`Track Outfits`** - Added option to ignore quality when checking if an item exists as part of an outfit.
+
+
 ## 1.14.1.2
 ***New Tweaks***
 - **`Armoire Tooltip for Glamour Dresser`** - Show a hint on the tooltip of items stored in the glamour dresser when they could be stored in armoire.

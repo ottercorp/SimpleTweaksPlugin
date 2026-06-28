@@ -26,6 +26,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 [TweakDescription("Allows you to display extra currencies.")]
 [TweakAuthor("MidoriKami")]
 [TweakReleaseVersion("1.8.3.0")]
+[TweakAutoConfig]
 [Changelog("1.8.3.1", "Use configured format culture for number display, should fix French issue")]
 [Changelog("1.8.4.0", "Added support for Collectibles")]
 [Changelog("1.8.8.0", "Added option for adjustable spacing in horizontal layouts.")]
@@ -83,7 +84,7 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
         Down,
     }
 
-    [TweakConfig] private Config TweakConfig { get; set; } = null!;
+    [TweakConfig] public Config TweakConfig { get; set; } = new();
     
     protected void DrawConfig() {
         DrawDirectionComboBox();
@@ -197,7 +198,6 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
         hudLayoutChangeHook?.Disable();
         updatePositionHook?.Disable();
         simpleEvent?.Dispose();
-        SaveConfig(TweakConfig);
         Common.FrameworkUpdate -= OnFrameworkUpdate;
         FreeAllNodes();
         base.Disable();
@@ -359,7 +359,7 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
     private void DrawGridConfig() {
 
         if (ImGui.Checkbox("Disable Interaction", ref TweakConfig.DisableEvents)) {
-            SaveConfig(TweakConfig);
+            RequestSaveConfig();
             FreeAllNodes();
         }
         ImGui.SameLine();
@@ -374,7 +374,7 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
             ImGui.SetNextItemWidth(regionSize.X * 2.0f / 3.0f);
             if (ImGui.InputInt("Currencies Per Line", ref TweakConfig.GridSize)) {
                 if (TweakConfig.GridSize < 2) TweakConfig.GridSize = 2;
-                SaveConfig(TweakConfig);
+                RequestSaveConfig();
             }
             if (TweakConfig.GridSize < 2) TweakConfig.GridSize = 2;
             
@@ -389,7 +389,7 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
                     if (ImGui.Selectable(direction.ToString(), TweakConfig.DisplayDirection == direction))
                     {
                         TweakConfig.GridGrowth = direction;
-                        SaveConfig(TweakConfig);
+                        RequestSaveConfig();
                     }
                 }
             
@@ -406,18 +406,20 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
                     l.RemoveAt(spacingIndex);
                     TweakConfig.GridSpacing = l.ToArray();
                     spacingIndex--;
+                    RequestSaveConfig();
                     continue;
                 }
                 if (ImGui.IsItemHovered()) ImGui.SetTooltip("Remove Column");
                 ImGui.SameLine();
                 ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X * 2.0f / 3.0f);
                 if (ImGui.DragFloat($"Column#{spacingIndex + 1}", ref TweakConfig.GridSpacing[spacingIndex], 0.5f)) {
-                    SaveConfig(TweakConfig);
+                    RequestSaveConfig();
                 }
             }
 
             if (ImGuiExt.IconButton("addGridSpacing", FontAwesomeIcon.Plus)) {
                 Array.Resize(ref TweakConfig.GridSpacing, TweakConfig.GridSpacing.Length + 1);
+                RequestSaveConfig();
             }
             if (ImGui.IsItemHovered()) ImGui.SetTooltip("Add Column");
             ImGui.Unindent();
@@ -479,6 +481,8 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
                             HqItem = hqItemSearch,
                             CollectibleItem = collectibleItemSearch
                         });
+                        
+                        RequestSaveConfig();
                 
                         FreeAllNodes();
                     }
@@ -496,6 +500,7 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
         ImGui.SameLine();
         if (ImGui.Checkbox("Collectible Item", ref collectibleItemSearch)) {
             if (collectibleItemSearch) hqItemSearch = false;
+            RequestSaveConfig();
             UpdateSearch();
         }
         ImGuiComponents.HelpMarker("To track Collectible items.");
@@ -524,6 +529,7 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
                     FreeAllNodes();
                     TweakConfig.Currencies.Remove(currency);
                     TweakConfig.Currencies.Insert(index - 1, currency);
+                    RequestSaveConfig();
                 }
             }
             else {
@@ -547,7 +553,7 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
             
             if (ImGuiExt.IconButton($"CurrencyPositionButton{index}", currency.UseCustomPosition ? FontAwesomeIcon.CompressArrowsAlt : FontAwesomeIcon.ExpandArrowsAlt)) {
                 currency.UseCustomPosition = !currency.UseCustomPosition;
-                SaveConfig(TweakConfig);
+                RequestSaveConfig();
             }
 
             if (ImGui.IsItemHovered()) {
@@ -576,6 +582,7 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
                 ImGui.SetNextItemWidth(200 * ImGuiHelpers.GlobalScale);
                 if (ImGui.DragFloat2($"##position_{index}", ref p)) {
                     currency.CustomPosition = p;
+                    RequestSaveConfig();
                 }
                 ImGui.SameLine();
             }
@@ -586,7 +593,7 @@ public unsafe class ExpandedCurrencyDisplay : UiAdjustments.SubTweak {
                 ImGui.SameLine();
                 if (ImGui.Checkbox("Automatically Select Grand Company", ref currency.AutoAdjustGrandCompany)) {
                     FreeAllNodes();
-                    SaveConfig(TweakConfig);
+                    RequestSaveConfig();
                 }
                 if (ImGui.IsItemHovered()) {
                     ImGui.SetTooltip("If enabled, grand company seals will be automatically adjusted to show your current grand company.");

@@ -1,11 +1,12 @@
 using System;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using Lumina.Text;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
-using SimpleTweaksPlugin.Utility;
 using static SimpleTweaksPlugin.Tweaks.TooltipTweaks.ItemTooltipField;
 
 namespace SimpleTweaksPlugin.Tweaks.Tooltips;
@@ -27,7 +28,7 @@ public unsafe class ShowItemID : TooltipTweaks.SubTweak {
         [TweakConfigOption("Show Resolved Action ID", 2)]
         public bool ShowResolvedActionId = true;
 
-        public bool ShouldShowShowOriginalActionId() => ShowResolvedActionId && !Both;
+        public bool ShouldShowShowOriginalActionId() => ShowResolvedActionId && (!Hex || !Both);
         [TweakConfigOption("Show Original Action ID", 3, ConditionalDisplay = true, SameLine = true)]
         public bool ShowOriginalActionId;
     }
@@ -77,34 +78,37 @@ public unsafe class ShowItemID : TooltipTweaks.SubTweak {
     public override void OnActionTooltip(AtkUnitBase* addon, TooltipTweaks.HoveredActionDetail action) {
         var categoryText = addon->GetTextNodeById(6);
         if (categoryText == null) return;
-        var seStr = Common.ReadSeString(categoryText->NodeText.StringPtr);
-        if (seStr.Payloads.Count > 1) return;
+        var seStr = categoryText->NodeText.AsReadOnlySeStringSpan();
+        if (seStr.PayloadCount > 1) return;
+        var builder = new SeStringBuilder();
+        builder.Append(seStr);
+        
         var id = Config.ShowResolvedActionId ? ActionManager.Instance()->GetAdjustedActionId(action.Id) : action.Id;
-        if (seStr.Payloads.Count >= 1) {
-            if (Config.ShowResolvedActionId && Config.ShowOriginalActionId && !Config.Both && id != action.Id) {
-                seStr.Payloads.Add(new NewLinePayload());
+        if (seStr.PayloadCount >= 1) {
+            if (Config.ShowResolvedActionId && Config.ShowOriginalActionId && (!Config.Both || !Config.Hex) && id != action.Id) {
+                builder.AppendNewLine();
             } else {
-                seStr.Payloads.Add(new TextPayload("   "));
+                builder.Append(" ");
             }
         }
 
-        seStr.Payloads.Add(new UIForegroundPayload(3));
-        seStr.Payloads.Add(new TextPayload($"["));
-        if (Config.ShowResolvedActionId && Config.ShowOriginalActionId && !Config.Both && id != action.Id) {
-            seStr.Payloads.Add(new TextPayload($"{action.Id}→"));
+        builder.PushColorType(3);
+        builder.Append("[");
+        if (Config.ShowResolvedActionId && Config.ShowOriginalActionId && (!Config.Both || !Config.Hex) && id != action.Id) {
+            builder.Append($"{action.Id}→");
         }
 
-        if (Config.Hex == false || Config.Both) {
-            seStr.Payloads.Add(new TextPayload($"{id}"));
+        if (!Config.Hex || Config.Both) {
+            builder.Append($"{id}");
         }
 
         if (Config.Hex) {
-            if (Config.Both) seStr.Payloads.Add(new TextPayload(" - "));
-            seStr.Payloads.Add(new TextPayload($"0x{id:X}"));
+            if (Config.Both) builder.Append(" - ");
+            builder.Append($"0x{id:X}");
         }
 
-        seStr.Payloads.Add(new TextPayload($"]"));
-        seStr.Payloads.Add(new UIForegroundPayload(0));
-        categoryText->SetText(seStr.EncodeWithNullTerminator());
+        builder.Append("]");
+        builder.PopColorType();
+        categoryText->SetText(builder.GetViewAsSpan());
     }
 }

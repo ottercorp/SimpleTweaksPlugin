@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
-using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
+using Lumina.Text;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -16,12 +17,13 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 [TweakAutoConfig]
 [TweakReleaseVersion("1.9.0.0")]
 [Changelog("1.10.8.0", "Once again fixed logic.")]
-public unsafe class ScenarioProgressionDisplay : UiAdjustments.SubTweak, IDisabledTweak {
-
+[Changelog("1.15.0.5", "Fixed percentage not being displayed in some circumstances.")]
+public unsafe class ScenarioProgressionDisplay : UiAdjustments.SubTweak {
     private ScenarioTree? finalScenario;
     private readonly Dictionary<uint, ScenarioTree> expansionBegins = new();
     private readonly Dictionary<uint, ScenarioTree> expansionEnds = new();
-
+    private SeStringBuilder? savedBuilder;
+    
     public class Config : TweakConfig {
         [TweakConfigOption("Show for current expansion", 1)]
         public bool UseCurrentExpansion;
@@ -33,7 +35,7 @@ public unsafe class ScenarioProgressionDisplay : UiAdjustments.SubTweak, IDisabl
         public int Accuracy = 1;
     }
 
-    [TweakConfig] public Config TweakConfig { get; private set; }
+    [TweakConfig] public Config TweakConfig { get; private set; } = new();
 
     protected override void Enable() => UpdateAddon(Common.GetUnitBase("ScenarioTree"));
     protected override void Disable() => UpdateAddon(Common.GetUnitBase("ScenarioTree"));
@@ -51,7 +53,7 @@ public unsafe class ScenarioProgressionDisplay : UiAdjustments.SubTweak, IDisabl
         if (current == null) return 0;
         
         if (finalScenario == null) {
-            foreach (var st in Service.Data.GetExcelSheet<ScenarioTree>()!) {
+            foreach (var st in Service.Data.GetExcelSheet<ScenarioTree>()) {
                 if (!Service.Data.GetExcelSheet<Quest>().TryGetRow(st.RowId, out var quest)) continue;
                 if (!quest.Expansion.IsValid) continue;
 
@@ -105,38 +107,29 @@ public unsafe class ScenarioProgressionDisplay : UiAdjustments.SubTweak, IDisabl
     [AddonPostRefresh("ScenarioTree")]
     private void UpdateAddon(AtkUnitBase* addon) {
         if (addon == null) return;
-        
         if (addon->AtkValuesCount < 8) return;
         var textValue = addon->AtkValues + 7;
-        if (textValue->Type != AtkValueType.String || textValue->String.Value == null) return;
-
+        if (textValue->Type is not (AtkValueType.String or AtkValueType.ConstString or AtkValueType.ManagedString) || textValue->String.Value == null) return;
         var button = addon->GetComponentButtonById(13);
         if (button == null) return;
-
-        var textNode = (AtkTextNode*)button->AtkComponentBase.GetTextNodeById(6);
+        var textNode = button->AtkComponentBase.GetTextNodeById(6);
         if (textNode == null) return;
-
-        var text = Common.ReadSeString(textValue->String);
-        
+        var text = textValue->String.AsReadOnlySeStringSpan();
+        var builder = new SeStringBuilder();
         if (!Unloading) {
             var percentage = TweakConfig.UseCurrentExpansion ? GetScenarioCompletionForCurrentExpansion() : GetScenarioCompletion();
-            var percentageString = new TextPayload(string.Format($" ({{0:P{Math.Clamp(TweakConfig.Accuracy, 0, 3)}}}) ", percentage));
+            var percentageString = string.Format($" ({{0:P{Math.Clamp(TweakConfig.Accuracy, 0, 3)}}}) ", percentage);
             if (TweakConfig.ShowBeforeQuest) {
-                text.Payloads.Insert(0, percentageString);
+                builder.Append(percentageString);
+                builder.Append(text);
             } else {
-                text.Payloads.Add(percentageString);
+                builder.Append(text);
+                builder.Append(percentageString);
             }
         }
-
-        var encoded = text.EncodeWithNullTerminator();
-        if (encoded.Length == 0 || encoded[0] == 0) {
-            SimpleLog.Verbose($"Update ScenarioTree: [empty string]");
-            textNode->SetText(string.Empty);
-        } else {
-            SimpleLog.Verbose($"Update ScenarioTree: {text.TextValue}");
-            textNode->SetText(encoded);
-        }
+        
+        textNode->SetText(builder.GetViewAsSpan());
+        savedBuilder?.Clear();
+        savedBuilder = builder;
     }
-
-    public string DisabledMessage => "Tweak is not currently functional and will return when possible";
 }

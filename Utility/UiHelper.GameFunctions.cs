@@ -7,13 +7,9 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 namespace SimpleTweaksPlugin.Utility; 
 
 public unsafe partial class UiHelper {
-    private delegate byte AtkUnitBaseClose(AtkUnitBase* unitBase, byte a2);
-    private static AtkUnitBaseClose _atkUnitBaseClose;
-        
     public static bool Ready;
 
     public static void Setup(ISigScanner scanner) {
-        _atkUnitBaseClose = Marshal.GetDelegateForFunctionPointer<AtkUnitBaseClose>(scanner.ScanText("40 53 48 83 EC 50 81 A1"));
         Ready = true;
     }
 

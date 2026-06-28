@@ -23,11 +23,11 @@ public unsafe class SortWorldList : Tweak {
 
     [AddonPostRefresh("LobbyDKTWorldList")]
     private void PostRefresh(AtkUnitBase* addon) {
-        var list = addon->GetComponentByNodeId(22);
+        var list = addon->GetComponentByNodeId(24);
         if (list == null) return;
         
         List<Entry> entries = [];
-        for (var nodeIndex = 0U; nodeIndex < addon->AtkValuesSpan[1833].UInt; nodeIndex++) {
+        for (var nodeIndex = 0U; nodeIndex < addon->AtkValuesSpan[1834].UInt; nodeIndex++) {
             var nodeId = nodeIndex == 0 ? 3U : 31000U + nodeIndex;
             var node = Common.GetNodeByID(list, nodeId);
             if (node == null || (ushort)node->Type < 1000 || node->Y == 0) continue;

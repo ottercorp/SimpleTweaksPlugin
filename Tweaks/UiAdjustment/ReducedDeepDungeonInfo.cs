@@ -1,9 +1,9 @@
-using System.Collections.Generic;
-using System.Linq;
-using Dalamud.Game.Text.SeStringHandling;
-using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
+using Lumina.Text;
+using Lumina.Text.Payloads;
+using Lumina.Text.ReadOnly;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -78,7 +78,7 @@ public unsafe class ReducedDeepDungeonInfo : UiAdjustments.SubTweak {
             UiHelper.SetPosition(textNode, 78, 65);
             textNode->FontSize = 12;
             textNode->AlignmentFontType = 3;
-            textNode->SetText(Service.Data.Excel.GetSheet<Addon>()!.GetRow(10430)!.Text);
+            textNode->SetText(Service.Data.Excel.GetSheet<Addon>().GetRow(10430).Text);
 
             return;
         }
@@ -118,15 +118,14 @@ public unsafe class ReducedDeepDungeonInfo : UiAdjustments.SubTweak {
         UiHelper.SetPosition(textNode, 148, 0);
         textNode->FontSize = 14;
         textNode->AlignmentFontType = 5;
-        var armAetherpoolSeStr = Common.ReadSeString(armAetherpoolTextNode->NodeText.StringPtr);
-        var armorAetherpoolSeStr = Common.ReadSeString(armorAetherpoolTextNode->NodeText.StringPtr);
+        var armAetherpoolSeStr = armAetherpoolTextNode->NodeText.AsReadOnlySeStringSpan();
+        var armorAetherpoolSeStr = armorAetherpoolTextNode->NodeText.AsReadOnlySeStringSpan();
 
-        var payloads = new List<Payload>();
-        payloads.AddRange(GetAetherpoolPayloads(armAetherpoolSeStr));
-        payloads.Add(new TextPayload("/"));
-        payloads.AddRange(GetAetherpoolPayloads(armorAetherpoolSeStr));
-
-        textNode->SetText(new SeString(payloads).EncodeWithNullTerminator());
+        var builder = new SeStringBuilder();
+        AppendAetherpoolToBuilder(builder, armAetherpoolSeStr);
+        builder.Append("/");
+        AppendAetherpoolToBuilder(builder, armorAetherpoolSeStr);
+        textNode->SetText(builder.GetViewAsSpan());
     }
 
     private static void SetDeepdungeonWindow(AtkComponentNode* windowNode, ushort? width, ushort? height)
@@ -145,46 +144,44 @@ public unsafe class ReducedDeepDungeonInfo : UiAdjustments.SubTweak {
         windowNode->AtkResNode.DrawFlags |= 0x1;
     }
 
-    private IEnumerable<Payload> GetAetherpoolPayloads(SeString aetherpoolSeStr)
-    {
+    private void AppendAetherpoolToBuilder(SeStringBuilder builder, ReadOnlySeStringSpan aetherpoolSeStr) {
         var aetherpool = string.Empty;
-
-        foreach (var payload in aetherpoolSeStr.Payloads.Where(p => p.Type == PayloadType.RawText)) {
-            var text = ((TextPayload)payload).Text;
-            if (text?.IndexOf('+') != -1)
-            {
-                aetherpool = text?[text.IndexOf('+')..];
+        var isSynced = false;
+        
+        foreach (var payload in aetherpoolSeStr) {
+            if (payload.Type == ReadOnlySePayloadType.Macro && payload.MacroCode == MacroCode.Italic && payload.TryGetExpression(out var expression) && expression.TryGetUInt(out var expressionValue) && expressionValue == 1) {
+                // There has to be a better way to do this, right?
+                isSynced = true;
+            }
+            
+            if (payload.Type != ReadOnlySePayloadType.Text) continue;
+            var text = payload.ToString();
+            if (text.Contains('+')) {
+                aetherpool = text[text.IndexOf('+')..];
                 break;
             }
         }
 
-        if (string.IsNullOrEmpty(aetherpool))
-            aetherpool = "+0";
-
-        var isSynced = aetherpoolSeStr.Payloads.Any(payload =>
-            payload is EmphasisItalicPayload {IsEnabled: true});
-
-        var payloads = new List<Payload> {new TextPayload(aetherpool)};
-            
-        if (isSynced)
-        {
-            payloads.Insert(0, new EmphasisItalicPayload(true));
-            payloads.Insert(payloads.Count, new EmphasisItalicPayload(false));
-        }
-            
-        if (aetherpool == "+99")
-        {
-            payloads.Insert(0, new UIGlowPayload(501));
-            payloads.Insert(payloads.Count, new UIGlowPayload(0));
-            payloads.Insert(0, new UIForegroundPayload(500));
-            payloads.Insert(payloads.Count, new UIForegroundPayload(0));
+        if (string.IsNullOrEmpty(aetherpool)) aetherpool = "+0";
+        var isMax = aetherpool == "+99";
+        
+        if (isMax) {
+            builder.PushColorType(500);
+            builder.PushEdgeColorType(501);
         } else if (isSynced) {
-            payloads.Insert(0, new UIGlowPayload(574));
-            payloads.Insert(payloads.Count, new UIGlowPayload(0));
-            payloads.Insert(0, new UIForegroundPayload(573));
-            payloads.Insert(payloads.Count, new UIForegroundPayload(0));
+            builder.PushColorType(573);
+            builder.PushEdgeColorType(574);
         }
-            
-        return payloads;
+        
+        if (isSynced) builder.AppendSetItalic(true);
+        
+        builder.Append(aetherpool);
+
+        if (isMax || isSynced) {
+            builder.PopColorType();
+            builder.PopEdgeColorType();
+        }
+
+        if (isSynced) builder.AppendSetItalic(false);
     }
 }

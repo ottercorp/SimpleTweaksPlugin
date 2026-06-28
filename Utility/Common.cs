@@ -8,7 +8,6 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.IoC;
 using Dalamud.Networking.Http;
 using Dalamud.Plugin.Services;
@@ -17,7 +16,6 @@ using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using FFXIVClientStructs.FFXIV.Client.UI.Shell;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
 using SimpleTweaksPlugin.Debugging;
@@ -71,7 +69,7 @@ public unsafe class Common {
 
     public static T* GetUnitBase<T>(string? name = null, int index = 1) where T : unmanaged {
         if (string.IsNullOrEmpty(name)) {
-            var attr = (AddonAttribute?) typeof(T).GetCustomAttribute(typeof(AddonAttribute));
+            var attr = typeof(T).GetCustomAttribute<AddonAttribute>();
             if (attr != null) {
                 name = attr.AddonIdentifiers.FirstOrDefault();
             }
@@ -97,31 +95,6 @@ public unsafe class Common {
         return unitBase != null;
     }
 
-    public static SeString? ReadSeString(byte** startPtr) {
-        if (startPtr == null) return null;
-        var start = *(startPtr);
-        if (start == null) return null;
-        return ReadSeString(start);
-    }
-
-    public static SeString ReadSeString(byte* ptr) {
-        var offset = 0;
-        while (true) {
-            var b = *(ptr + offset);
-            if (b == 0) {
-                break;
-            }
-
-            offset += 1;
-        }
-
-        var bytes = new byte[offset];
-        Marshal.Copy(new IntPtr(ptr), bytes, 0, offset);
-        return SeString.Parse(bytes);
-    }
-
-    public static SeString ReadSeString(Utf8String xivString) => SeString.Parse(xivString);
-    
     public static HookWrapper<T> Hook<T>(string signature, T detour, int addressOffset = 0) where T : Delegate {
         var addr = Service.SigScanner.ScanText(signature);
         var h = ImNotGonnaCallItThat.HookFromAddress(addr + addressOffset, detour);

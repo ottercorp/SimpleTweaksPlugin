@@ -1,18 +1,19 @@
 ﻿using System;
 using System.Linq;
-using Dalamud.Game;
-using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using Lumina.Text.ReadOnly;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 using DetailKind = FFXIVClientStructs.FFXIV.Client.Enums.DetailKind;
 
 namespace SimpleTweaksPlugin.Tweaks;
 
+[Changelog("1.8.5.1", "Added additional protections to attempt to reduce crashing. Please report any crashes you believe may be related to tooltips.")]
+[Changelog("1.8.6.1", "Yet another attempt at fixing crashes.")]
 public unsafe class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
     public override bool AlwaysEnabled => true;
 
@@ -24,6 +25,7 @@ public unsafe class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
         public virtual void OnGenerateActionTooltip(NumberArrayData* numberArrayData, StringArrayData* stringArrayData) { }
 
         protected static SeString? GetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ItemTooltipField field) => GetTooltipString(stringArrayData, (int)field);
+        protected static bool TryGetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ItemTooltipField field, out ReadOnlySeStringSpan readOnlySeStringSpan) => TryGetTooltipString(stringArrayData, (int)field, out readOnlySeStringSpan);
         protected static SeString? GetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ActionTooltipField field) => GetTooltipString(stringArrayData, (int)field);
 
         protected static SeString? GetTooltipString(StringArrayData* stringArrayData, int field) {
@@ -39,10 +41,37 @@ public unsafe class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
             }
         }
 
+        private static bool TryGetTooltipString(StringArrayData* stringArrayData, int field, out ReadOnlySeStringSpan readOnlySeStringSpan) {
+            try {
+                if (stringArrayData->Span.Length <= field) {
+                    readOnlySeStringSpan = default;
+                    return false;
+                }
+
+                var stringAddress = stringArrayData->Span[field];
+                if (!stringAddress.HasValue) {
+                    readOnlySeStringSpan = default;
+                    return false;
+                }
+
+
+                readOnlySeStringSpan = new ReadOnlySeStringSpan(stringAddress.AsSpan());
+                return true;
+            } catch (Exception ex) {
+                SimpleLog.Error(ex);
+                readOnlySeStringSpan = default;
+                return false;
+            }
+        }
+
         protected static void SetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ItemTooltipField field, SeString seString) {
             seString ??= new SeString();
             var bytes = seString.EncodeWithNullTerminator();
             stringArrayData->SetValue((int)field, bytes, false);
+        }
+
+        protected static void SetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ItemTooltipField field, ReadOnlySpan<byte> seString) {
+            stringArrayData->SetValue((int)field, seString, false);
         }
 
         protected static void SetTooltipString(StringArrayData* stringArrayData, TooltipTweaks.ActionTooltipField field, SeString seString) {
@@ -78,13 +107,7 @@ public unsafe class TooltipTweaks : SubTweakManager<TooltipTweaks.SubTweak> {
     private delegate void* GetItemRowDelegate(uint itemId);
 
     private HookWrapper<GetItemRowDelegate> getItemRowHook;
-
-    protected override void Setup() {
-        AddChangelog("1.8.5.1", "Added additional protections to attempt to reduce crashing. Please report any crashes you believe may be related to tooltips.");
-        AddChangelog("1.8.6.1", "Yet another attempt at fixing crashes.");
-        base.Setup();
-    }
-
+    
     protected override void Enable() {
         if (!Ready) return;
         

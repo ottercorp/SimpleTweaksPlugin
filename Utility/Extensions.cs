@@ -17,6 +17,9 @@ using FFXIVClientStructs.Interop;
 using FFXIVClientStructs.STD;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
+using Lumina.Text.Payloads;
+using Lumina.Text.ReadOnly;
+using Newtonsoft.Json;
 using SimpleTweaksPlugin.Sheets;
 using SimpleTweaksPlugin.TweakSystem;
 
@@ -48,10 +51,6 @@ public static class Extensions {
         } catch (Exception ex) {
             return $"<<{ex.Message}>>";
         }
-    }
-
-    public static SeString GetSeString(this Utf8String utf8String) {
-        return Common.ReadSeString(utf8String);
     }
 
     public static int GetStableHashCode(this string str)
@@ -233,4 +232,50 @@ public static class Extensions {
     }
 
     public static string FirstWord(this string str) => string.Concat(str.TakeWhile(t => !char.IsWhiteSpace(t)));
+
+    extension(ReadOnlySeStringSpan self) {
+        public bool ContainsPayload(Predicate<ReadOnlySePayloadSpan> predicate) {
+            foreach (var p in self) {
+                if (predicate(p)) return true;
+            }
+        
+            return false;
+        }
+        
+        public bool ContainsDalamudLinkPayload(DalamudLinkPayload dalamudLinkPayload) {
+            return self.ContainsPayload(payload => {
+                try {
+                    if (payload.MacroCode != MacroCode.Link) return false;
+                    if (!payload.TryGetExpression(out var linkTypeExpression, out var commandIdExpression, out var extra1Expression, out var extra2Expression, out var compositeExpression)) return false;
+                    if (!linkTypeExpression.TryGetInt(out var linkType) || linkType != (int)Payload.EmbeddedInfoType.DalamudLink - 1) return false;
+                    if (!commandIdExpression.TryGetUInt(out var commandId)) return false;
+                    if (!extra1Expression.TryGetInt(out var extra1)) return false;
+                    if (!extra2Expression.TryGetInt(out var extra2)) return false;
+                    if (!compositeExpression.TryGetString(out var compositeString)) return false;
+                    var extraData = JsonConvert.DeserializeObject<string[]>(compositeString.ExtractText());
+                    if (extraData == null || extraData.Length < 2) return false;
+                    return commandId == dalamudLinkPayload.CommandId &&
+                           extra1 == dalamudLinkPayload.Extra1 &&
+                           extra2 == dalamudLinkPayload.Extra2 &&
+                           extraData[0] == dalamudLinkPayload.Plugin &&
+                           extraData[1] == dalamudLinkPayload.ExtraString;
+                } catch (Exception ex) {
+                    SimpleLog.Warning(ex);
+                    return false;
+                }
+            });
+        }
+    }
+
+    extension(Lumina.Text.SeStringBuilder builder) {
+        public Lumina.Text.SeStringBuilder AppendDalamudLinkPayload(DalamudLinkPayload payload) {
+            return builder.BeginMacro(MacroCode.Link)
+                .AppendIntExpression((int)Payload.EmbeddedInfoType.DalamudLink - 1)
+                .AppendUIntExpression(payload.CommandId)
+                .AppendIntExpression(payload.Extra1)
+                .AppendIntExpression(payload.Extra2)
+                .AppendStringExpression(JsonConvert.SerializeObject(new[] { payload.Plugin, payload.ExtraString }))
+                .EndMacro();
+        }
+    }
 }

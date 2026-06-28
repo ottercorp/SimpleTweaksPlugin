@@ -33,6 +33,7 @@ public class Service {
     [PluginService] public static IContextMenu ContextMenu { get; private set; } = null!;
     [PluginService] public static INamePlateGui NamePlateGui { get; private set; } = null!;
     [PluginService] public static IPlayerState PlayerState { get; private set; } = null!;
+    [PluginService] public static ISeStringEvaluator SeStringEvaluator { get; private set; } = null!;
 
     public static NativeKeyState NativeKeyState { get; } = new();
 

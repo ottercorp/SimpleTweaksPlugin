@@ -1,27 +1,42 @@
-using Dalamud.Game.ClientState.Conditions;
-using Dalamud.Game.Gui.NamePlate;
-using Dalamud.Game.Text;
-using Dalamud.Game.Text.SeStringHandling;
-using Dalamud.Game.Text.SeStringHandling.Payloads;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using Dalamud.Bindings.ImGui;
-using Lumina.Excel.Sheets;
-using SimpleTweaksPlugin.ExtraPayloads;
-using SimpleTweaksPlugin.TweakSystem;
-using SimpleTweaksPlugin.Utility;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using System.Text.Json.Serialization;
+using Dalamud.Bindings.ImGui;
+using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.ClientState.Objects.SubKinds;
+using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Game.Gui.NamePlate;
+using Dalamud.Game.Text;
+using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Interface.Utility.Raii;
+using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using Lumina.Excel.Sheets;
+using SimpleTweaksPlugin.TweakSystem;
+using SimpleTweaksPlugin.Utility;
+using SeStringBuilder = Lumina.Text.SeStringBuilder;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 
 [TweakName("Custom Free Company Tags")]
 [TweakDescription("Allows hiding or customizing Free Company and Wanderer tags.")]
 [TweakAutoConfig]
+
+[Changelog("1.8.7.0", "Added option to display FC tags on a separate line to character name.")]
+[Changelog("1.8.7.2", "Removed 'Hide in Duty' option from Wanderer. This is now a vanilla game option.")]
+[Changelog("1.8.9.0", "Added support for full RGB colours.")]
+[Changelog("1.8.9.0", "Added an icon viewer for supported icons.")]
+[Changelog("1.8.9.1", "Fix some issues with glow colours.")]
+[Changelog("1.8.9.2", "Fixed icon-only tags not displaying.")]
+[Changelog("1.8.9.3", "Added hide tags in duty")]
+[Changelog("1.15.0.1", "Added ability to give individual characters a custom FC tag.")]
 public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
     public class Configs : TweakConfig {
+        public Dictionary<ulong, TagCustomization> PersonalCustomizations = new();
         public Dictionary<string, TagCustomization> FcCustomizations = new();
         public TagCustomization DefaultCustomization = new();
         public TagCustomization WandererCustomization = new() { Enabled = false, Replacement = "<crossworldicon><homeworld>" };
@@ -34,25 +49,18 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
         public string Replacement = string.Empty;
         public bool HideQuoteMarks;
         public bool OwnLine;
+        [JsonIgnore] public bool DisplayNameUpdated;
+        public string DisplayName = string.Empty;
     }
 
     [TweakConfig] public Configs Config { get; private set; }
-
-    protected override void Setup() {
-        AddChangelog("1.8.7.0", "Added option to display FC tags on a separate line to character name.");
-        AddChangelog("1.8.7.2", "Removed 'Hide in Duty' option from Wanderer. This is now a vanilla game option.");
-        AddChangelog("1.8.9.0", "Added support for full RGB colours.");
-        AddChangelog("1.8.9.0", "Added an icon viewer for supported icons.");
-        AddChangelog("1.8.9.1", "Fix some issues with glow colours.");
-        AddChangelog("1.8.9.2", "Fixed icon-only tags not displaying.");
-        AddChangelog("1.8.9.3", "Added hide tags in duty");
-    }
 
     protected override void Enable() {
         Service.NamePlateGui.OnDataUpdate += NamePlateGuiOnOnDataUpdate;
     }
 
     private void NamePlateGuiOnOnDataUpdate(INamePlateUpdateContext context, IReadOnlyList<INamePlateUpdateHandler> handlers) {
+        var saveConfig = false;
         var localPlayer = Service.Objects.LocalPlayer;
         if (localPlayer == null) return;
         foreach (var h in handlers) {
@@ -64,9 +72,15 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
                     h.RemoveFreeCompanyTag();
                     return;
                 }
-                var customization = Config.DefaultCustomization;
-                string companyTag = string.Empty;
-                if (battleChara->Character.HomeWorld != battleChara->Character.CurrentWorld) {
+                var companyTag = string.Empty;
+                if (Config.PersonalCustomizations.TryGetValue(battleChara->ContentId, out var customization)) {
+                    if (!customization.DisplayNameUpdated) {
+                        customization.DisplayName = $"{h.PlayerCharacter.Name.TextValue} @ {h.PlayerCharacter.HomeWorld.Value.Name.ExtractText()}";
+                        customization.DisplayNameUpdated = false;
+                        customization.Enabled = true;
+                        saveConfig = true;
+                    }
+                } else if (battleChara->Character.HomeWorld != battleChara->Character.CurrentWorld) {
                     // Wanderer
                     var w = Service.Data.Excel.GetSheet<World>().GetRowOrDefault(battleChara->Character.HomeWorld);
                     if (w == null || w.Value.RowId == 0 || w.Value.DataCenter.RowId == localPlayer.CurrentWorld.Value.DataCenter.RowId) {
@@ -80,7 +94,7 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
                     customization = companyTag.Length switch {
                         <= 0 => null,
                         > 0 when Config.FcCustomizations.ContainsKey(companyTag) => Config.FcCustomizations[companyTag],
-                        _ => customization
+                        _ => Config.DefaultCustomization
                     };
                 }
 
@@ -88,11 +102,12 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
                     if (customization.Replacement.Trim().Length == 0) {
                         h.RemoveFreeCompanyTag();
                     } else {
-                        var payloads = new List<Payload>();
+
+                        var builder = new SeStringBuilder();
                         if (customization.OwnLine)
-                            payloads.Add(new NewLinePayload());
+                            builder.AppendNewLine();
                         if (!customization.HideQuoteMarks)
-                            payloads.Add(new TextPayload(" «"));
+                            builder.Append(" «");
 
                         var cText = string.Empty;
 
@@ -102,13 +117,13 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
 
                         var resetHexForegrond = false;
                         var resetHexGlow = false;
-                        Vector3? hexGlow = null;
+                        Vector4? hexGlow = null;
 
                         foreach (var t in customization.Replacement) {
                             switch (t) {
                                 case '<': {
                                     if (cText.Length > 0) {
-                                        payloads.Add(new TextPayload(cText));
+                                        builder.Append(cText);
                                     }
 
                                     cText = "<";
@@ -118,30 +133,33 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
                                     cText += '>';
                                     switch (cText.ToLower()) {
                                         case "<crossworldicon>": {
-                                            payloads.Add(new IconPayload(BitmapFontIcon.CrossWorld));
+                                            builder.AppendIcon((uint)BitmapFontIcon.CrossWorld);
                                             break;
                                         }
                                         case "<homeworld>": {
                                             var world = Service.Data.Excel.GetSheet<World>().GetRowOrDefault(battleChara->Character.HomeWorld);
-
-                                            payloads.Add(new TextPayload(world?.Name.ExtractText() ?? $"UnknownWorld#{battleChara->Character.HomeWorld}"));
+                                            if (world == null) {
+                                                builder.Append($"UnknownWorld#{battleChara->Character.HomeWorld}");
+                                            } else {
+                                                builder.Append(world.Value.Name);
+                                            }
                                             break;
                                         }
                                         case "<level>": {
-                                            payloads.Add(new TextPayload(battleChara->Character.CharacterData.Level.ToString()));
+                                            builder.Append($"{battleChara->Level}");
                                             break;
                                         }
                                         case "<fctag>": {
-                                            payloads.Add(new TextPayload(companyTag));
+                                            builder.Append(companyTag);
                                             break;
                                         }
                                         case "<i>": {
-                                            payloads.Add(new EmphasisItalicPayload(true));
+                                            builder.AppendSetItalic(true);
                                             resetItalic = true;
                                             break;
                                         }
                                         case "</i>": {
-                                            payloads.Add(new EmphasisItalicPayload(false));
+                                            builder.AppendSetItalic(false);
                                             resetItalic = false;
                                             break;
                                         }
@@ -149,19 +167,20 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
                                         case "</colour>": {
                                             if (resetHexForegrond) {
                                                 if (hexGlow != null) {
-                                                    payloads.Add(new GlowEndPayload().AsRaw());
+                                                    builder.PopEdgeColor();
                                                 }
 
-                                                payloads.Add(new ColorEndPayload().AsRaw());
+                                                builder.PopColor();
+             
                                                 if (hexGlow != null) {
-                                                    payloads.Add(new GlowPayload(hexGlow.Value).AsRaw());
+                                                    builder.PushEdgeColorRgba(hexGlow.Value);
                                                 }
 
                                                 resetHexForegrond = false;
                                             }
 
                                             if (resetForeground) {
-                                                payloads.Add(new UIForegroundPayload(0));
+                                                builder.PopColorType();
                                                 resetForeground = false;
                                             }
 
@@ -169,13 +188,13 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
                                         }
                                         case "</glow>": {
                                             if (resetHexGlow) {
-                                                payloads.Add(new GlowEndPayload().AsRaw());
+                                                builder.PopEdgeColor();
                                                 resetHexGlow = false;
                                                 hexGlow = null;
                                             }
 
                                             if (resetGlow) {
-                                                payloads.Add(new UIGlowPayload(0));
+                                                builder.PopEdgeColor();
                                                 resetGlow = false;
                                             }
 
@@ -186,17 +205,17 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
 
                                             if (TryGetColorFromHex(k, out var hexColor)) {
                                                 if (resetHexForegrond) {
-                                                    payloads.Add(new ColorEndPayload().AsRaw());
+                                                    builder.PopEdgeColor();
                                                 }
 
-                                                payloads.Add(new ColorPayload(hexColor).AsRaw());
+                                                builder.PushColorRgba(hexColor);
                                                 resetHexForegrond = true;
                                             } else {
                                                 if (ushort.TryParse(k, out var colorKey)) {
-                                                    payloads.Add(new UIForegroundPayload(colorKey));
+                                                    builder.PushColorType(colorKey);
                                                     resetForeground = colorKey != 0;
                                                 } else {
-                                                    payloads.Add(new TextPayload(cText));
+                                                    builder.Append(cText);
                                                 }
                                             }
 
@@ -206,25 +225,25 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
                                             var k = s.Substring(8, s.Length - 9);
                                             if (TryGetColorFromHex(k, out var hexColor)) {
                                                 if (hexGlow != null) {
-                                                    payloads.Add(new GlowEndPayload().AsRaw());
+                                                    builder.PopEdgeColor();
                                                 }
 
                                                 if (resetHexForegrond) {
-                                                    payloads.Add(new ColorEndPayload().AsRaw());
+                                                    builder.PopColor();
                                                 }
 
-                                                payloads.Add(new ColorPayload(hexColor).AsRaw());
+                                                builder.PushColorRgba(hexColor);
                                                 if (hexGlow != null) {
-                                                    payloads.Add(new GlowPayload(hexGlow.Value).AsRaw());
+                                                    builder.PushEdgeColorRgba(hexGlow.Value);
                                                 }
 
                                                 resetHexForegrond = true;
                                             } else {
                                                 if (ushort.TryParse(k, out var colorKey)) {
-                                                    payloads.Add(new UIForegroundPayload(colorKey));
+                                                    builder.PushColorType(colorKey);
                                                     resetForeground = colorKey != 0;
                                                 } else {
-                                                    payloads.Add(new TextPayload(cText));
+                                                    builder.Append(cText);
                                                 }
                                             }
 
@@ -234,18 +253,18 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
                                             var k = s.Substring(6, s.Length - 7);
                                             if (TryGetColorFromHex(k, out var hexColor)) {
                                                 if (resetHexGlow) {
-                                                    payloads.Add(new GlowEndPayload().AsRaw());
+                                                    builder.PopEdgeColor();
                                                 }
 
                                                 hexGlow = hexColor;
-                                                payloads.Add(new GlowPayload(hexColor).AsRaw());
+                                                builder.PushEdgeColorRgba(hexColor);
                                                 resetHexGlow = true;
                                             } else {
                                                 if (ushort.TryParse(k, out var colorKey)) {
-                                                    payloads.Add(new UIGlowPayload(colorKey));
+                                                    builder.PushEdgeColorType(colorKey);
                                                     resetGlow = colorKey != 0;
                                                 } else {
-                                                    payloads.Add(new TextPayload(cText));
+                                                    builder.Append(cText);
                                                 }
                                             }
 
@@ -254,16 +273,15 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
                                         case { } s when s.StartsWith("<icon:"): {
                                             var k = s.Substring(6, s.Length - 7);
                                             if (uint.TryParse(k, out var iconKey)) {
-                                                payloads.Add(new IconPayload((BitmapFontIcon)iconKey));
-                                                resetGlow = iconKey != 0;
+                                                builder.AppendIcon(iconKey);
                                             } else {
-                                                payloads.Add(new TextPayload(cText));
+                                                builder.Append(cText);
                                             }
 
                                             break;
                                         }
                                         default: {
-                                            payloads.Add(new TextPayload(cText));
+                                            builder.Append(cText);
                                             break;
                                         }
                                     }
@@ -279,23 +297,23 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
                         }
 
                         if (!string.IsNullOrWhiteSpace(cText)) {
-                            payloads.Add(new TextPayload(cText));
+                            builder.Append(cText);
                         }
 
-                        if (resetForeground) payloads.Add(new UIForegroundPayload(0));
-                        if (resetGlow) payloads.Add(new UIGlowPayload(0));
-                        if (resetItalic) payloads.Add(new EmphasisItalicPayload(false));
-                        if (resetHexForegrond) payloads.Add(new ColorEndPayload());
-                        if (resetHexGlow) payloads.Add(new GlowEndPayload());
+                        if (resetForeground) builder.PopColorType();
+                        if (resetGlow) builder.PopEdgeColorType();
+                        if (resetItalic) builder.AppendSetItalic(false);
+                        if (resetHexForegrond) builder.PopColor();
+                        if (resetHexGlow) builder.PopEdgeColor();
 
                         if (!customization.HideQuoteMarks)
-                            payloads.Add(new TextPayload("»"));
+                            builder.Append("»");
 
-                        var seString = new SeString(payloads);
-                        if (string.IsNullOrWhiteSpace(seString.TextValue) && !payloads.Any(p => p is IconPayload)) {
+                        var str = builder.ToReadOnlySeString().ToDalamudString();
+                        if (string.IsNullOrWhiteSpace(str.TextValue) && !str.Payloads.Any(p => p is IconPayload)) {
                             h.RemoveFreeCompanyTag();
                         } else {
-                            h.FreeCompanyTag = seString;
+                            h.FreeCompanyTag = str;
                         }
                     }
                 }
@@ -306,21 +324,28 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
                 }
             }
         }
+
+        if (saveConfig) RequestSaveConfig();
     }
 
     protected override void Disable() {
         Service.NamePlateGui.OnDataUpdate -= NamePlateGuiOnOnDataUpdate;
     }
 
-    private bool TryGetColorFromHex(string str, out Vector3 hexColor) {
-        hexColor = Vector3.One;
-        if (str.Length != 7) return false;
+    private bool TryGetColorFromHex(string str, out Vector4 hexColor) {
+        hexColor = Vector4.One;
+        if (str.Length is not (7 or 9)) return false;
         if (str[0] != '#') return false;
         if (str.Contains(' ')) return false;
 
         if (!byte.TryParse(str.AsSpan(1, 2), NumberStyles.HexNumber, NumberFormatInfo.InvariantInfo, out var r) || !byte.TryParse(str.AsSpan(3, 2), NumberStyles.HexNumber, NumberFormatInfo.InvariantInfo, out var g) || !byte.TryParse(str.AsSpan(5, 2), NumberStyles.HexNumber, NumberFormatInfo.InvariantInfo, out var b)) return false;
-
-        hexColor = new Vector3(r / 255f, g / 255f, b / 255f);
+        
+        byte a = 255;
+        if (str.Length == 9) {
+            if (!byte.TryParse(str.AsSpan(7, 2), NumberStyles.HexNumber, NumberFormatInfo.InvariantInfo, out a)) return false;
+        }
+        
+        hexColor = new Vector4(r / 255f, g / 255f, b / 255f, a / 255f);
         return true;
     }
 
@@ -381,6 +406,7 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
                 if (newFcName.Length > 0 && !Config.FcCustomizations.ContainsKey(newFcName)) {
                     Config.FcCustomizations.Add(newFcName, new TagCustomization());
                     newFcName = string.Empty;
+                    RequestSaveConfig();
                 }
             }
 
@@ -393,29 +419,76 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
             }
 
             ImGui.EndTable();
+        }
 
-            if (ImGui.CollapsingHeader("Supported Icons")) {
-                if (ImGui.BeginTable("iconViewer", 1 + (int)(ImGui.GetContentRegionAvail().X / 100))) {
-                    foreach (var i in GraphicFont.FontIcons.Icons) {
-                        if (i.IsValid()) {
-                            ImGui.TableNextColumn();
-                            i.Draw();
-                            if (ImGui.IsItemHovered()) {
-                                ImGui.BeginTooltip();
-                                ImGui.Text($"<icon:{i.ID}>");
-                                ImGui.Separator();
-                                i.DrawScaled(new Vector2(2));
-                                ImGui.EndTooltip();
-                            }
+        if (ImGui.BeginTable("personalCustomizations", 4)) {
+            
+            ImGui.TableSetupColumn("", ImGuiTableColumnFlags.WidthFixed, 28 * ImGui.GetIO().FontGlobalScale);
+            ImGui.TableSetupColumn(LocString("Replace"), ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoClip, 50 * ImGui.GetIO().FontGlobalScale);
+            ImGui.TableSetupColumn(LocString("Personal Tags"), ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoClip, 250f * ImGui.GetIO().FontGlobalScale);
+            ImGui.TableSetupColumn(LocString("Replacement"), ImGuiTableColumnFlags.NoClip);
+            ImGui.TableHeadersRow();
 
-                            if (ImGui.IsItemClicked()) {
-                                ImGui.SetClipboardText($"<icon:{i.ID}>");
-                            }
+            ulong? deleteContentId = null;
+            foreach (var (contentId, customization) in Config.PersonalCustomizations) {
+                var edit = TagCustomizationEditor(ref customization.DisplayName, customization, false, true);
+                if (edit == ChangeType.Delete) {
+                    deleteContentId = contentId;
+                }
+            }
+
+            if (deleteContentId != null) {
+                Config.PersonalCustomizations.Remove(deleteContentId.Value);
+            }
+
+            ImGui.TableNextColumn();
+            
+            ImGui.TableNextColumn();
+            ImGui.Text("Add PC:");
+            ImGui.TableNextColumn();
+
+            void ShowAddButton(string label, IGameObject? gameObject) {
+                var battleChara = (BattleChara*)(gameObject?.Address ?? 0);
+                var disable = gameObject is not IPlayerCharacter || battleChara == null || Config.PersonalCustomizations.ContainsKey(battleChara->ContentId);
+                
+                using (ImRaii.Disabled(disable)) {
+                    if (ImGui.Button(label) && battleChara != null && gameObject is IPlayerCharacter pc) {
+                        Config.PersonalCustomizations.TryAdd(battleChara->ContentId, new TagCustomization()
+                        {
+                            Enabled = true,
+                            DisplayName = $"{pc.Name.TextValue} @ {pc.HomeWorld.Value.Name.ExtractText()}",
+                            DisplayNameUpdated = true
+                        });
+                        RequestSaveConfig();
+                    }
+                }
+            }
+
+            ShowAddButton("Target", Service.Targets.SoftTarget ?? Service.Targets.Target);
+            ImGui.EndTable();
+        }
+
+        if (ImGui.CollapsingHeader("Supported Icons")) {
+            if (ImGui.BeginTable("iconViewer", 1 + (int)(ImGui.GetContentRegionAvail().X / 100))) {
+                foreach (var i in GraphicFont.FontIcons.Icons) {
+                    if (i.IsValid()) {
+                        ImGui.TableNextColumn();
+                        i.Draw();
+                        if (ImGui.IsItemHovered()) {
+                            ImGui.BeginTooltip();
+                            ImGui.Text($"<icon:{i.ID}>");
+                            ImGui.Separator();
+                            i.DrawScaled(new Vector2(2));
+                            ImGui.EndTooltip();
+                        }
+
+                        if (ImGui.IsItemClicked()) {
+                            ImGui.SetClipboardText($"<icon:{i.ID}>");
                         }
                     }
-
-                    ImGui.EndTable();
                 }
+
+                ImGui.EndTable();
             }
         }
     }
@@ -426,12 +499,12 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
         Rename,
     }
 
-    private ChangeType TagCustomizationEditor(ref string name, TagCustomization tc, bool canChange = true) {
+    private ChangeType TagCustomizationEditor(ref string name, TagCustomization tc, bool canChange = true, bool isPersonal = false) {
         ImGui.TableNextColumn();
 
         var changeType = ChangeType.None;
 
-        if (canChange) {
+        if (canChange || isPersonal) {
             if (ImGui.Button($"X##fcList#{GetType().Name}_delete_{name}", new Vector2(-1, 24 * ImGui.GetIO().FontGlobalScale))) {
                 changeType = ChangeType.Delete;
             }
@@ -457,6 +530,10 @@ public unsafe class CustomFreeCompanyTags : UiAdjustments.SubTweak {
         } else {
             var s = string.Empty;
             ImGui.InputTextWithHint($"##fcList#{GetType().Name}_name_{name}", name, ref s, 5, ImGuiInputTextFlags.ReadOnly);
+        }
+
+        if (ImGui.IsItemHovered()) {
+            ImGui.SetTooltip($"{name}");
         }
 
         ImGui.TableNextColumn();

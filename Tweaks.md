@@ -885,6 +885,11 @@
   Moves the text on target castbars to make it easier to read
 
 
+- **Scenario Progression Display**
+
+  Shows the percentage of completion of the main scenario.
+
+
 - **Shield on HP Bar**
 
   Show approximate shield on the HP Bar.

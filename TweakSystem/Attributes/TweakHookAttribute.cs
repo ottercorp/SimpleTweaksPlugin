@@ -12,6 +12,7 @@ public class TweakHookAttribute : Attribute {
     public string DetourName { get; init; } = string.Empty;
 
     public bool VirtualFunction { get; init; } = false;
+    public bool AllowFailure { get; init; } = false;
     
     public TweakHookAttribute() { }
 

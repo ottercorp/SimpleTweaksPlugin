@@ -75,10 +75,10 @@ public abstract class SubTweakManager<T> : SubTweakManager where T : BaseTweak {
         SubTweaks = tweakList.OrderBy(t => t.Name).ToList();
     }
 
-    public override void RequestSaveConfig() {
-        base.RequestSaveConfig();
+    public override void RequestSaveConfig(bool forceImmediate = false) {
+        base.RequestSaveConfig(forceImmediate);
         foreach (var t in SubTweaks) {
-            t.RequestSaveConfig();
+            t.RequestSaveConfig(forceImmediate);
         }
     }
 

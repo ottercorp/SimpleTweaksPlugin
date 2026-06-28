@@ -96,9 +96,4 @@ public static unsafe partial class UiHelper {
         newNode->NextSiblingNode = null;
         return newNode;
     }
-
-    public static void Close(AtkUnitBase* atkUnitBase, bool unknownBool = false) {
-        if (!Ready) return;
-        _atkUnitBaseClose(atkUnitBase, (byte) (unknownBool ? 1 : 0));
-    }
 }

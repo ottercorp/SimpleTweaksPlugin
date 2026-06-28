@@ -3,6 +3,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Dalamud.Game.Text;
+using Dalamud.Utility;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -112,10 +113,10 @@ public unsafe class MarketEnhancements : UiAdjustments.SubTweak {
 
                 if (singlePriceNode->NodeText.StringPtr.Value[0] == 0x20 || totalTextNode->NodeText.StringPtr.Value[0] == 0x20) continue;
 
-                var priceString = Common.ReadSeString(singlePriceNode->NodeText).TextValue.Replace($"{(char)SeIconChar.Gil}", "").Replace($",", "").Replace(" ", "").Replace($".", "");
+                var priceString = singlePriceNode->NodeText.AsReadOnlySeStringSpan().ExtractText().Replace($"{(char)SeIconChar.Gil}", "").Replace($",", "").Replace(" ", "").Replace($".", "");
 
                 if (!ulong.TryParse(priceString, out var priceValue)) continue;
-                if (!ushort.TryParse(Common.ReadSeString(qtyTextNode->NodeText).TextValue.Replace(",", "").Replace(".", ""), out var qtyValue)) continue;
+                if (!ushort.TryParse(qtyTextNode->NodeText.AsReadOnlySeStringSpan().ExtractText().Replace(",", "").Replace(".", ""), out var qtyValue)) continue;
                 if (priceValue <= 0 || qtyValue <= 0) continue;
 
                 var total = priceValue * qtyValue;

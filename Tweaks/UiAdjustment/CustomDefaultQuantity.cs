@@ -2,6 +2,7 @@ using System;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Utility;
 using Lumina.Excel.Sheets;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
@@ -64,7 +65,7 @@ public unsafe class CustomDefaultQuantity : Tweak {
 
         var textValue = atkUnitBase->AtkValues + 6;
         if (textValue->Type != AtkValueType.String) return;
-        var text = Common.ReadSeString(textValue->String)?.TextValue;
+        var text = textValue->String.AsReadOnlySeStringSpan().ExtractText();
         if (string.IsNullOrEmpty(text)) return;
 
         var mode = text.Equals(textWithdraw) ? Config.Withdraw : text.Equals(textDeposit) ? Config.Deposit : null;

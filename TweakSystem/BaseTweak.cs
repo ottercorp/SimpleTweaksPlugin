@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
@@ -15,6 +16,7 @@ using Dalamud.Plugin;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using InteropGenerator.Runtime;
 using Newtonsoft.Json;
 using SimpleTweaksPlugin.Events;
@@ -25,7 +27,7 @@ namespace SimpleTweaksPlugin.TweakSystem;
 
 public abstract class BaseTweak {
     protected BaseTweak() { }
-    internal BaseTweak(string name) => tweakNameAttribute = new TweakNameAttribute(name);
+    internal BaseTweak(string name) => TweakNameAttribute = new TweakNameAttribute(name);
 
     protected SimpleTweaksPlugin Plugin;
     protected IDalamudPluginInterface PluginInterface;
@@ -247,14 +249,49 @@ public abstract class BaseTweak {
         }
     }
 
-    public virtual void RequestSaveConfig() {
+
+    private bool savingConfig = false;
+    private CancellationTokenSource? saveDebounceCts;
+    private PropertyInfo? configProperty;
+    
+    public virtual void RequestSaveConfig(bool forceImmediate = false) {
         try {
 #if DEBUG
-            SimpleLog.Log($"Request Save Config: {Name}");
+            SimpleLog.Verbose($"Request Save Config: {Name}");
 #endif
-            var configObj = this.GetType().GetProperties().FirstOrDefault(p => p.PropertyType.IsSubclassOf(typeof(TweakConfig)))?.GetValue(this);
-            if (configObj == null) return;
-            SaveConfig((TweakConfig)configObj);
+            
+            void SaveAction() {
+                configProperty ??= GetType().GetProperties(
+                    BindingFlags.Instance |
+                    BindingFlags.Public |
+                    BindingFlags.NonPublic
+                ).FirstOrDefault(p => p.PropertyType.IsSubclassOf(typeof(TweakConfig)));
+                
+                var configObj = configProperty?.GetValue(this);
+                if (configObj == null) return;
+                SaveConfig((TweakConfig)configObj);
+            }
+
+            saveDebounceCts?.Cancel();
+            saveDebounceCts = new CancellationTokenSource();
+            
+            if (forceImmediate) {
+                SaveAction();
+                return;
+            }
+            
+            var wasImmediate = false;
+            
+            if (!savingConfig) {
+                savingConfig = true;
+                wasImmediate = true;
+                SaveAction();
+            }
+            
+            Service.Framework.RunOnTick(() => {
+                if (!wasImmediate) SaveAction();
+                savingConfig = false;
+            }, delay: TimeSpan.FromSeconds(2), cancellationToken: saveDebounceCts.Token);
         } catch (Exception ex) {
             SimpleLog.Error($"Failed to save config for tweak: {this.Name}");
             SimpleLog.Error(ex);
@@ -625,6 +662,15 @@ public abstract class BaseTweak {
     }
     
     internal void InternalEnable() {
+#if TEST
+        void Error(Exception ex, bool allowContinue = false, string message = "") => throw ex;
+#elif DEBUG
+        void Error(Exception ex, bool allowContinue = false, string message = "", [System.Runtime.CompilerServices.CallerFilePath] string callerFilePath = "", [System.Runtime.CompilerServices.CallerLineNumber] int callerLineNumber = 0, [System.Runtime.CompilerServices.CallerMemberName] string callerMemberName = "") => Plugin.Error(this, ex, allowContinue, message, callerFilePath, callerLineNumber, callerMemberName);
+#else
+        void Error(Exception ex, bool allowContinue = false, string message = "") => Plugin.Error(this, ex, allowContinue, message);
+#endif
+        
+        
         Unloading = false;
         if (!signatureHelperInitialized) {
             SignatureHelper.Initialise(this);
@@ -641,64 +687,42 @@ public abstract class BaseTweak {
 
         foreach (var (field, attribute) in this.GetFieldsWithAttribute<TweakHookAttribute>()) {
             if (attribute == null) continue;
-            if (attribute.AddressType != null && field.GetValue(this) is null) {
+            if (field.GetValue(this) is null) {
                 SimpleLog.Verbose($"Setup Tweak Hook: [{Name}] {field.Name} for {attribute.AddressType.Name}.{attribute.AddressName}");
 
                 if (!(field.FieldType.IsGenericType && field.FieldType.GetGenericTypeDefinition() == typeof(HookWrapper<>))) {
-#if TEST
-                    throw new Exception($"Tweak Hook for named address not supported on {field.FieldType}");
-#else
-                    SimpleLog.Error($"Tweak Hook for named address not supported on {field.FieldType}");
-                    continue;
-#endif
+                    Error(new Exception($"Tweak Hook for named address not supported on {field.FieldType}"));
                 }
                 
                 nint hookAddress = 0;
                 if (attribute.VirtualFunction) {
-#if TEST
-                    hookAddress = GetVirtualFunctionAddressFromAttribute(attribute);
-#else
                     try {
                         hookAddress = GetVirtualFunctionAddressFromAttribute(attribute);
-                        
                         SimpleLog.Verbose($"    {attribute.AddressType.Name}.VirtualTable.{attribute.AddressName} = 0x{hookAddress:X}");
                     } catch (Exception ex) {
-                        SimpleLog.Error(ex.Message);
+                        Error(ex, attribute.AllowFailure);
+                        continue;
                     }
-#endif
                 } else {
-                    
                     var addressesType = attribute.AddressType.GetNestedType("Addresses");
                     if (addressesType == null) {
-#if TEST
-                    throw new Exception($"Failed to find {attribute.AddressType}.Addresses");
-#else
-                        SimpleLog.Error($"Failed to find {attribute.AddressType}.Addresses");
+                        Error(new Exception($"Failed to find {attribute.AddressType}.Addresses"), attribute.AllowFailure);
                         continue;
-#endif
                     }
                     
 
                     var addressField = addressesType.GetField(attribute.AddressName);
 
                     if (addressField == null) {
-#if TEST
-                    throw new Exception($"Failed to find {attribute.AddressType.Name}.Addresses.{attribute.AddressName}");
-#else
-                        SimpleLog.Error($"Failed to find {attribute.AddressType.Name}.Addresses.{attribute.AddressName}");
+                        Error(new Exception($"Failed to find {attribute.AddressType}.Addresses"), attribute.AllowFailure);
                         continue;
-#endif
                     }
 
                     var addressObj = addressField.GetValue(null);
 
                     if (addressObj is not Address address) {
-#if TEST
-                    throw new Exception($"{attribute.AddressType.Name}.Addresses.{attribute.AddressName} is not an Address?");
-#else
-                        SimpleLog.Error($"{attribute.AddressType.Name}.Addresses.{attribute.AddressName} is not an Address?");
+                        Error(new Exception($"{attribute.AddressType.Name}.Addresses.{attribute.AddressName} is not an Address?"), attribute.AllowFailure);
                         continue;
-#endif
                     }
 
                     SimpleLog.Verbose($"    {attribute.AddressType.Name}.Addresses.{attribute.AddressName} = 0x{hookAddress:X}");
@@ -706,29 +730,33 @@ public abstract class BaseTweak {
                 }
 
                 if (hookAddress == 0) {
+                    Error(new Exception($"Failed to find address for '{attribute.AddressType.Name}.{attribute.AddressName}'"), attribute.AllowFailure);
                     continue;
                 }
 
                 var hookDelegateType = field.FieldType.GenericTypeArguments[0];
-                const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+                const BindingFlags flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
                 Delegate? detour;
 
-                if (attribute.DetourName == null) {
-                    var matches = GetType().GetMethods(Flags).Select(method => method.IsStatic ? Delegate.CreateDelegate(hookDelegateType, method, false) : Delegate.CreateDelegate(hookDelegateType, this, method, false)).Where(del => del != null).ToArray();
+                if (string.IsNullOrEmpty(attribute.DetourName)) {
+                    var matches = GetType().GetMethods(flags).Select(method => method.IsStatic ? Delegate.CreateDelegate(hookDelegateType, method, false) : Delegate.CreateDelegate(hookDelegateType, this, method, false)).Where(del => del != null).ToArray();
                     if (matches.Length != 1) {
+                        Error(new Exception($"Failed to find suitable detour for '{attribute.AddressType.Name}.{attribute.AddressName}'"), attribute.AllowFailure);
                         continue;
                     }
 
                     detour = matches[0]!;
                 } else {
-                    var method = this.GetType().GetMethod(attribute.DetourName, Flags);
+                    var method = this.GetType().GetMethod(attribute.DetourName, flags);
                     if (method == null) {
+                        Error(new Exception($"Failed to find '{GetType().Name}.{attribute.DetourName}' for '{field.Name}'"), attribute.AllowFailure);
                         continue;
                     }
 
                     var del = method.IsStatic ? Delegate.CreateDelegate(hookDelegateType, method, false) : Delegate.CreateDelegate(hookDelegateType, this, method, false);
                     if (del == null) {
+                        Error(new Exception($"Failed to create detour to '{GetType().Name}.{attribute.DetourName}' for '{field.Name}'"), attribute.AllowFailure);
                         continue;
                     }
 
@@ -739,26 +767,16 @@ public abstract class BaseTweak {
 
                 var createMethod = hookType.GetMethod("FromAddress", BindingFlags.Static | BindingFlags.NonPublic);
                 if (createMethod == null) {
-                    
-#if TEST
-                    throw new Exception($"{GetType().Name}: could not find Hook<{hookDelegateType.Name}>.FromAddress");
-#else
-                    SimpleTweaksPlugin.Plugin.Error(new Exception($"{GetType().Name}: could not find Hook<{hookDelegateType.Name}>.FromAddress"));
+                    Error(new Exception($"{GetType().Name}: could not find Hook<{hookDelegateType.Name}>.FromAddress"), attribute.AllowFailure);
                     continue;
-#endif
                 }
 
                 var hook = createMethod.Invoke(null, [hookAddress, detour, false, GetType().Assembly]);
 
                 var wrapperCtor = field.FieldType.GetConstructor([hookType]);
                 if (wrapperCtor == null) {
-                    
-#if TEST
-                    throw new Exception($"{GetType().Name}: could not find could not find HookWrapper<{hookDelegateType.Name}> constructor");
-#else
-                    SimpleTweaksPlugin.Plugin.Error(new Exception($"{GetType().Name}: could not find could not find HookWrapper<{hookDelegateType.Name}> constructor"));
+                    Error(new Exception($"{GetType().Name}: could not find could not find HookWrapper<{hookDelegateType.Name}> constructor"));
                     continue;
-#endif
                 }
 
                 var wrapper = wrapperCtor.Invoke([hook]);
@@ -799,7 +817,7 @@ public abstract class BaseTweak {
             }
            
             if (handler == null) {
-                Plugin.Error(this, new Exception($"Invalid LinkHandler '{field.Name}'."));
+                Error(new Exception($"Invalid LinkHandler '{field.Name}'."));
             } else {
                 field.SetValue(this, handler);
             }
@@ -868,82 +886,19 @@ public abstract class BaseTweak {
 
     #region Attribute Handles
 
-    private TweakNameAttribute tweakNameAttribute;
-
-    protected TweakNameAttribute TweakNameAttribute {
-        get {
-            if (tweakNameAttribute != null) return tweakNameAttribute;
-            tweakNameAttribute = GetType().GetCustomAttribute<TweakNameAttribute>() ?? new TweakNameAttribute($"{GetType().Name}");
-            return tweakNameAttribute;
-        }
-    }
-    
-    private TweakKeyAttribute tweakKeyAttribute;
-
-    protected TweakKeyAttribute TweakKeyAttribute {
-        get {
-            if (tweakKeyAttribute != null) return tweakKeyAttribute;
-            tweakKeyAttribute = GetType().GetCustomAttribute<TweakKeyAttribute>() ?? new TweakKeyAttribute($"{GetType().Name}");
-            return tweakKeyAttribute;
-        }
-    }
-
-    private TweakDescriptionAttribute tweakDescriptionAttribute;
-
-    protected TweakDescriptionAttribute TweakDescriptionAttribute {
-        get {
-            if (tweakDescriptionAttribute != null) return tweakDescriptionAttribute;
-            tweakDescriptionAttribute = GetType().GetCustomAttribute<TweakDescriptionAttribute>() ?? TweakDescriptionAttribute.Default;
-            return tweakDescriptionAttribute;
-        }
-    }
-
-    private TweakAuthorAttribute tweakAuthorAttribute;
-
-    protected TweakAuthorAttribute TweakAuthorAttribute {
-        get {
-            if (tweakAuthorAttribute != null) return tweakAuthorAttribute;
-            tweakAuthorAttribute = GetType().GetCustomAttribute<TweakAuthorAttribute>() ?? TweakAuthorAttribute.Default;
-            return tweakAuthorAttribute;
-        }
-    }
-
-    private TweakVersionAttribute tweakVersionAttribute;
-
-    protected TweakVersionAttribute TweakVersionAttribute {
-        get {
-            if (tweakVersionAttribute != null) return tweakVersionAttribute;
-            tweakVersionAttribute = GetType().GetCustomAttribute<TweakVersionAttribute>() ?? new TweakVersionAttribute(1);
-            return tweakVersionAttribute;
-        }
-    }
-
-    private TweakAutoConfigAttribute tweakAutoConfigAttribute;
-
-    protected TweakAutoConfigAttribute TweakAutoConfigAttribute {
-        get {
-            if (tweakAutoConfigAttribute != null) return tweakAutoConfigAttribute;
-            tweakAutoConfigAttribute = GetType().GetCustomAttribute<TweakAutoConfigAttribute>() ?? NoAutoConfig.Singleton;
-            return tweakAutoConfigAttribute;
-        }
-    }
-
-    private TweakTagsAttribute tweakTagsAttribute;
-
-    protected TweakTagsAttribute TweakTagsAttribute {
-        get {
-            if (tweakDescriptionAttribute != null) return tweakTagsAttribute;
-            tweakTagsAttribute = GetType().GetCustomAttribute<TweakTagsAttribute>() ?? new TweakTagsAttribute();
-            return tweakTagsAttribute;
-        }
-    }
+    protected TweakNameAttribute TweakNameAttribute => field ??= GetType().GetCustomAttribute<TweakNameAttribute>() ?? new TweakNameAttribute($"{GetType().Name}");
+    protected TweakKeyAttribute TweakKeyAttribute => field ??= GetType().GetCustomAttribute<TweakKeyAttribute>() ?? new TweakKeyAttribute($"{GetType().Name}");
+    protected TweakDescriptionAttribute TweakDescriptionAttribute => field ??= GetType().GetCustomAttribute<TweakDescriptionAttribute>() ?? TweakDescriptionAttribute.Default;
+    protected TweakAuthorAttribute TweakAuthorAttribute => field ??= GetType().GetCustomAttribute<TweakAuthorAttribute>() ?? TweakAuthorAttribute.Default;
+    protected TweakVersionAttribute TweakVersionAttribute => field ??= GetType().GetCustomAttribute<TweakVersionAttribute>() ?? new TweakVersionAttribute(1);
+    protected TweakAutoConfigAttribute TweakAutoConfigAttribute => field ??= GetType().GetCustomAttribute<TweakAutoConfigAttribute>() ?? NoAutoConfig.Singleton;
+    protected TweakTagsAttribute TweakTagsAttribute => field ??= GetType().GetCustomAttribute<TweakTagsAttribute>() ?? new TweakTagsAttribute();
 
     public HashSet<string> Categories {
         get {
             if (field != null) return field;
-
+            field = [];
             void HandleAttributes(IEnumerable<TweakCategoryAttribute> attributes) {
-                field = new HashSet<string>();
                 foreach (var attr in attributes) {
                     foreach (var v in attr.Categories) {
                         field.Add(v);
@@ -956,7 +911,7 @@ public abstract class BaseTweak {
                 HandleAttributes(i.GetCustomAttributes<TweakCategoryAttribute>(true));
             }
 
-            if (Experimental) field?.Add($"{TweakCategory.Experimental}");
+            if (Experimental) field.Add($"{TweakCategory.Experimental}");
 
             return field ?? [];
         }

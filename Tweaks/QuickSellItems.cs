@@ -112,7 +112,7 @@ public unsafe class QuickSellItems : Tweak {
                     if (contextItemName != sellText) continue;
                     Common.GenerateCallback(addon, 0, i, 0U, 0, 0);
                     agent->AgentInterface.Hide();
-                    UiHelper.Close(addon);
+                    addon->Close(false);
                     return true;
                 }
 

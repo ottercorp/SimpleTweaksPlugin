@@ -88,6 +88,8 @@ public class Changelog : Window {
         Add("1.10.5.0", "Fixed tweak preview images not loading correctly");
         Add("1.10.11.0", "Fixed translation loading.");
         Add("1.10.11.5", "Disabled error messages in chat when using a tweak command in a macro after using '/macroerror off'.");
+        Add("1.15.0.5", "Fixed issues with some tweaks not saving their settings correctly.");
+        Add("1.15.0.5", "Disabled metrics collection.");
     }
 
 

@@ -145,7 +145,7 @@ public unsafe class AccurateVentureTimes : UiAdjustments.SubTweak {
 
     private void CloseRetainerList() {
         var rl = Common.GetUnitBase("RetainerList");
-        if (rl != null) UiHelper.Close(rl, true);
+        if (rl != null) rl->Close(true);
     }
 
     protected override void Disable() {

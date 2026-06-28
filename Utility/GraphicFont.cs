@@ -14,14 +14,15 @@ public class GraphicFont {
     public GraphicFontIcon[] Icons = [];
 
     private static uint _padIconMode;
-    private static readonly string[] TexturePath = ["common/font/fonticon_xinput.tex", "common/font/fonticon_ps3.tex", "common/font/fonticon_ps4.tex", "common/font/fonticon_ps5.tex", "common/font/fonticon_lys.tex"];
+    private static readonly string[] TexturePath = ["common/font/fonticon_xinput.tex", "common/font/fonticon_ps3.tex", "common/font/fonticon_ps4.tex", "common/font/fonticon_ps5.tex", "common/font/fonticon_lys.tex", "common/font/fonticon_obe.tex"];
 
     public enum IconStyle {
         Xbox360,
         PS3,
         PS4,
         PS5,
-        XboxSeries
+        XboxSeries,
+        Switch,
     }
 
     static GraphicFont() {

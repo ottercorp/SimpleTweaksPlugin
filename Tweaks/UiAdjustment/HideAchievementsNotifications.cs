@@ -1,10 +1,9 @@
-﻿using System;
+using Dalamud.Bindings.ImGui;
+using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.Config;
 using Dalamud.Interface.Colors;
-using Dalamud.Bindings.ImGui;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
-using SimpleTweaksPlugin.Utility;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 
@@ -12,6 +11,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 [TweakDescription("Completely hides the login/zone-in notification for achievements nearing completion.")]
 [TweakAuthor("Anna")]
 [TweakAutoConfig]
+[Changelog("1.15.0.5", "Fixed notification window appearing for a couple frames before being hidden.", Author = "Haselnussbomber")]
 public class HideAchievementsNotifications : UiAdjustments.SubTweak {
     public class Configs : TweakConfig {
         public bool HideLogIn = true;
@@ -41,19 +41,13 @@ public class HideAchievementsNotifications : UiAdjustments.SubTweak {
         hasChanged |= ImGui.Checkbox(LocString("HideZoneIn", "Hide the zone-in notification."), ref Config.HideZoneIn);
     }
 
-    [FrameworkUpdate(NthTick = 10)]
-    private void HideNotifications() {
-        if (Config.HideLogIn) HideNotification("_NotificationAchieveLogIn");
-        if (Config.HideZoneIn) HideNotification("_NotificationAchieveZoneIn");
-    }
-
-    private unsafe void HideNotification(string name) {
-        try {
-            var atkUnitBase = Common.GetUnitBase(name);
-            if (atkUnitBase == null || atkUnitBase->IsVisible == false) return;
-            atkUnitBase->Hide(false, false, 1);
-        } catch (Exception) {
-            // ignore
+    [AddonPreShow("_NotificationAchieveLogIn", "_NotificationAchieveZoneIn")]
+    private void HideNotification(AddonArgs args) {
+        switch (args.AddonName) {
+            case "_NotificationAchieveLogIn" when Config.HideLogIn:
+            case "_NotificationAchieveZoneIn" when Config.HideZoneIn:
+                args.PreventOriginal();
+                break;
         }
     }
 }

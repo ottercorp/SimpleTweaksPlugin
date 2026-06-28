@@ -21,7 +21,7 @@ public unsafe class OpenEstateAccess : CommandTweak {
     private readonly OpenEstateAccessSettingsDelegate openEstateAccessSettings = null!;
 
     [TweakHook(typeof(AtkUnitBase), nameof(AtkUnitBase.FireCallback), nameof(FireCallbackDetour), AutoEnable = false)]
-    private readonly HookWrapper<AtkUnitBase.Delegates.FireCallback>? fireCallbackHook;
+    private readonly HookWrapper<AtkUnitBase.Delegates.FireCallback> fireCallbackHook;
 
     [StructLayout(LayoutKind.Explicit, Size = 0xDE90)]
     [Agent(AgentId.Housing)]
@@ -53,20 +53,17 @@ public unsafe class OpenEstateAccess : CommandTweak {
         }
     }
 
-
-    protected void DrawConfig() {
-        
-    }
-    
-    public void FireCallbackDetour(AtkUnitBase* atkUnitBase, uint valueCount, AtkValue* values, bool close) {
-        fireCallbackHook?.Original(atkUnitBase, valueCount, values, close);
+    public bool FireCallbackDetour(AtkUnitBase* atkUnitBase, uint valueCount, AtkValue* values, bool close = false) {
+        var retVal = fireCallbackHook.Original(atkUnitBase, valueCount, values, close);
         try {
-            if (atkUnitBase->NameString != "HousingConfig") return;
-            fireCallbackHook?.Disable();
+            if (atkUnitBase->NameString != "HousingConfig") return retVal;
+            fireCallbackHook.Disable();
             AgentModule.Instance()->GetAgentByInternalId(AgentId.Housing)->Hide();
         } catch {
             fireCallbackHook?.Disable();
         }
+
+        return retVal;
     }
 
     protected override void OnCommand(string args) {
@@ -129,7 +126,7 @@ public unsafe class OpenEstateAccess : CommandTweak {
                 return;
         }
 
-        fireCallbackHook?.Enable();
+        fireCallbackHook.Enable();
         openEstateAccessSettings(agent);
     }
 

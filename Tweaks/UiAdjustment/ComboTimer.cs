@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -15,9 +15,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment;
 [TweakName("Combo Timer")]
 [TweakDescription("Shows a countdown for combo actions.")]
 [TweakAutoConfig]
+[Changelog("1.15.0.5", "Fixed Dragoon's [Wheeling Thrust -> Drakesbane] combo not being correctly timed.")]
 public unsafe class ComboTimer : UiAdjustments.SubTweak {
     private readonly Dictionary<uint, byte> comboActions = new() {
-        [7526] = 80,
+        [3556] = 64, // Dragoon, Wheeling Thrust -> Drakesbane
+        [7526] = 80, // Red Mage, Verholy -> Scorch
     };
     private bool usingScreenText;
 

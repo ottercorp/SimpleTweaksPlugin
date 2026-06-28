@@ -1,4 +1,5 @@
-﻿using FFXIVClientStructs.FFXIV.Component.GUI;
+﻿using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
@@ -14,7 +15,7 @@ public unsafe class HideExperienceBar : UiAdjustments.SubTweak {
         if (addonExp == null) return;
         var node = addonExp->GetTextNodeById(4);
         if (node == null) return;
-        SetExperienceBarVisible(!node->NodeText.GetSeString().TextValue.Contains("-/-"));
+        SetExperienceBarVisible(!node->NodeText.AsReadOnlySeString().ExtractText().Contains("-/-"));
     }
 
     private static void SetExperienceBarVisible(bool visible) {

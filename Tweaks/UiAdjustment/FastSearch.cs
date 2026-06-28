@@ -70,7 +70,7 @@ public unsafe class FastSearch : UiAdjustments.SubTweak {
         }
     }
 
-    private void RecipeNoteIterateDetour() { }
+    private void RecipeNoteIterateDetour(RecipeSearchContext* recipeSearchContext) { }
 
     private void AgentItemSearchUpdateDetour(AgentItemSearch* agentItemSearch) {
         if (agentItemSearch->IsPartialSearching && !agentItemSearch->IsItemPushPending) {

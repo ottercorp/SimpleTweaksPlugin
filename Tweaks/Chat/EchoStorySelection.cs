@@ -12,9 +12,9 @@ using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Utility;
 using SimpleTweaksPlugin.Events;
 using SimpleTweaksPlugin.TweakSystem;
-using SimpleTweaksPlugin.Utility;
 
 namespace SimpleTweaksPlugin.Tweaks.Chat;
 
@@ -51,7 +51,7 @@ public unsafe class EchoStorySelection : ChatTweaks.SubTweak {
 
                     ImGui.SameLine();
 
-                    if (ImGui.InputText($"##hiddenMessage_{i}", ref ignoredMessage, 512)) {
+                    if (ImGui.InputText($"##hiddenMessage_{i}", ref ignoredMessage)) {
                         TweakConfig.IgnoredMessages[i] = ignoredMessage;
                     }
                 }
@@ -65,7 +65,7 @@ public unsafe class EchoStorySelection : ChatTweaks.SubTweak {
             }
 
             ImGui.SameLine();
-            ImGui.InputText($"##newIgnoredMessage", ref newIgnoredMessageString, 512);
+            ImGui.InputText($"##newIgnoredMessage", ref newIgnoredMessageString);
         }
     }
 
@@ -94,13 +94,13 @@ public unsafe class EchoStorySelection : ChatTweaks.SubTweak {
         var buttonTextNode = listItemRenderer->AtkComponentButton.ButtonTextNode;
         if (buttonTextNode is null) return;
 
-        var buttonText = Common.ReadSeString(buttonTextNode->NodeText);
+        var buttonText = buttonTextNode->NodeText.AsReadOnlySeStringSpan().ExtractText();
 
         if (TweakConfig.IgnoredMessages.Any(i => i.Trim()
-                .Equals(buttonText.TextValue.Trim(), StringComparison.InvariantCultureIgnoreCase)))
+                .Equals(buttonText.Trim(), StringComparison.InvariantCultureIgnoreCase)))
             return;
 
-        var message = new SeStringBuilder().AddText(buttonText.TextValue)
+        var message = new SeStringBuilder().AddText(buttonText)
             .Build();
 
         var playerName = PlayerState.Instance()->CharacterNameString;

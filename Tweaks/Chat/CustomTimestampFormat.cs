@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Numerics;
-using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface.Utility;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using Dalamud.Bindings.ImGui;
-using SimpleTweaksPlugin.ExtraPayloads;
+using Dalamud.Interface.Colors;
+using Lumina.Text;
 using SimpleTweaksPlugin.TweakSystem;
 using SimpleTweaksPlugin.Utility;
 
@@ -29,7 +29,7 @@ public unsafe class CustomTimestampFormat : ChatTweaks.SubTweak {
     [TweakHook, Signature("E9 ?? ?? ?? ?? 7D 20", DetourName = nameof(FormatTextDetour))]
     private HookWrapper<ApplyTextFormatDelegate>? applyTextFormatHook;
 
-    public Configs Config { get; private set; }
+    [TweakConfig] public Configs Config { get; private set; }
 
     protected void DrawConfig(ref bool hasChanged) {
         hasChanged |= ImGui.Checkbox("Use Server Time", ref Config.UseServerTime);
@@ -42,8 +42,12 @@ public unsafe class CustomTimestampFormat : ChatTweaks.SubTweak {
         ImGui.SetNextItemWidth(200 * ImGuiHelpers.GlobalScale);
         hasChanged |= ImGui.InputText("Format##timestampFormatEditInput", ref Config.Format, 80);
         ImGui.SameLine();
-        ImGui.TextDisabled($"   {(Config.UseServerTime ? DateTime.UtcNow : DateTime.Now).ToString(Config.Format)}");
-
+        try {
+            ImGui.TextDisabled($"   {(Config.UseServerTime ? DateTime.UtcNow : DateTime.Now).ToString(Config.Format)}");
+        } catch (Exception ex) {
+            ImGui.TextColored(ImGuiColors.DalamudRed, ex.Message);
+        }
+       
         ImGui.Text("Presets:");
         if (ImGui.BeginTable("presetList", (int)(ImGui.GetContentRegionAvail().X / 150) + 1)) {
             void PresetButton(string format) {
@@ -69,30 +73,20 @@ public unsafe class CustomTimestampFormat : ChatTweaks.SubTweak {
     }
 
     private byte* FormatTextDetour(RaptureTextModule* raptureTextModule, uint addonTextId, int value) {
-        if (addonTextId is 7840 or 7841) {
-            var time = DateTimeOffset.FromUnixTimeSeconds(value);
-
-            if (str != null) {
-                if (Config.DoColor) {
-                    var seStr = new SeString();
-                    seStr.Append(new ColorPayload(Config.Color));
-                    seStr.Append((Config.UseServerTime ? time.DateTime : time.LocalDateTime).ToString(Config.Format));
-                    seStr.Append(new ColorEndPayload());
-                    var bytes = seStr.EncodeWithNullTerminator();
-                    if (bytes.Length == 0 || bytes[0] == 0) {
-                        str->SetString(string.Empty);
-                    } else {
-                        str->SetString(bytes);
-                    }
-                } else {
-                    var text = (Config.UseServerTime ? time.DateTime : time.LocalDateTime).ToString(Config.Format);
-                    str->SetString(string.IsNullOrEmpty(text) ? string.Empty : text);
-                }
-
-                return str->StringPtr;
-            }
+        if (addonTextId is not (7840 or 7841) || str == null) 
+            return applyTextFormatHook!.Original(raptureTextModule, addonTextId, value);
+        
+        var time = DateTimeOffset.FromUnixTimeSeconds(value);
+        var builder = new SeStringBuilder();
+        if (Config.DoColor) builder.PushColorRgba(Config.Color.AsVector4());
+        try {
+            builder.Append((Config.UseServerTime ? time.DateTime : time.LocalDateTime).ToString(Config.Format));
+        } catch {
+            builder.Append((Config.UseServerTime ? time.DateTime : time.LocalDateTime).ToString("[HH:mm:ss]"));
         }
-
-        return applyTextFormatHook!.Original(raptureTextModule, addonTextId, value);
+        
+        if (Config.DoColor) builder.PopColor();
+        str->SetString(builder.GetViewAsSpan());
+        return str->StringPtr;
     }
 }
